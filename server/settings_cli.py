@@ -1,7 +1,21 @@
-"""Print one setting value (used by Run_Accio.bat). Usage: settings_cli.py <key>"""
+"""Print one derived setting (used by Run_Accio.bat). Usage: settings_cli.py <key>
+
+Keys: comfy_url, comfy_port, comfy_dir, launch_flags, external (1 when an external ComfyUI is configured).
+"""
 import sys
 
-from config import load_settings
+import config
 
 if len(sys.argv) == 2:
-    print(load_settings().get(sys.argv[1], ""))
+    s = config.load_settings()
+    key = sys.argv[1]
+    if key == "comfy_url":
+        print(config.comfy_url(s))
+    elif key == "comfy_port":
+        print(int(s["comfy_port"]))
+    elif key == "comfy_dir":
+        print(config.comfy_dir(s))
+    elif key == "launch_flags":
+        print(config.install_state().get("launch_flags", ""))
+    elif key == "external":
+        print("1" if str(s["external_comfy_url"]).strip() else "0")

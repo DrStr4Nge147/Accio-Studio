@@ -1,0 +1,159 @@
+{
+  "comfyui": {
+    "version": "0.38.0",
+    "tag": "v0.38.0",
+    "release_url": "https://github.com/comfyanonymous/ComfyUI/releases/download/{tag}/ComfyUI_windows_portable_{build}.7z"
+  },
+  "tools": {
+    "7zr": {
+      "urls": [
+        "https://www.7-zip.org/a/7zr.exe",
+        "https://github.com/ip7z/7zip/releases/download/26.04/7zr.exe"
+      ],
+      "min_size": 500000
+    }
+  },
+  "nodes": [
+    {
+      "name": "rgthree-comfy",
+      "repo": "rgthree/rgthree-comfy",
+      "commit": "602ae5ea451ee7ea8e1ee3beaf2c7dd9ab7d10ed"
+    },
+    {
+      "name": "ComfyUI-KJNodes",
+      "repo": "kijai/ComfyUI-KJNodes",
+      "commit": "d3cfe21625e5170126ce06fbfcfe1d88108688c3"
+    },
+    {
+      "name": "ComfyUI_essentials",
+      "repo": "cubiq/ComfyUI_essentials",
+      "commit": "9d9f4bedfc9f0321c19faf71855e228c93bd0dc9"
+    },
+    {
+      "name": "ComfyUI-AusBoss",
+      "repo": "ausboss/ComfyUI-AusBoss",
+      "commit": "d87c259b64b69d1e1f8005e938f8ef3512675471"
+    },
+    {
+      "name": "ComfyUI-PixelDriftFix",
+      "repo": "Mozer/ComfyUI-PixelDriftFix",
+      "commit": "62b79b86016e3914e62e258624646afa6cd8d394"
+    },
+    {
+      "name": "ComfyUI-Fantastic-MiniMaxH3-PromptBuilder",
+      "repo": "Adudeguyman/ComfyUI-Fantastic-MiniMaxH3-PromptBuilder",
+      "commit": "01b6d8d91180c6994840e34312a65febe02cc4f5"
+    },
+    {
+      "name": "ComfyUI-Krea2T-Enhancer",
+      "repo": "capitan01R/ComfyUI-Krea2T-Enhancer",
+      "commit": "e1f60f79e168c62b1cb1cf773dfb3ae4ee2292e2",
+      "registry_version": "1.4.2"
+    },
+    {
+      "name": "ComfyUI-RBG-SmartSeedVariance",
+      "repo": "RamonGuthrie/ComfyUI-RBG-SmartSeedVariance",
+      "commit": "00fe680709fc7a0b943994dc91c99bbd20e64d7b",
+      "registry_version": "2.2.1"
+    }
+  ],
+  "models": [
+    {
+      "file": "krea2_turbo_int8_convrot.safetensors",
+      "folder": "diffusion_models",
+      "size": 13492686496,
+      "required": true,
+      "used_by": "Create",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/krea2_turbo_int8_convrot.safetensors?download=true"
+    },
+    {
+      "file": "qwen3vl_4b_fp8_scaled.safetensors",
+      "folder": "text_encoders",
+      "size": 5242467968,
+      "required": true,
+      "used_by": "Create",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/qwen3vl_4b_fp8_scaled.safetensors?download=true"
+    },
+    {
+      "file": "qwen_image_vae.safetensors",
+      "folder": "vae",
+      "size": 253806246,
+      "required": true,
+      "used_by": "Create",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/qwen_image_vae.safetensors?download=true"
+    },
+    {
+      "file": "krea2_turbo_lora_rank_64_bf16.safetensors",
+      "folder": "loras",
+      "size": 469423778,
+      "required": true,
+      "used_by": "Create (Detailed)",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/krea2_turbo_lora_rank_64_bf16.safetensors?download=true"
+    },
+    {
+      "file": "Qwen-Image-2.1-viggle-turbo-v0.2.1-6step-int8_convrot.safetensors",
+      "folder": "diffusion_models",
+      "size": 7256783064,
+      "required": true,
+      "used_by": "Edit",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/Qwen-Image-2.1-viggle-turbo-v0.2.1-6step-int8_convrot.safetensors?download=true"
+    },
+    {
+      "file": "qwen3vl_8b_int8_convrot.safetensors",
+      "folder": "text_encoders",
+      "size": 9350798360,
+      "required": true,
+      "used_by": "Edit, Prompt Enhancer",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/qwen3vl_8b_int8_convrot.safetensors?download=true"
+    },
+    {
+      "file": "texture_fix_vae_for_qwen_image_2.1_bf16.safetensors",
+      "folder": "vae",
+      "size": 675509688,
+      "required": true,
+      "used_by": "Edit",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/texture_fix_vae_for_qwen_image_2.1_bf16.safetensors?download=true"
+    },
+    {
+      "file": "qwen-image-2.1-outpaint-v2.safetensors",
+      "folder": "loras",
+      "size": 159436576,
+      "required": true,
+      "used_by": "Outpaint",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/qwen-image-2.1-outpaint-v2.safetensors?download=true"
+    },
+    {
+      "file": "bfs_head_v1.1_qwen_2.1.safetensors",
+      "folder": "loras",
+      "size": 260096144,
+      "required": false,
+      "used_by": "Head Swap preset",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/bfs_head_v1.1_qwen_2.1.safetensors?download=true"
+    },
+    {
+      "file": "bfs_body_swap_v1.0_qwen_2.1.safetensors",
+      "folder": "loras",
+      "size": 209753576,
+      "required": false,
+      "used_by": "Body Swap preset",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/bfs_body_swap_v1.0_qwen_2.1.safetensors?download=true"
+    },
+    {
+      "file": "Qwen-Image-2.1-Object-Remover-Bbox-turbo-4000.safetensors",
+      "folder": "loras",
+      "size": 83943952,
+      "required": false,
+      "used_by": "Remove Object preset",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/Qwen-Image-2.1-Object-Remover-Bbox-turbo-4000.safetensors?download=true"
+    },
+    {
+      "file": "Qwen-Image-2.1-Object-Mover-Bbox-turbo-4000.safetensors",
+      "folder": "loras",
+      "size": 83944008,
+      "required": false,
+      "used_by": "Move Object preset",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/Qwen-Image-2.1-Object-Mover-Bbox-turbo-4000.safetensors?download=true"
+    }
+  ],
+  "notes": "Pins match the reference ComfyUI install (2026-10-07): git packs by `git rev-parse HEAD`; registry packs by matching the installed files byte-for-byte to the commit (LF-normalised) in the upstream repo."
+}

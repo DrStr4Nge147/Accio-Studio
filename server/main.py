@@ -22,7 +22,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import engine
 from comfy import ComfyClient, ComfyError
-from config import DATA_DIR, FRONTEND_DIST, ROOT, TEMPLATES_DIR, load_settings
+from config import DATA_DIR, FRONTEND_DIST, ROOT, comfy_url, load_manifest, load_settings, template_files
 from history import History
 from jobs import JobManager
 from schemas import JobRequest
@@ -30,12 +30,11 @@ from schemas import JobRequest
 log = logging.getLogger("accio")
 STATIC_DIR = ROOT / "server" / "static"
 
-REQUIRED_MODELS = {
-    "diffusion_models": ["krea2_turbo_int8_convrot.safetensors", "Qwen-Image-2.1-viggle-turbo-v0.2.1-6step-int8_convrot.safetensors"],
-    "text_encoders": ["qwen3vl_4b_fp8_scaled.safetensors", "qwen3vl_8b_int8_convrot.safetensors"],
-    "vae": ["qwen_image_vae.safetensors", "texture_fix_vae_for_qwen_image_2.1_bf16.safetensors"],
-    "loras": ["krea2_turbo_lora_rank_64_bf16.safetensors", "qwen-image-2.1-outpaint-v2.safetensors"],
-}
+MANIFEST = load_manifest()
+REQUIRED_MODELS: dict[str, list[str]] = {}
+for _m in MANIFEST["models"]:
+    if _m["required"]:
+        REQUIRED_MODELS.setdefault(_m["folder"], []).append(_m["file"])
 UPLOAD_KINDS = {"media": engine.MEDIA_SUBFOLDER, "image": engine.UPLOAD_SUBFOLDER, "mask": engine.UPLOAD_SUBFOLDER}
 
 
@@ -59,7 +58,7 @@ async def lifespan(app: FastAPI):
     settings = load_settings()
     DATA_DIR.mkdir(exist_ok=True)
     app.state.settings = settings
-    app.state.comfy = ComfyClient(settings["comfy_url"])
+    app.state.comfy = ComfyClient(comfy_url(settings))
     app.state.history = History(DATA_DIR / "history.db")
     app.state.jobs = JobManager(app.state.comfy, app.state.history)
     app.state.cache = {}
@@ -144,7 +143,12 @@ async def make_catalog(request: Request, need_loras: bool = True) -> engine.Cata
 
 
 def template_classes() -> set[str]:
-    return {n["class_type"] for p in TEMPLATES_DIR.glob("*.json") for n in engine.load_template(p.stem).values()}
+    """Classes the app actually sends (output-only nodes are stripped before queueing, spec 4.4)."""
+    return {
+        n["class_type"]
+        for p in template_files()
+        for n in engine.strip_output_only(engine.load_template(p.stem)).values()
+    }
 
 
 # --------------------------------------------------------------------------- routes
@@ -153,15 +157,29 @@ def template_classes() -> set[str]:
 async def health(request: Request):
     comfy: ComfyClient = request.app.state.comfy
     try:
-        await comfy.system_stats()
+        stats = await comfy.system_stats()
     except ComfyError:
-        return {"comfy_online": False, "missing_models": [], "missing_nodes": []}
+        return {"comfy_online": False, "missing_models": [], "missing_nodes": [], "warnings": []}
     missing = []
     for folder, names in REQUIRED_MODELS.items():
         have = set(await comfy.models(folder))
         missing += [f"{folder}/{n}" for n in names if n not in have]
     info = await cached(request, "object_info_keys", 300, lambda: _object_info_keys(comfy))
-    return {"comfy_online": True, "missing_models": missing, "missing_nodes": sorted(template_classes() - info)}
+    version = stats.get("system", {}).get("comfyui_version")
+    pinned = MANIFEST["comfyui"]["version"]
+    warnings = []
+    if version and version != pinned:  # non-blocking (spec 11.3)
+        warnings.append(
+            f"ComfyUI {version} is running, but the templates were exported against {pinned}. "
+            "Outputs may differ; see scripts/export-templates.md to re-export."
+        )
+    return {
+        "comfy_online": True,
+        "comfy_version": version,
+        "missing_models": missing,
+        "missing_nodes": sorted(template_classes() - info),
+        "warnings": warnings,
+    }
 
 
 async def _object_info_keys(comfy: ComfyClient) -> set[str]:
@@ -321,7 +339,7 @@ def main() -> None:
         print(f"  LAN address      http://{lan_ip()}:{port}")
     else:
         print("  (loopback only until login exists; set lan_access in settings.json to open it to the LAN)")
-    print(f"  ComfyUI backend  {s['comfy_url']}\n")
+    print(f"  ComfyUI backend  {comfy_url(s)}\n")
     uvicorn.run(app, host=host, port=port, log_level="warning")
 
 

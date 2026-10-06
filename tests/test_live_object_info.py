@@ -10,10 +10,10 @@ import urllib.request
 
 import pytest
 
-from config import TEMPLATES_DIR
+from config import comfy_url, load_settings, template_files
 from engine import strip_output_only
 
-URL = os.environ.get("COMFY_URL", "http://127.0.0.1:8188")
+URL = os.environ.get("COMFY_URL") or comfy_url(load_settings())  # bundled ComfyUI (8189) unless overridden
 # Free-form / dynamic inputs: object_info cannot list them.
 FREE_FORM = {"Power Lora Loader (rgthree)", "Any Switch (rgthree)"}
 # Button-style frontend widgets that graphToPrompt serialises but ComfyUI ignores.
@@ -32,7 +32,7 @@ INFO = _object_info()
 pytestmark = pytest.mark.skipif(INFO is None, reason="ComfyUI offline")
 
 
-@pytest.mark.parametrize("path", sorted(TEMPLATES_DIR.glob("*.json")), ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", template_files(), ids=lambda p: p.stem)
 def test_template_matches_installed_nodes(path):
     prompt = strip_output_only(json.loads(path.read_text("utf-8")))  # what the app actually sends
     problems = []

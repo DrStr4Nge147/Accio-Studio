@@ -11,10 +11,6 @@ echo Accio Studio
 echo =================================================================
 echo.
 
-:: Defaults (override in settings.json: comfy_url, comfy_dir)
-set "COMFY_URL=http://127.0.0.1:8188"
-set "COMFY_DIR=E:\AI_Softwares\ImageGenerator\Merged\ComfyUI_windows_portable"
-
 :: Self-heal: environment
 if not exist "env\Scripts\python.exe" (
     echo [ERROR] Python environment not found. Please run Install.bat first.
@@ -22,58 +18,67 @@ if not exist "env\Scripts\python.exe" (
     exit /b 1
 )
 
-:: Read optional overrides from settings.json
+:: Settings (settings.json is optional): bundled ComfyUI folder, port, flags saved by the installer
 for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py comfy_url`) do set "COMFY_URL=%%a"
+for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py comfy_port`) do set "COMFY_PORT=%%a"
 for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py comfy_dir`) do set "COMFY_DIR=%%a"
+for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py launch_flags`) do set "COMFY_FLAGS=%%a"
+for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py external`) do set "COMFY_EXTERNAL=%%a"
 
-:: Step 1: ComfyUI (reuse if running, otherwise launch and wait)
+:: Step 1: ComfyUI (bundled; reuse it if it is already running)
 echo [1/3] Checking ComfyUI at %COMFY_URL% ...
+if "%COMFY_EXTERNAL%"=="1" (
+    echo       Using an external ComfyUI ^(external_comfy_url in settings.json^); the bundled one is not started.
+)
 curl.exe -s -m 3 -o nul "%COMFY_URL%/system_stats"
 if !errorlevel! equ 0 (
     echo       ComfyUI is already running.
     goto :comfy_ready
 )
-if not exist "%COMFY_DIR%\python_embeded\python.exe" (
-    echo [ERROR] ComfyUI not found at "%COMFY_DIR%".
-    echo         Set comfy_dir in settings.json, or start ComfyUI yourself.
+if "%COMFY_EXTERNAL%"=="1" (
+    echo [ERROR] The external ComfyUI at %COMFY_URL% is not responding.
     pause
     exit /b 1
 )
-echo       Starting ComfyUI in its own window...
-start "ComfyUI" /d "%COMFY_DIR%" cmd /c ".\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --disable-cuda-malloc --reserve-vram 1"
+if not exist "%COMFY_DIR%\python_embeded\python.exe" (
+    echo [ERROR] The bundled ComfyUI was not found at "%COMFY_DIR%".
+    echo         Please run Install.bat first.
+    pause
+    exit /b 1
+)
+if not exist "data\logs" mkdir "data\logs"
+echo       Starting ComfyUI... ^(own minimized window; log: data\logs\comfyui.log^)
+start "ComfyUI (Accio)" /min /d "%COMFY_DIR%" cmd /c ".\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port %COMFY_PORT% %COMFY_FLAGS% > "%~dp0data\logs\comfyui.log" 2>&1"
 set /a WAITED=0
 
 :wait_comfy
 curl.exe -s -m 3 -o nul "%COMFY_URL%/system_stats"
 if !errorlevel! equ 0 goto :comfy_ready
 if !WAITED! geq 180 (
-    echo [ERROR] ComfyUI did not answer within 3 minutes. Check its window for errors.
+    echo [ERROR] ComfyUI did not answer within 3 minutes.
+    echo         See data\logs\comfyui.log for the reason.
     pause
     exit /b 1
 )
 echo       Waiting for ComfyUI... ^(!WAITED!s^)
-timeout /t 3 /nobreak >nul
+ping -n 4 127.0.0.1 >nul
 set /a WAITED+=3
 goto :wait_comfy
 
 :comfy_ready
 echo       ComfyUI is ready.
 
-:: Step 2: Frontend build self-heal
+:: Step 2: Frontend build self-heal (release zips already contain frontend\dist)
 echo.
 echo [2/3] Checking the frontend build...
 if not exist "frontend\dist\index.html" (
     echo       Frontend build missing. Building ^(this may take a minute^)...
-    where npm >nul 2>&1
-    if !errorlevel! neq 0 (
-        echo [ERROR] npm not found. Install Node.js or run Install.bat.
+    env\Scripts\python.exe installer\install.py --yes --skip-models
+    if not exist "frontend\dist\index.html" (
+        echo [ERROR] Could not build the frontend. Run Install.bat.
         pause
         exit /b 1
     )
-    pushd frontend
-    call npm install --no-audit --no-fund
-    call npm run build
-    popd
 )
 
 :: Step 3: Connection mode

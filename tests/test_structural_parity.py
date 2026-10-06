@@ -15,7 +15,7 @@ import json
 
 import pytest
 
-from config import TEMPLATES_DIR
+from config import TEMPLATES_DIR, template_files
 from engine import STRIP_CLASSES, Built, Catalog, assert_graph_ok, build, load_template
 from schemas import JobRequest
 
@@ -125,7 +125,7 @@ def _build(req: dict) -> Built:
 
 
 def test_there_are_exactly_20_templates():
-    assert len(list(TEMPLATES_DIR.glob("*.json"))) == 20
+    assert len(template_files()) == 20
 
 
 @pytest.mark.parametrize("name,base,full,expected", CASES)
@@ -158,14 +158,14 @@ def _loose(name: str) -> set[str]:
 
 
 def test_templates_on_disk_not_mutated_by_builds():
-    before = {p.name: p.read_bytes() for p in TEMPLATES_DIR.glob("*.json")}
+    before = {p.name: p.read_bytes() for p in template_files()}
     for p in CASES:
         _build(p.values[1])
-    assert before == {p.name: p.read_bytes() for p in TEMPLATES_DIR.glob("*.json")}
+    assert before == {p.name: p.read_bytes() for p in template_files()}
 
 
 def test_server_templates_match_exported_originals():
     src = TEMPLATES_DIR.parent.parent / "comfy-templates"
-    for p in TEMPLATES_DIR.glob("*.json"):
+    for p in template_files():
         assert json.loads(p.read_text("utf-8")) == json.loads((src / p.name).read_text("utf-8")), p.name
 
