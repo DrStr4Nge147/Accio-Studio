@@ -1,0 +1,27 @@
+# Environment and binaries
+/env/
+/bin/
+/cloudflared.exe
+/zrok.exe
+/.zrok_share
+uv.exe
+uvw.exe
+uvx.exe
+uv.zip
+
+# Frontend
+/frontend/node_modules/
+/frontend/dist/
+
+# Runtime data (settings contain the password hash, history is personal)
+/settings.json
+/data/
+/.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Models
+*.safetensors

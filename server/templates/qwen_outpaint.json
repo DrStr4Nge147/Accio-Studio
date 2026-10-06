@@ -1,0 +1,241 @@
+{
+  "4": {
+    "inputs": {
+      "clip_name": "qwen3vl_8b_int8_convrot.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "6": {
+    "inputs": {
+      "vae_name": "texture_fix_vae_for_qwen_image_2.1_bf16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "71": {
+    "inputs": {
+      "image": "ChatGPT Image Sep 30, 2026, 07_02_49 PM.png",
+      "pad_left": 0,
+      "pad_top": 397,
+      "pad_right": 0,
+      "pad_bottom": 110,
+      "mode": "color",
+      "fill_color": "#808080",
+      "backdrop_blur": 0.5,
+      "feather": 32,
+      "canvas_multiple": 32,
+      "target_megapixels": 1.5
+    },
+    "class_type": "AUSBOSS_NODES_LoadImagePad",
+    "_meta": {
+      "title": "Load Image + Pad 🆎"
+    }
+  },
+  "74": {
+    "inputs": {
+      "seed": 42,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "252",
+        0
+      ],
+      "positive": [
+        "259:255",
+        0
+      ],
+      "negative": [
+        "259:255",
+        1
+      ],
+      "latent_image": [
+        "259:255",
+        2
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "78": {
+    "inputs": {
+      "filename_prefix": "Qwen21/outpaint",
+      "images": [
+        "259:258",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "79": {
+    "inputs": {
+      "rgthree_comparer": {
+        "images": []
+      },
+      "image_a": [
+        "71",
+        0
+      ],
+      "image_b": [
+        "259:258",
+        0
+      ]
+    },
+    "class_type": "Image Comparer (rgthree)",
+    "_meta": {
+      "title": "Image Comparer (rgthree)"
+    }
+  },
+  "252": {
+    "inputs": {
+      "PowerLoraLoaderHeaderWidget": {
+        "type": "PowerLoraLoaderHeaderWidget"
+      },
+      "lora_1": {
+        "on": true,
+        "lora": "qwen-image-2.1-outpaint-v2.safetensors",
+        "strength": 1
+      },
+      "➕ Add Lora": "",
+      "model": [
+        "268:248",
+        0
+      ],
+      "clip": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "Power Lora Loader (rgthree)",
+    "_meta": {
+      "title": "Power Lora Loader (rgthree)"
+    }
+  },
+  "253": {
+    "inputs": {
+      "value": "Outpaint the image: replace the solid gray areas with a seamless continuation of the scene, keeping the existing picture unchanged."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Prompt"
+    }
+  },
+  "342": {
+    "inputs": {},
+    "class_type": "PixaromaRunTimer",
+    "_meta": {
+      "title": "Run Timer Pixaroma"
+    }
+  },
+  "268:247": {
+    "inputs": {
+      "unet_name": "Qwen-Image-2.1-viggle-turbo-v0.2.1-6step-int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "268:248": {
+    "inputs": {
+      "device": "auto",
+      "dtype": "default",
+      "model": [
+        "268:247",
+        0
+      ]
+    },
+    "class_type": "QwenImage21Cache",
+    "_meta": {
+      "title": "Qwen Image 2.1 Cache"
+    }
+  },
+  "259:255": {
+    "inputs": {
+      "prompt": [
+        "253",
+        0
+      ],
+      "negative_prompt": "",
+      "resolution": 0,
+      "clip": [
+        "252",
+        1
+      ],
+      "images.image_1": [
+        "71",
+        0
+      ],
+      "vae": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImage21",
+    "_meta": {
+      "title": "Text Encode Qwen Image 2.1"
+    }
+  },
+  "259:256": {
+    "inputs": {
+      "samples": [
+        "74",
+        0
+      ],
+      "vae": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "259:257": {
+    "inputs": {
+      "image": [
+        "259:256",
+        0
+      ]
+    },
+    "class_type": "SplitImageWithAlpha",
+    "_meta": {
+      "title": "Split Image with Alpha"
+    }
+  },
+  "259:258": {
+    "inputs": {
+      "fix_edge_halo": false,
+      "color_match": 0,
+      "seam": "blend in",
+      "stitcher": [
+        "71",
+        4
+      ],
+      "inpainted": [
+        "259:257",
+        0
+      ]
+    },
+    "class_type": "AUSBOSS_NODES_StitchInpaint",
+    "_meta": {
+      "title": "Stitch Inpaint 🆎"
+    }
+  }
+}

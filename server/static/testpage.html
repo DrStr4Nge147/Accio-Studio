@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accio Studio - engine test page</title>
+<style>
+  body { font: 14px system-ui, sans-serif; background: #111; color: #ddd; margin: 0; padding: 16px; max-width: 760px; }
+  textarea, input, select, button { font: inherit; background: #1d1d1d; color: #ddd; border: 1px solid #444; border-radius: 6px; padding: 6px 8px; }
+  textarea { width: 100%; box-sizing: border-box; min-height: 90px; }
+  label { margin-right: 12px; white-space: nowrap; }
+  .row { margin: 8px 0; }
+  button { cursor: pointer; } button.go { background: #b8892e; color: #111; border: 0; font-weight: 600; }
+  pre { background: #1a1a1a; padding: 8px; overflow: auto; max-height: 260px; }
+  img { max-width: 100%; margin-top: 8px; border-radius: 6px; }
+  bar { display: block; height: 6px; background: #b8892e; width: 0; transition: width .2s; }
+</style>
+</head>
+<body>
+<h3>Engine test page <small>(phase 2, not the real UI)</small></h3>
+<div class="row"><textarea id="prompt" placeholder="Prompt">A lighthouse on a cliff at dusk, cinematic</textarea></div>
+<div class="row">
+  <label>Variant <select id="variant"><option>standard</option><option>detailed</option></select></label>
+  <label>W <input id="w" type="number" value="1080" step="8" style="width:5em"></label>
+  <label>H <input id="h" type="number" value="1920" step="8" style="width:5em"></label>
+</div>
+<div class="row">
+  <label><input type="checkbox" id="sv" checked> Seed Variance</label>
+  <label><input type="checkbox" id="te"> T-Enhancer</label>
+  <label><input type="checkbox" id="sh" checked> Sharpen</label>
+</div>
+<div class="row">
+  <button id="dry">Dry run (build only)</button>
+  <button class="go" id="go">Generate</button>
+  <button id="cancel" disabled>Cancel</button>
+</div>
+<bar id="bar"></bar>
+<div id="status" class="row">idle</div>
+<div id="out"></div>
+<pre id="log"></pre>
+<script>
+const $ = (id) => document.getElementById(id);
+const log = (x) => ($("log").textContent = typeof x === "string" ? x : JSON.stringify(x, null, 2));
+let current = null;
+
+function params() {
+  return { mode: "create", variant: $("variant").value, prompt: $("prompt").value,
+    width: +$("w").value, height: +$("h").value,
+    seed_variance: $("sv").checked, t_enhancer: $("te").checked, sharpen: $("sh").checked };
+}
+async function post(url, body) {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error ? j.error.message : JSON.stringify(j.detail || j));
+  return j;
+}
+$("dry").onclick = async () => { try { const j = await post("/api/build", { params: params() }); log({ template: j.template, seeds: j.seeds, nodes: Object.keys(j.prompt).length }); } catch (e) { log(String(e)); } };
+$("go").onclick = async () => { try { const j = await post("/api/jobs", { params: params() }); current = j.id; $("out").innerHTML = ""; render(j); } catch (e) { log(String(e)); } };
+$("cancel").onclick = () => current && fetch(`/api/jobs/${current}/cancel`, { method: "POST" });
+
+function render(j) {
+  const l = j.live || {};
+  $("status").textContent = `${j.label} - ${j.status}` + (l.queue_ahead ? ` (queue: ${l.queue_ahead} ahead)` : "") + (l.max ? ` - step ${l.step}/${l.max}` : "") + (l.node ? ` - node ${l.node}` : "") + (j.error ? ` - ${j.error}` : "");
+  $("bar").style.width = l.max ? (100 * l.step / l.max) + "%" : "0";
+  $("cancel").disabled = !["queued", "running"].includes(j.status);
+  if (j.status === "done" && !$("out").innerHTML) {
+    $("out").innerHTML = j.outputs.map((o, i) => `<div>${o.role}<br><img src="/api/jobs/${j.id}/image/${i}"></div>`).join("");
+    log({ seeds: j.seeds, template: j.template });
+  }
+}
+function connect() {
+  const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/ws`);
+  ws.onmessage = (m) => {
+    if (typeof m.data !== "string") return; // preview frames: not shown in this page
+    const d = JSON.parse(m.data);
+    const jobs = d.type === "snapshot" ? d.jobs : d.type === "job" ? [d.job] : [];
+    for (const j of jobs) { if (!current) current = j.id; if (j.id === current) render(j); }
+  };
+  ws.onclose = () => setTimeout(connect, 1500);
+}
+connect();
+</script>
+</body>
+</html>
