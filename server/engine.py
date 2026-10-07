@@ -238,6 +238,46 @@ def create_defaults() -> dict[str, Any]:
     }
 
 
+def edit_defaults() -> dict[str, Any]:
+    """Workflow default values of the Edit patch points (single source of truth for the UI)."""
+    me = load_template("qwen_multiedit__resize1")
+    ip = load_template("qwen_inpaint")
+    op = load_template("qwen_outpaint")
+    sampler_keys = ("steps", "cfg", "sampler_name", "scheduler", "denoise")
+
+    def sampler(pr: dict, node: str) -> dict[str, Any]:
+        return {k: pr[node]["inputs"][k] for k in sampler_keys}
+
+    crop_keys = ("context_factor", "blend_pixels", "output_multiple", "mask_grow", "mask_blur", "context_pixels", "target_megapixels")
+    pad = op["71"]["inputs"]
+    return {
+        "multiedit": {
+            "sampler": sampler(me, "36"),
+            "base_megapixels": me["16"]["inputs"]["megapixels"],
+            "ref_megapixels": [me[n]["inputs"]["megapixels"] for n in REF_MEGAPIXEL_NODES],
+            "manual_width": me["341:339"]["inputs"]["width"],
+            "manual_height": me["341:339"]["inputs"]["height"],
+        },
+        "inpaint": {
+            "sampler": sampler(ip, "60"),
+            "crop": {k: ip["267:266"]["inputs"][k] for k in crop_keys},
+            "seam": ip["267:262"]["inputs"]["seam"],
+        },
+        "outpaint": {
+            "sampler": sampler(op, "74"),
+            "fill_mode": pad["mode"],
+            "fill_color": pad["fill_color"],
+            "backdrop_blur": pad["backdrop_blur"],
+            "feather": pad["feather"],
+            "canvas_multiple": pad["canvas_multiple"],
+            "target_megapixels": pad["target_megapixels"],
+            "seam": op["259:258"]["inputs"]["seam"],
+            "lora_strength": op["252"]["inputs"]["lora_1"]["strength"],
+            "prompt": op["253"]["inputs"]["value"],
+        },
+    }
+
+
 # --------------------------------------------------------------------------- builders
 
 def _build_create(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], prefix: str) -> Built:

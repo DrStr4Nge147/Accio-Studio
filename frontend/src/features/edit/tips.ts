@@ -1,0 +1,19 @@
+/** Hover / focus explanations for the Edit controls (shown by the app tooltip). */
+export const EDIT_TIPS = {
+  enhancer: "Rewrites your prompt into a clearer instruction before editing. The rewritten text is shown under the result. If the rewrite fails, your own prompt is used.",
+  keepOriginal: "Keep image 1 at its own resolution. Off scales it to about 1 megapixel first, which is faster and what the model is tuned for.",
+  pixelDrift: "Corrects the slight shift that edit models can add, so unchanged parts stay aligned with the original.",
+  manualSize: "Choose the output size yourself instead of following image 1.",
+  baseMp: "Size image 1 is scaled to (in megapixels) before editing. Only applies when Keep original resolution is off.",
+  refMp: "Size this reference image is scaled to (in megapixels) before it is shown to the model.",
+  invert: "Swap the mask: change everything except the painted area.",
+  maskGrow: "Grows (or, if negative, shrinks) the painted area in pixels, so the change blends past your brush edge.",
+  contextFactor: "How much of the surroundings the model sees around the painted area. Higher = more context, slower.",
+  blendPixels: "Width of the soft seam where the new content is blended back into the original.",
+  halo: "Cleans up a light or dark fringe that can appear around the edited area.",
+  seam: "How the result is stitched back into the original: classic, or blend in for a softer join.",
+  fillMode: "What fills the new area before the model continues the scene. Solid colour is what the outpaint model was trained with.",
+  feather: "Width of the soft transition between your picture and the new area.",
+  targetMp: "The padded canvas is scaled to about this many megapixels before generating.",
+  outpaintLora: "The outpaint LoRA that teaches the model to continue a scene into the gray padding. Leave it on.",
+} as const;

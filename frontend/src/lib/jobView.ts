@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import type { Job } from "../api/types";
 
-/** Output size of a Create job (the template default when the request didn't set one). */
+export type JobGroup = "create" | "edit";
+export const jobGroup = (job: Job): JobGroup => (job.mode === "create" ? "create" : "edit");
+
+/** "Create · Standard" -> "Standard", "Edit · Inpaint" -> "Inpaint". */
+export const shortLabel = (job: Job) => job.label.replace(/^(Create|Edit) · /, "");
+
+/** Output size to reserve for a job: Create's size (template default if unset), or an Edit job's size hint. */
 export function jobSize(job: Job): { w: number; h: number } {
+  const hint = job.params.size_hint as number[] | undefined;
+  if (job.mode !== "create") return hint?.length === 2 ? { w: hint[0]!, h: hint[1]! } : { w: 1024, h: 1024 };
   const detailed = job.params.variant === "detailed";
   return { w: job.params.width ?? (detailed ? 1920 : 1080), h: job.params.height ?? (detailed ? 1080 : 1920) };
 }

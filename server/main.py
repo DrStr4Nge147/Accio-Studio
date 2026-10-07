@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import socket
 import threading
 import time
@@ -37,6 +38,7 @@ REQUIRED_MODELS: dict[str, list[str]] = {}
 for _m in MANIFEST["models"]:
     if _m["required"]:
         REQUIRED_MODELS.setdefault(_m["folder"], []).append(_m["file"])
+INPUT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 UPLOAD_KINDS = {"media": engine.MEDIA_SUBFOLDER, "image": engine.UPLOAD_SUBFOLDER, "mask": engine.UPLOAD_SUBFOLDER}
 
 
@@ -81,7 +83,7 @@ class SkipImageGZip:
         self.inner = inner
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] == "http" and "/image/" in scope["path"]:
+        if scope["type"] == "http" and ("/image/" in scope["path"] or scope["path"].startswith("/api/input/")):
             await self.inner(scope, receive, send)
         else:
             await self.gzip(scope, receive, send)
@@ -196,7 +198,7 @@ async def catalog(request: Request):
         "samplers": sorted(cat.samplers or []),
         "schedulers": sorted(cat.schedulers or []),
         "variance": cat.variance_spec,
-        "defaults": engine.create_defaults(),
+        "defaults": {**engine.create_defaults(), "edit": engine.edit_defaults()},
     }
 
 
@@ -288,6 +290,30 @@ async def upload(request: Request, kind: str):
     name = f"{uuid.uuid4().hex}.{ext}"
     res = await request.app.state.comfy.upload_image(bytes(data), name, UPLOAD_KINDS[kind], mime)
     return {"file": res["name"], "kind": kind}
+
+
+@app.get("/api/input/{kind}/{file}")
+async def input_image(kind: str, file: str, request: Request):
+    """Serve back an image this app uploaded (compare slider, reuse). Only our own upload folders, validated names."""
+    if kind not in ("media", "image") or not INPUT_NAME.fullmatch(file):
+        raise HTTPException(404, "Image not found.")
+    comfy: ComfyClient = request.app.state.comfy
+    upstream = await comfy.send(comfy.view_stream(file, UPLOAD_KINDS[kind], "input"), stream=True)
+    if upstream.status_code != 200:
+        await upstream.aclose()
+        raise HTTPException(404, "Image not found.")
+
+    async def body():
+        try:
+            async for chunk in upstream.aiter_bytes():
+                yield chunk
+        except httpx.HTTPError:
+            log.warning("input stream interrupted")
+        finally:
+            await upstream.aclose()
+
+    headers = {"Cache-Control": "private, max-age=31536000, immutable"}
+    return StreamingResponse(body(), media_type=upstream.headers.get("content-type", "image/png"), headers=headers)
 
 
 @app.websocket("/api/ws")

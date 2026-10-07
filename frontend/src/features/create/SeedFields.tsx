@@ -5,9 +5,9 @@ import { TIPS } from "./tips";
 import { useCreate, type Seeds } from "./store";
 
 const MAX_SEED = Number.MAX_SAFE_INTEGER; // 2^53 - 1, the server's limit
-const randomSeed = () => Math.floor(Math.random() * 2 ** 53);
+export const randomSeed = () => Math.floor(Math.random() * 2 ** 53);
 
-function SeedInput({ label, value, onChange }: { label: string; value: number | null; onChange: (v: number | null) => void }) {
+export function SeedInput({ label, value, onChange }: { label: string; value: number | null; onChange: (v: number | null) => void }) {
   return (
     <div>
       <Label>{label}</Label>

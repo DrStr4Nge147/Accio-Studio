@@ -2,21 +2,17 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SamplerDefaults } from "../../api/types";
 import { ASPECTS, CUSTOM } from "../../lib/aspects";
+import type { LoraSel } from "../../components/LoraList";
 import type { LoraMode } from "../../lib/loras";
 
+export type { LoraSel, LoraTarget } from "../../components/LoraList";
+
 export type Variant = "standard" | "detailed";
-export type LoraTarget = "both" | "pass1" | "pass2";
 
 export interface SizeSel {
   aspect: string; // an ASPECTS key or CUSTOM
   w: number;
   h: number;
-}
-export interface LoraSel {
-  name: string;
-  strength: number;
-  on: boolean;
-  target: LoraTarget;
 }
 export interface Seeds {
   main: number | null; // Standard: seed node. Detailed: pass 1.

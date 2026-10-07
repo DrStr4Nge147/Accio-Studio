@@ -5,9 +5,13 @@ import { SelectedStage } from "../components/stage/Stage";
 import { Wordmark } from "../components/Wordmark";
 import { CreateComposer } from "../features/create/CreateComposer";
 import { useCreate } from "../features/create/store";
-import { EditSoon, GallerySoon } from "../features/edit/ComingSoon";
+import { GallerySoon } from "../features/edit/ComingSoon";
+import { EditCanvas } from "../features/edit/EditCanvas";
+import { EditComposer } from "../features/edit/EditComposer";
+import { EditModeSwitch } from "../features/edit/EditControls";
+import { EDIT_MODES, useEdit } from "../features/edit/store";
 import { HistoryPane, QueuePane, RecentStrip } from "../features/history/SidePanes";
-import { jobSize, passOf } from "../lib/jobView";
+import { jobGroup, jobSize, passOf, shortLabel } from "../lib/jobView";
 import { useJobs } from "../store/jobs";
 import { useUi, type Tab } from "../store/ui";
 
@@ -18,8 +22,23 @@ const NAV: { id: Tab; label: string; icon: typeof Sparkles }[] = [
 ];
 
 function ContextLine() {
-  const job = useJobs((s) => (s.selectedId ? s.jobs[s.selectedId] : undefined));
+  const tab = useUi((s) => s.tab);
+  const job = useJobs((s) => {
+    const j = s.selectedId ? s.jobs[s.selectedId] : undefined;
+    return j && jobGroup(j) === (tab === "edit" ? "edit" : "create") ? j : undefined;
+  });
   const variant = useCreate((s) => s.variant);
+  const editMode = useEdit((s) => s.mode);
+  if (tab === "edit") {
+    const label = EDIT_MODES.find((m) => m.value === editMode)?.label;
+    if (!job) return <span className="text-[13px] text-text-3">{label}</span>;
+    const { w, h } = jobSize(job);
+    return (
+      <span className="text-[13px] text-text-3">
+        {shortLabel(job)} · {w}×{h}
+      </span>
+    );
+  }
   if (!job) return <span className="text-[13px] text-text-3">{variant === "detailed" ? "Detailed" : "Standard"}</span>;
   const { w, h } = jobSize(job);
   const pass = job.status === "running" ? passOf(job) : null;
@@ -63,6 +82,16 @@ export function DesktopLayout() {
         </div>
         {tab === "create" ? (
           <CreateComposer layout="pane" above={nav} />
+        ) : tab === "edit" ? (
+          <EditComposer
+            layout="pane"
+            above={
+              <>
+                {nav}
+                <EditModeSwitch stretch />
+              </>
+            }
+          />
         ) : (
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3.5">
             {nav}
@@ -76,13 +105,13 @@ export function DesktopLayout() {
         <div className="flex h-14 flex-none items-center px-4">
           <ContextLine />
         </div>
-        <div className="min-h-0 flex-1 px-4 pb-4">{tab === "create" ? <SelectedStage /> : tab === "edit" ? <EditSoon /> : <GallerySoon />}</div>
-        {tab === "create" && <RecentStrip />}
+        <div className="min-h-0 flex-1 px-4 pb-4">{tab === "create" ? <SelectedStage /> : tab === "edit" ? <EditCanvas /> : <GallerySoon />}</div>
+        {tab !== "gallery" && <RecentStrip group={tab === "edit" ? "edit" : "create"} />}
       </section>
 
       <aside className="flex min-h-0 flex-col border-l border-line bg-surface" aria-label="Queue and history">
         <QueuePane />
-        <HistoryPane />
+        <HistoryPane group={tab === "edit" ? "edit" : "create"} />
       </aside>
     </div>
   );

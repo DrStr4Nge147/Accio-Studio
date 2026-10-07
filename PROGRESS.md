@@ -1,6 +1,6 @@
 # Accio Studio - progress
 
-Read `APP_SPEC.md` first; this file records state, decisions and how to run. Last updated: 2026-10-07 (Phase 4).
+Read `APP_SPEC.md` first; this file records state, decisions and how to run. Last updated: 2026-10-07 (Phase 5).
 
 ## Status
 
@@ -11,10 +11,11 @@ Read `APP_SPEC.md` first; this file records state, decisions and how to run. Las
 | 2b. Portable bundle | **Done** (see below) |
 | 3. Design proposal | **Done, approved by user 2026-10-07** (see "Approved design" below; user: "a good start, we can always edit it") |
 | 4. Create mode | **Done** (see "Phase 4 results"; awaiting the user's demo/test) |
-| 5. Edit modes | **Next** (ask the spec 6.4 Remove/Move question first) |
-| 6-8 | Not started |
+| 5. Edit modes | **Done** (see "Phase 5 results"; awaiting the user's test) |
+| 6. Gallery, history, PWA | **Next** |
+| 7-8 | Not started |
 
-Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio`. Git: all work is on branch `dev`, **committed phase by phase directly on `dev` (user decision 2026-10-07: no feature branches, no new branches; this overrides APP_SPEC section 10's "feature branch")**. History: Phase 1+2, Phase 2b, Phase 3 design, Phase 4 Create. Commit at the end of each phase without asking. `main` is the default branch and is not used yet.
+Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio`. Git: all work is on branch `dev`, **committed phase by phase directly on `dev` (user decision 2026-10-07: no feature branches, no new branches; this overrides APP_SPEC section 10's "feature branch")**. History: Phase 1+2, Phase 2b, Phase 3 design, Phase 4 Create, Phase 5 Edit. Commit at the end of each phase without asking. `main` is the default branch and is not used yet.
 
 ## Spec change recorded after Phase 2 (APP_SPEC rule 3, 5.1, 9.2 step 1, new section 11)
 
@@ -41,6 +42,41 @@ Accio now ships its **own portable ComfyUI** (v0.38.0, port **8189**) installed 
 - Interactive prompts (models-folder question, optional-LoRA question, GPU menu): only the `--yes`/arguments path was run.
 - Release packaging (`scripts\make_release`, section 11.5): not part of 2b, not built. `Update.bat`, `Run_Accio-zrok-only.bat`, `Setup_Zrok.bat`: later phases.
 - The "Download missing models" UI action and the setup-check screen (section 11.3): server side `/api/health` reports missing models/nodes and a ComfyUI-version warning (non-blocking), the UI and the download action come with the frontend phases.
+
+## Phase 5 results (Edit modes, 2026-10-07)
+
+Multi-edit, Inpaint and Outpaint, end to end, on the bundled ComfyUI 0.38.0 with the real GPU.
+
+**Verified on this PC:**
+- **Multi-edit through the API (2 uploaded images, default toggles): PASS**, 212 s including model load. The minimal `media_state` shape (spec 5.2: `kind`, `file`, `name` only) is accepted by `MiniMaxH3MediaLoader`; the enhancer's rewritten prompt came back in `prompt_used`; output about 1 MP.
+- **Pixel Drift Fix + Manual output size (spec 6.3 open test): ran without error** (768x512 output from a 512x384 source, Pixel Drift on); the picture showed no visible warping. One synthetic image only, so the Advanced note says "only had one test run" and Pixel Drift is **not** auto-disabled. Re-check with a photo in Phase 8.
+- **Inpaint through the API with a PIL-made RGBA mask PNG: PASS** (122 s). **Inpaint through the UI** (Remove preset, one red box, in the in-app browser): the browser built the mask in a worker, uploaded it and queued the job. The uploaded PNG, fetched back and inspected with PIL: RGBA 900x600, alpha only 0 or 255, **alpha 0 exactly over the box (80,940 px = box area), RGB under the mask untouched** (original pixel values kept), 4,488 pure-red (255,0,0) outline pixels whose bounding box is exactly the box. The job finished (about 2 min, enhancer included) and **removed the red circle cleanly**; the before / after slider and the "Prompt used" button showed up on the result.
+- **Outpaint through the API** (128 px left and right): PASS (156 s); the result is the padded canvas at about 1.5 MP with the picture unchanged in the middle and a plausible continuation at the sides.
+- Editors exercised with real mouse input in the in-app browser: tray (drop two images, upload, numbering, Base badge, reorder buttons), preset tap fills the prompt and sets the flag, brush stroke + undo enabled + brush ring, red-box tool, outpaint handle drag (+384 px on the right, the handle tracks the pointer, numeric field and canvas size update), mobile 375 px layout of all three modes.
+- `pytest tests -q`: **107 passed, 20 skipped** with the bundled ComfyUI stopped (the 20 live `/object_info` tests skip when it is offline; the 112 that ran earlier in the session, before the 15 new tests, all passed). New: edit defaults, size hint, `/api/input` name / kind validation. `npm test` (vitest): **45 passed** (new: PNG encoder round trip incl. RGB under alpha 0, box burning, mask alpha, request building and "what blocks Generate" per mode, presets text, reuse). `npm run build`: tsc clean; **initial JS 108 KB gzipped** (budget 200 KB); the three editors are lazy chunks (SlotGrid 2.3 KB, OutpaintEditor 2.5 KB, MaskEditor 3.9 KB gzipped) plus a 2.5 KB PNG worker.
+
+**What exists (frontend, `frontend/src/features/edit/`):**
+- `store.ts` (persisted settings per mode: prompts, toggles, overrides of workflow defaults only, seeds, LoRAs), `workspace.ts` (not persisted: tray slots with background upload + progress, Inpaint source + op list, Outpaint source + pads + upload state, "before" images for compare), `params.ts` (request builders, `editBlocker` = the reason Generate is disabled, reuse), `actions.ts` (generate, mode switch, presets, Send to Edit, reuse), `presets.ts` (exact texts from spec 6.4), `maskOps.ts` (op list, repaint, mask bytes), `pads.ts`.
+- UI: `EditCanvas` (editor or result + "Editor" back button), `SlotGrid` (9 numbered slots, image 1 = Base, drag or arrow buttons to reorder, per-slot upload progress / retry), `MaskEditor` (brush / eraser / rectangle / hand, size slider, undo / redo / clear, `[` `]` size, Ctrl+Z, B/E/X/H, Space-drag pan, pinch zoom, brush ring), `OutpaintEditor` (drag the four edges, ratio presets 1:1 4:3 3:4 16:9 9:16, reset, live "+N" tags, solid-colour or hatched fill preview), `PaddingFields`, `EditControls` (mobile chips / desktop toggles + mode switch), `EditAdvanced`, `EditComposer` (reuses the shared `Composer`), `ImagePicker` (choose, camera on touch screens, drop, Ctrl+V paste).
+- Shared pieces changed: `Zoomable` takes an optional drawing `tool` (one pointer draws; two fingers, Space, the middle button or the hand tool pan and zoom); `LoraList` extracted from Create's LoRA section and shared; `ResultView` gained Send to Edit (menu: Multi-edit / Inpaint / Outpaint), the before / after compare slider (`Compare.tsx`), the "Prompt used" panel (Use as prompt / Copy) and uses the image's real size once loaded; `jobSize` / `jobGroup` / `shortLabel` in `lib/jobView.ts`; history, recent strip and stage are filtered by Create vs Edit; `features/reuse.ts` dispatches Reuse / Try again by mode.
+- Server: `engine.edit_defaults()` (in `GET /api/catalog` under `defaults.edit`), optional display-only `size_hint` on the three Edit requests (never reaches a node), `GET /api/input/{media|image}/{file}` to read back our own uploads (validated names, only our two upload folders).
+
+**Remove / Move object presets (spec 6.4, answered by the user):** the Inpaint canvas switches to the rectangle tool; each box is burned into the RGB as a pure-red outline (about 0.6% of the shorter side, minimum 3 px, inside the box edge) and the mask covers the same rectangle. Remove needs at least one box, Move exactly two (the object first, then the target). Brush strokes still add to the mask. Boxes are only burned while a Remove / Move preset is on; without a preset the rectangle tool is a plain rectangular mask.
+
+**Decisions / deviations (Phase 5):**
+- The mask PNG is encoded by our own encoder (`lib/png.ts`, Sub filter + the browser's `CompressionStream`), because canvas export is premultiplied and would zero the RGB under alpha 0 (spec 5.3). The source is decoded with `createImageBitmap(..., colorSpaceConversion: "none")` so pixel values stay exact; EXIF orientation is applied like the backend does. Runs in a module worker, with a main-thread fallback.
+- Outpaint uploads the original file untouched as soon as it is picked; Inpaint uploads at Generate time (the mask depends on the strokes); Multi-edit images upload in the background when added.
+- The Outpaint view always has room to grow by 60% of the longer side so the edge handles track the pointer exactly; typing a bigger padding widens the view. Padding is limited to 16,384 px by the server schema.
+- Edit sub-modes on mobile are a full-width segmented control in a row under the header (not inside the header: three labels do not fit next to the wordmark and gear at 375 px).
+- "Reuse settings" for an Edit job restores its prompt, toggles, overrides, LoRAs and seed (locked); Multi-edit images and the Outpaint image come back from the backend's input folder. Inpaint's image is **not** restored (the stored file is the RGBA mask upload); the user picks it again. "Try again" uses a new seed.
+- Compare slider: Multi-edit (image 1 from the backend) and Inpaint (this session's source); not offered for Outpaint (different canvas size), nor for Inpaint after a reload.
+- Not built, deliberately: drag from the history pane into a Multi-edit slot (the design mentions it; Send to Edit and Reuse cover the need), resizing or moving a drawn box (undo and redraw instead).
+
+**Known issues / not done in Phase 5:**
+- Not tested: a real phone or touch (pinch, two-finger pan, finger painting use the same pointer code as the Phase 4 zoom, exercised only with synthetic events and the desktop mouse), Head swap / Body swap / Move object on the GPU (flags and prompt texts are unit-tested; the optional preset LoRAs were not run), Remove object result quality, the Edit LoRA picker with real LoRAs applied, camera capture, Ctrl+V paste, Multi-edit with 9 images, very large source images.
+- Large sources: the RGBA PNG for Inpaint is lossless and can exceed the 40 MB upload limit (`max_upload_mb`) for big photos; the server then answers "That image is too large." and nothing is resized (parity).
+- Mobile has no way to reach older Edit results except the compact Recent strip (10 newest); the gallery is Phase 6.
+- Create (Standard / Detailed) was not re-run on the GPU after the shared-component changes (Zoomable, ResultView, Stage, history panes); only its rendering was checked.
 
 ## Phase 4 results (Create mode, 2026-10-07)
 
@@ -120,7 +156,7 @@ Structural parity (spec 7.1) for all 20 templates: **PASS** (fresh re-export fro
 ## Open questions (user)
 
 - (Answered 2026-10-07) Design direction approved as in "Approved design"; further edits welcome later.
-- Remove/Move object presets (spec 6.4): confirm the intended input (red box burned into RGB + mask?). **Ask before Phase 5.**
+- (Answered 2026-10-07) Remove/Move object presets (spec 6.4): burn the red box(es) into the image RGB **and** put the mask over the same area(s). Implemented that way (see Phase 5).
 - (Answered 2026-10-07) Commits go directly on `dev`, one per phase, no new branches.
 
 ## How to run and test
@@ -136,6 +172,13 @@ node scripts/check-contrast.mjs    # design-token contrast check
 ```
 
 Dry-run any request without queueing: `POST /api/build` with `{"params": {...}}`.
+
+**Manual test of the Edit modes (Phase 5):** run `Run_Accio.bat` (option 1; there is no login yet) and open the Edit tab.
+1. *Multi-edit:* choose or drop 2 images (tray shows numbers, image 1 = Base, upload bars). Prompt such as "Change the shirt in <image1> to red". Generate. Expect the result with a **Prompt used** button (the enhancer's rewrite), the compare button (before / after) and **Send to Edit**. Try the arrows to reorder, Head swap / Body swap (they fill the prompt; need 2 images and the optional LoRAs), Keep original resolution, Manual output size with Pixel Drift on and off.
+2. *Inpaint:* choose an image, paint over an object (B brush, E eraser, `[` `]` size, Ctrl+Z, Space-drag or the hand to pan, wheel / pinch to zoom). Prompt "Replace ... with ...". Generate. Then try **Remove object** (draw a box around the object) and **Move object** (two boxes: the object, then the target). These two need the Remover / Mover LoRAs.
+3. *Outpaint:* choose an image, drag the gold edges outward (or type pixels, or tap 16:9 etc.). Generate with the default prompt. Try other fill modes in Advanced.
+4. On a phone (same Wi-Fi, LAN access on, or later via a tunnel): the three-way switch is under the header; the prompt, chips and Generate are in the bottom sheet; Advanced = tap the sliders button or swipe up.
+5. *Reuse / Try again / Send to Edit:* on any result, Reuse settings restores the settings and seed; Send to Edit (wand button) loads the result into any Edit mode.
 
 ## Approved design (Phase 3, approved 2026-10-07)
 
@@ -182,8 +225,6 @@ Radii 10 / 14 / 22 / pill. Three surface levels separated by 1 px hairlines. Lin
 
 **Deviations / caveats:** the prototype uses gradients as image stand-ins and is not responsive between the phone and desktop frames (the real app switches at 1024 px). Prototype lives in `design/` and is not shipped (excluded from release packaging).
 
-## Next (Phase 5: Edit modes)
+## Next (Phase 6: Gallery, history, PWA)
 
-Phase 5 starts in a fresh session (user decision 2026-10-07): read `APP_SPEC.md` and this file first.
-
-Multi-Edit (MiniMax upload, 9-slot tray), Inpaint (mask canvas, RGBA mask per spec 5.3), Outpaint (pad editor), enhancer "Prompt used" panel, presets, Send to Edit. **Ask the user the spec 6.4 Remove/Move question first.** Reuse the Phase 4 pieces: `Composer`, `Sheet`, `ui/controls`, `stage/` (add the before/after compare slider to `ResultView`), the jobs store and WebSocket. The Edit tab currently renders `features/edit/ComingSoon.tsx`; the Edit sub-modes become a segmented control in the mobile top bar (design). The server already supports all three Edit modes (`/api/upload?kind=media|image|mask`, `/api/jobs`).
+Server-side WebP thumbnails (384 / 1024 px, cached on disk) and a virtualized, paged gallery (the Gallery tab is still `ComingSoon`); "Reuse settings" / "Send to Edit" already exist (Phase 4 / 5) and should be wired into the gallery; PWA install (app icons, service worker check in real Chrome); revisit mobile Edit history (only a compact Recent strip exists). Then Phase 7 (login, tunnels) and Phase 8 (GPU parity, polish, README).

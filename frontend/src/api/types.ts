@@ -53,6 +53,33 @@ export interface SamplerDefaults {
 /** Spec of one ComfyUI input as returned by /object_info: [kind-or-options, opts?]. */
 export type InputSpec = [string | string[], Record<string, any>?];
 
+export interface EditDefaults {
+  multiedit: {
+    sampler: SamplerDefaults;
+    base_megapixels: number;
+    ref_megapixels: number[];
+    manual_width: number;
+    manual_height: number;
+  };
+  inpaint: {
+    sampler: SamplerDefaults;
+    crop: Record<"context_factor" | "blend_pixels" | "output_multiple" | "mask_grow" | "mask_blur" | "context_pixels" | "target_megapixels", number>;
+    seam: "classic" | "blend in";
+  };
+  outpaint: {
+    sampler: SamplerDefaults;
+    fill_mode: string;
+    fill_color: string;
+    backdrop_blur: number;
+    feather: number;
+    canvas_multiple: number;
+    target_megapixels: number;
+    seam: "classic" | "blend in";
+    lora_strength: number;
+    prompt: string;
+  };
+}
+
 export interface Catalog {
   loras: string[];
   samplers: string[];
@@ -71,5 +98,6 @@ export interface Catalog {
     sharpen_strength: number;
     t_enhancer_strength: number;
     variance: Record<string, string | number>;
+    edit: EditDefaults;
   };
 }

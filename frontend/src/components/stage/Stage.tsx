@@ -1,9 +1,7 @@
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import type { Job } from "../../api/types";
-import { generate, reuseSettings } from "../../features/create/actions";
-import { reuseJob } from "../../features/create/params";
-import { useCreate } from "../../features/create/store";
-import { useServer } from "../../store/health";
+import { retryAny, reuseAny } from "../../features/reuse";
+import { jobGroup, type JobGroup } from "../../lib/jobView";
 import { isActive, useJobs } from "../../store/jobs";
 import { Ring } from "../Wordmark";
 import { ResultView } from "./ResultView";
@@ -25,12 +23,6 @@ export function EmptyStage() {
 }
 
 function Problem({ job, title }: { job: Job; title: string }) {
-  const catalog = useServer((s) => s.catalog);
-  const retry = () => {
-    reuseJob(job, catalog?.defaults ?? null);
-    useCreate.getState().patch({ lockSeed: false }); // a retry draws fresh seeds
-    void generate();
-  };
   return (
     <div className="grid h-full place-items-center p-6">
       <div className="max-w-sm rounded-l border border-line bg-surface p-5 text-center">
@@ -38,12 +30,12 @@ function Problem({ job, title }: { job: Job; title: string }) {
         <h3 className="mt-3 text-[16px] font-semibold">{title}</h3>
         {job.error && <p className="mt-1.5 text-[14px] text-text-2">{job.error}</p>}
         <div className="mt-4 flex justify-center gap-2">
-          <button type="button" onClick={retry} className="hover-wash flex h-11 items-center gap-2 rounded-full bg-raised px-4 text-[14px] font-medium">
+          <button type="button" onClick={() => void retryAny(job)} className="hover-wash flex h-11 items-center gap-2 rounded-full bg-raised px-4 text-[14px] font-medium">
             <RotateCcw size={16} strokeWidth={1.7} /> Try again
           </button>
           <button
             type="button"
-            onClick={() => reuseSettings(job)}
+            onClick={() => reuseAny(job)}
             className="hover-wash h-11 rounded-full border border-line-strong px-4 text-[14px] text-text-2 hover:text-text"
           >
             Reuse settings
@@ -62,7 +54,11 @@ export function JobStage({ job }: { job: Job | undefined }) {
   return <Problem job={job} title={job.status === "cancelled" ? "Cancelled" : "That job didn't finish"} />;
 }
 
-export function SelectedStage() {
-  const job = useJobs((s) => (s.selectedId ? s.jobs[s.selectedId] : undefined));
+/** The selected job, if it belongs to this side of the app (Create results never show in Edit and vice versa). */
+export function SelectedStage({ group = "create" }: { group?: JobGroup }) {
+  const job = useJobs((s) => {
+    const j = s.selectedId ? s.jobs[s.selectedId] : undefined;
+    return j && jobGroup(j) === group ? j : undefined;
+  });
   return <JobStage job={job} />;
 }

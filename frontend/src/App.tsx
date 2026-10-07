@@ -3,6 +3,7 @@ import { startSocket } from "./api/socket";
 import { Settings } from "./components/Settings";
 import { TooltipLayer } from "./components/ui/Tooltip";
 import { cancelCurrent, generate } from "./features/create/actions";
+import { generateEdit } from "./features/edit/actions";
 import { DesktopLayout } from "./layout/DesktopLayout";
 import { MobileLayout } from "./layout/MobileLayout";
 import { useIsDesktop } from "./lib/useMedia";
@@ -39,7 +40,8 @@ function useShortcuts(desktop: boolean) {
       const t = e.target as HTMLElement;
       const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-        if (useUi.getState().tab === "create" && !running()) void generate();
+        const tab = useUi.getState().tab;
+        if (!running()) void (tab === "create" ? generate() : tab === "edit" ? generateEdit() : undefined);
         e.preventDefault();
       } else if (e.key === "Escape" && running() && !document.querySelector('[role="dialog"]')) {
         void cancelCurrent();

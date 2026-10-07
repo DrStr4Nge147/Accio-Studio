@@ -2,7 +2,9 @@ import { Loader2, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { requestCancel } from "../../features/create/actions";
 import type { Job } from "../../api/types";
+import { jobGroup, shortLabel, type JobGroup } from "../../lib/jobView";
 import { isActive, useJobs } from "../../store/jobs";
+import { openJob } from "./open";
 import { Thumb } from "./Thumb";
 
 function useJobList(filter: (j: Job) => boolean) {
@@ -30,7 +32,7 @@ export function QueuePane() {
             const { step, max, queue_ahead: ahead } = j.live;
             return (
               <li key={j.id} className="flex items-center gap-2.5 rounded-m border border-line bg-raised p-2 text-[13px]">
-                <button type="button" onClick={() => useJobs.getState().select(j.id)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
+                <button type="button" onClick={() => openJob(j)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
                   <Thumb job={j} className="h-10 w-10 flex-none rounded-lg" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{cancelling[j.id] ? "Cancelling…" : j.status === "running" ? "Running" : "Waiting"}</span>
@@ -40,7 +42,7 @@ export function QueuePane() {
                       </span>
                     ) : (
                       <span className="block truncate text-[12px] text-text-3">
-                        {j.label.replace("Create · ", "")}
+                        {shortLabel(j)}
                         {ahead ? ` · position ${ahead}` : ""}
                       </span>
                     )}
@@ -65,8 +67,8 @@ export function QueuePane() {
   );
 }
 
-export function HistoryPane() {
-  const jobs = useJobList((j) => j.status === "done");
+export function HistoryPane({ group = "create" }: { group?: JobGroup }) {
+  const jobs = useJobList((j) => j.status === "done" && jobGroup(j) === group);
   const selectedId = useJobs((s) => s.selectedId);
   return (
     <section aria-label="History" className="flex min-h-0 flex-1 flex-col border-t border-line">
@@ -80,7 +82,7 @@ export function HistoryPane() {
               <li key={j.id}>
                 <button
                   type="button"
-                  onClick={() => useJobs.getState().select(j.id)}
+                  onClick={() => openJob(j)}
                   aria-label={`Open: ${String(j.params.prompt ?? j.label).slice(0, 60)}`}
                   aria-current={j.id === selectedId}
                   data-tip={String(j.params.prompt ?? j.label).slice(0, 140)}
@@ -98,12 +100,12 @@ export function HistoryPane() {
 }
 
 /** "Recent" strip under the canvas: flip through the latest results without opening the gallery. */
-export function RecentStrip() {
-  const jobs = useJobList((j) => j.status === "done" || isActive(j)).slice(0, 10); // running jobs first, newest first
+export function RecentStrip({ group = "create", compact }: { group?: JobGroup; compact?: boolean }) {
+  const jobs = useJobList((j) => (j.status === "done" || isActive(j)) && jobGroup(j) === group).slice(0, 10); // running jobs first, newest first
   const selectedId = useJobs((s) => s.selectedId);
   if (!jobs.length) return null;
   return (
-    <div className="flex flex-none items-center gap-2 overflow-x-auto px-4 pb-3.5 no-scrollbar" aria-label="Recent results">
+    <div className={`flex flex-none items-center gap-2 overflow-x-auto no-scrollbar ${compact ? "px-3.5 pb-2" : "px-4 pb-3.5"}`} aria-label="Recent results">
       {jobs.map((j) => (
         <button
           key={j.id}
@@ -111,8 +113,8 @@ export function RecentStrip() {
           aria-label={isActive(j) ? "Show the image being generated" : "Show this result"}
           aria-current={j.id === selectedId}
           data-tip={isActive(j) ? "Being generated" : String(j.params.prompt ?? j.label).slice(0, 140)}
-          onClick={() => useJobs.getState().select(j.id)}
-          className={`h-[72px] w-[72px] flex-none overflow-hidden rounded-s border ${j.id === selectedId ? "border-gold" : "border-line-strong hover:border-text-3"}`}
+          onClick={() => openJob(j)}
+          className={`${compact ? "h-11 w-11" : "h-[72px] w-[72px]"} flex-none overflow-hidden rounded-s border ${j.id === selectedId ? "border-gold" : "border-line-strong hover:border-text-3"}`}
         >
           <Thumb job={j} className="h-full w-full" />
         </button>

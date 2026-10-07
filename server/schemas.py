@@ -12,6 +12,8 @@ Prompt = Annotated[str, StringConstraints(min_length=1, max_length=8000)]
 # Server-generated upload names only: no path separators, no dots-only, no spaces.
 Filename = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")]
 Dim = Annotated[int, Field(ge=64, le=8192, multiple_of=8)]
+# Display-only: pixel size the UI should reserve for the result (Edit jobs have no width/height inputs). Never reaches a node.
+SizeHint = Annotated[list[Annotated[int, Field(ge=1, le=32768)]], Field(min_length=2, max_length=2)]
 
 
 class Strict(BaseModel):
@@ -90,6 +92,7 @@ class MultiEditParams(Strict):
     body_swap: bool = False
     seed: Seed | None = None
     sampler: SamplerOpts | None = None
+    size_hint: SizeHint | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
 
 
@@ -112,6 +115,7 @@ class InpaintParams(Strict):
     mover: bool = False
     seed: Seed | None = None
     sampler: SamplerOpts | None = None
+    size_hint: SizeHint | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
 
 
@@ -135,6 +139,7 @@ class OutpaintParams(Strict):
     outpaint_lora_strength: float = Field(1.0, ge=0, le=5)
     seed: Seed | None = None
     sampler: SamplerOpts | None = None
+    size_hint: SizeHint | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
 
     @model_validator(mode="after")

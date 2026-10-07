@@ -5,6 +5,17 @@ const MAX_K = 10;
 const STEP = 1.25;
 const glass = "bg-[rgba(10,9,14,0.62)] text-[#f1eadb] border border-white/10 backdrop-blur-md";
 
+/** Optional drawing tool: one pointer on the surface goes to the tool; two fingers, Space + drag, the middle button or `pan` still move the view. */
+export interface ZoomTool {
+  down: (e: PointerEvent) => void;
+  move: (e: PointerEvent) => void;
+  up: (e: PointerEvent) => void;
+  /** a second finger landed or the pointer was cancelled: drop the stroke in progress */
+  cancel: () => void;
+  hover?: (e: PointerEvent) => void;
+  leave?: () => void;
+}
+
 interface View {
   k: number;
   x: number;
@@ -16,7 +27,22 @@ interface View {
  * drag pans, a double click or double tap toggles fit and actual pixels. The transform is written straight to the DOM
  * (GPU), so gestures never re-render the page. Controls sit outside the transformed layer.
  */
-export function Zoomable({ children, onExpand, onClose }: { children: ReactNode; onExpand?: () => void; onClose?: () => void }) {
+export function Zoomable({
+  children,
+  onExpand,
+  onClose,
+  tool,
+  pan,
+  cursor,
+}: {
+  children: ReactNode;
+  onExpand?: () => void;
+  onClose?: () => void;
+  tool?: ZoomTool;
+  /** with a tool: one pointer pans instead of drawing (the hand tool) */
+  pan?: boolean;
+  cursor?: string;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const layer = useRef<HTMLDivElement>(null);
   const view = useRef<View>({ k: 1, x: 0, y: 0 });
@@ -25,6 +51,8 @@ export function Zoomable({ children, onExpand, onClose }: { children: ReactNode;
   // sx/sy/moved describe the press in progress; last* is the previous tap, for double-tap detection.
   const tap = useRef({ sx: 0, sy: 0, moved: false, lastT: 0, lastX: 0, lastY: 0 });
   const [k, setK] = useState(1);
+  const gesture = useRef<"tool" | "pan" | null>(null);
+  const space = useRef(false);
 
   const apply = useCallback(() => {
     const { k: kk, x, y } = view.current;
@@ -85,6 +113,25 @@ export function Zoomable({ children, onExpand, onClose }: { children: ReactNode;
     return () => el.removeEventListener("wheel", onWheel);
   }, [zoomAt]);
 
+  // Space + drag pans while a tool is active (desktop).
+  useEffect(() => {
+    if (!tool) return;
+    const typing = (t: EventTarget | null) => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
+    const down = (e: globalThis.KeyboardEvent) => {
+      if (e.code === "Space" && !typing(e.target)) {
+        space.current = true;
+        e.preventDefault();
+      }
+    };
+    const up = (e: globalThis.KeyboardEvent) => e.code === "Space" && (space.current = false);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, [tool]);
+
   // Keep the image inside the box when the box itself changes size (window resize, panes toggling).
   useEffect(() => {
     const el = box.current;
@@ -109,12 +156,17 @@ export function Zoomable({ children, onExpand, onClose }: { children: ReactNode;
     } catch {
       /* the pointer is already gone (synthetic or released); gestures still work without capture */
     }
+    if (e.button === 1) e.preventDefault(); // no autoscroll on middle-button pan
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.current.size === 1) {
       const { x, y } = local(e);
       Object.assign(tap.current, { sx: x, sy: y, moved: false });
+      gesture.current = tool && !pan && !space.current && e.button === 0 ? "tool" : "pan";
+      if (gesture.current === "tool") tool!.down(e);
     }
     if (pointers.current.size === 2) {
+      if (gesture.current === "tool") tool!.cancel();
+      gesture.current = "pan";
       const [a, b] = [...pointers.current.values()];
       const r = box.current!.getBoundingClientRect();
       pinch.current = {
@@ -129,8 +181,9 @@ export function Zoomable({ children, onExpand, onClose }: { children: ReactNode;
 
   const onPointerMove = (e: PointerEvent) => {
     const prev = pointers.current.get(e.pointerId);
-    if (!prev) return;
+    if (!prev) return tool?.hover?.(e);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (gesture.current === "tool" && pointers.current.size === 1) return tool!.move(e);
     if (pointers.current.size === 2 && pinch.current) {
       const [a, b] = [...pointers.current.values()];
       const r = box.current!.getBoundingClientRect();
@@ -159,7 +212,11 @@ export function Zoomable({ children, onExpand, onClose }: { children: ReactNode;
     const wasOne = pointers.current.size === 1;
     pointers.current.delete(e.pointerId);
     pinch.current = null;
-    if (!wasOne || tap.current.moved) return;
+    if (wasOne && gesture.current === "tool") {
+      gesture.current = null;
+      return tool!.up(e);
+    }
+    if (tool || !wasOne || tap.current.moved) return;
     // A tap, not a drag: two quick taps (or a double click) toggle fit / actual pixels.
     const { x, y } = local(e);
     const now = performance.now();
@@ -170,6 +227,13 @@ export function Zoomable({ children, onExpand, onClose }: { children: ReactNode;
     } else {
       Object.assign(tp, { lastT: now, lastX: x, lastY: y });
     }
+  };
+
+  const onPointerCancel = (e: PointerEvent) => {
+    if (gesture.current === "tool") tool!.cancel();
+    gesture.current = null;
+    pointers.current.delete(e.pointerId);
+    pinch.current = null;
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -200,8 +264,10 @@ export function Zoomable({ children, onExpand, onClose }: { children: ReactNode;
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        className={`absolute inset-0 touch-none select-none overflow-hidden outline-none ${k > 1.005 ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"}`}
+        onPointerCancel={onPointerCancel}
+        onPointerLeave={() => tool?.leave?.()}
+        style={cursor ? { cursor } : undefined}
+        className={`absolute inset-0 touch-none select-none overflow-hidden outline-none ${cursor ? "" : tool ? (pan ? "cursor-grab" : "") : k > 1.005 ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"}`}
       >
         <div ref={layer} className="h-full w-full origin-top-left will-change-transform">
           {children}

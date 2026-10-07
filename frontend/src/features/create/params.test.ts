@@ -16,6 +16,7 @@ const defaults: Catalog["defaults"] = {
   sharpen_strength: 0.75,
   t_enhancer_strength: 1,
   variance: { variance_preset: "Balanced" },
+  edit: {} as Catalog["defaults"]["edit"], // not used by the Create tests
 };
 
 const state = (over: Partial<CreateState> = {}): CreateState => ({ ...useCreate.getState(), prompt: "a fox", ...over });

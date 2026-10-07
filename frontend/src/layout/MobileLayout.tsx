@@ -5,7 +5,13 @@ import { IconButton } from "../components/ui/controls";
 import { Sheet } from "../components/ui/Sheet";
 import { CreateAdvanced } from "../features/create/CreateAdvanced";
 import { CreateComposer } from "../features/create/CreateComposer";
-import { EditSoon, GallerySoon } from "../features/edit/ComingSoon";
+import { GallerySoon } from "../features/edit/ComingSoon";
+import { EditAdvanced } from "../features/edit/EditAdvanced";
+import { EditCanvas } from "../features/edit/EditCanvas";
+import { EditComposer } from "../features/edit/EditComposer";
+import { EditModeSwitch } from "../features/edit/EditControls";
+import { EDIT_MODES, useEdit } from "../features/edit/store";
+import { RecentStrip } from "../features/history/SidePanes";
 import { Thumb } from "../features/history/Thumb";
 import { SelectedStage, EmptyStage } from "../components/stage/Stage";
 import { jobSize } from "../lib/jobView";
@@ -84,6 +90,28 @@ function CreateMobile() {
   );
 }
 
+function EditMobile() {
+  const advancedOpen = useUi((s) => s.advancedOpen);
+  const set = useUi((s) => s.set);
+  const mode = useEdit((s) => s.mode);
+  const title = EDIT_MODES.find((m) => m.value === mode)?.label ?? "Edit";
+  return (
+    <>
+      <div className="flex-none px-3.5 pb-2">
+        <EditModeSwitch stretch />
+      </div>
+      <div className="relative min-h-0 flex-1 px-2.5 pb-2.5">
+        <EditCanvas />
+      </div>
+      <RecentStrip group="edit" compact />
+      <EditComposer layout="dock" />
+      <Sheet open={advancedOpen} onClose={() => set({ advancedOpen: false })} title={`Advanced · ${title}`}>
+        <EditAdvanced withPadding />
+      </Sheet>
+    </>
+  );
+}
+
 export function MobileLayout() {
   const tab = useUi((s) => s.tab);
   const set = useUi((s) => s.set);
@@ -99,7 +127,7 @@ export function MobileLayout() {
       </header>
       <HealthBanner />
       <main className="flex min-h-0 flex-1 flex-col">
-        {tab === "create" ? <CreateMobile /> : tab === "edit" ? <EditSoon /> : <GallerySoon />}
+        {tab === "create" ? <CreateMobile /> : tab === "edit" ? <EditMobile /> : <GallerySoon />}
       </main>
       <nav aria-label="Main" className="safe-b grid flex-none grid-cols-3 border-t border-line bg-surface">
         {TABS.map(({ id, label, icon: Icon }) => (

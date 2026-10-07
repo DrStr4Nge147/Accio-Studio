@@ -159,3 +159,25 @@ def test_create_defaults_match_workflow_values():
     # The combo's Seed Variance node must expose the same defaults, or the shared UI would lie for Detailed.
     combo_var = load_template("krea_combo__var1_tenh0_sharp0")["282"]["inputs"]
     assert all(combo_var[k] == v for k, v in d["variance"].items())
+
+
+def test_edit_defaults_match_workflow_values():
+    from engine import edit_defaults
+
+    d = edit_defaults()
+    assert d["multiedit"]["sampler"]["steps"] == 6 and d["inpaint"]["sampler"]["sampler_name"] == "euler"
+    assert d["multiedit"]["base_megapixels"] == 1 and len(d["multiedit"]["ref_megapixels"]) == 8
+    assert (d["multiedit"]["manual_width"], d["multiedit"]["manual_height"]) == (1024, 1024)
+    assert d["inpaint"]["crop"]["context_factor"] == 1.4 and d["inpaint"]["crop"]["mask_grow"] == 8
+    assert d["outpaint"]["fill_color"] == "#808080" and d["outpaint"]["seam"] == "blend in"
+    assert d["outpaint"]["prompt"].startswith("Outpaint the image")
+
+
+def test_size_hint_is_display_only_and_validated():
+    p = mk(mode="inpaint", prompt="x", image="a.png", size_hint=[1024, 768])
+    b = build(p, CAT, seed_source=lambda: 1)
+    assert "size_hint" not in json.dumps(b.prompt)
+    with pytest.raises(ValidationError):
+        mk(mode="inpaint", prompt="x", image="a.png", size_hint=[1024])
+    with pytest.raises(ValidationError):
+        mk(mode="inpaint", prompt="x", image="a.png", size_hint=[0, 10])
