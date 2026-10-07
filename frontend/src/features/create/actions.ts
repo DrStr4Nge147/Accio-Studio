@@ -26,9 +26,12 @@ export async function generate() {
   try {
     const job = await submitJob(buildParams(s, useServer.getState().catalog?.defaults ?? null));
     const jobs = useJobs.getState();
-    const busyBefore = Object.values(jobs.jobs).some(isActive);
+    // Generate takes you to the new job's card, queued or not. The one exception: you are watching a running job's card
+    // right now, and queueing another must not pull you away from it.
+    const shown = jobs.selectedId ? jobs.jobs[jobs.selectedId] : undefined;
+    const watching = isActive(shown) && shown!.mode === "create";
     jobs.upsert([job]);
-    if (!busyBefore) jobs.select(job.id); // a queued job does not take the canvas from the one running
+    if (!watching) jobs.select(job.id);
     useUi.getState().set({ viewerOpen: true });
     const last = { ...s.loraLastMode };
     for (const l of s.loras) last[l.name] = "create";
