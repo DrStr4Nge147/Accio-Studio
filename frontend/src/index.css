@@ -317,6 +317,11 @@ input[type="range"].slider::-moz-range-thumb {
   60% { filter: blur(2px) brightness(1.15); }
   100% { clip-path: circle(75% at 50% 50%); filter: none; transform: none; }
 }
+/* Inpaint: the real result fades in under the settling particles (they run 1.7s, see ParticleReveal). */
+@keyframes particle-fade {
+  from { opacity: 0; filter: blur(4px) brightness(1.3); }
+  to { opacity: 1; filter: none; }
+}
 @keyframes glow {
   0% { opacity: 0.9; transform: scale(0.2); }
   100% { opacity: 0; transform: scale(1.8); }
@@ -330,6 +335,7 @@ input[type="range"].slider::-moz-range-thumb {
   to { transform: none; }
 }
 .reveal-img { animation: summon 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.particle-img { animation: particle-fade 0.75s ease-out 0.95s both; }
 .reveal-glow::after {
   content: "";
   position: absolute;
@@ -346,7 +352,7 @@ input[type="range"].slider::-moz-range-thumb {
   .bubbles { display: none; }
   .ripple { display: none; }
   .breathe { animation: none !important; }
-  .reveal-img { animation: fade-in 0.25s both; }
+  .reveal-img, .particle-img { animation: fade-in 0.25s both; }
   .reveal-glow::after { display: none; }
   .sheet-in { animation: fade-in 0.15s both; }
   * { scroll-behavior: auto !important; }

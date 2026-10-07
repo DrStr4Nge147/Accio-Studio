@@ -5,7 +5,7 @@ import type { Job } from "../../api/types";
 import { continueFromResult, sendToEdit } from "../../features/edit/actions";
 import { showEnhanced } from "../../features/edit/enhanced";
 import type { EditMode } from "../../features/edit/store";
-import { useBeforeUrl } from "../../features/edit/useBefore";
+import { useBeforeUrl, useMaskPreviewUrl } from "../../features/edit/useBefore";
 import { reuseAny } from "../../features/reuse";
 import { enhancedText, formatDuration, jobSize } from "../../lib/jobView";
 import { canShareFiles, shareImage } from "../../lib/share";
@@ -15,6 +15,7 @@ import { IconButton } from "../ui/controls";
 import { jobMenuItems } from "../../features/history/jobMenu";
 import { Box } from "./Box";
 import { Compare } from "./Compare";
+import { LocalReveal } from "./LocalReveal";
 import { Zoomable } from "./Zoomable";
 
 const glass = "bg-[rgba(10,9,14,0.62)] text-[#f1eadb] border border-white/10 backdrop-blur-md";
@@ -37,6 +38,8 @@ export function ResultView({ job }: { job: Job }) {
   const revealing = useJobs((s) => !!s.reveal[job.id]);
   const clearReveal = useJobs((s) => s.clearReveal);
   const before = useBeforeUrl(job);
+  const maskUrl = useMaskPreviewUrl(job);
+  const local = job.mode === "inpaint"; // inpaint reveals only the painted area; everything else gets the whole-image reveal
   const hint = jobSize(job);
 
   useEffect(() => {
@@ -61,7 +64,14 @@ export function ResultView({ job }: { job: Job }) {
   const firstPass = cur.o.role === "first_pass";
   const canCompare = !!before && !firstPass;
 
-  const picture = (
+  const showReveal = revealing && !firstPass;
+  const localReady = showReveal && local && !!before && !!maskUrl;
+  const onLoad = (el: HTMLImageElement) => setNatural({ url, w: el.naturalWidth, h: el.naturalHeight });
+  const alt = job.params.prompt ?? "Generated image";
+
+  const picture = localReady ? (
+    <LocalReveal url={url} before={before!} mask={maskUrl!} w={w} h={h} alt={alt} onLoad={onLoad} onDone={() => clearReveal(job.id)} />
+  ) : (
     <img
       src={url}
       alt={job.params.prompt ?? "Generated image"}
@@ -69,8 +79,8 @@ export function ResultView({ job }: { job: Job }) {
       height={h}
       decoding="async"
       draggable={false}
-      className={`h-full w-full object-contain ${revealing && !firstPass ? "reveal-img" : ""}`}
-      onLoad={(e) => setNatural({ url, w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+      className={`h-full w-full object-contain ${showReveal ? (local ? "fade-in" : "reveal-img") : ""}`}
+      onLoad={(e) => onLoad(e.currentTarget)}
       onAnimationEnd={() => clearReveal(job.id)}
     />
   );
@@ -85,7 +95,7 @@ export function ResultView({ job }: { job: Job }) {
         </div>
       )}
       <div className="min-h-0 flex-1">
-        <Box w={w} h={h} className={`${revealing && !firstPass ? "reveal-glow" : ""} overflow-hidden rounded-m border border-line bg-raised`}>
+        <Box w={w} h={h} className={`${showReveal && !local ? "reveal-glow" : ""} overflow-hidden rounded-m border border-line bg-raised`}>
           {compare && canCompare ? (
             <Compare before={before!} after={url} />
           ) : (
