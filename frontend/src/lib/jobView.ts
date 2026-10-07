@@ -24,6 +24,9 @@ export function passOf(job: Job): { pass: 1 | 2; of: 2 } | null {
   return null;
 }
 
+/** True while the prompt enhancer (a text model) is rewriting the prompt: its "steps" are tokens, not image steps. */
+export const isEnhancing = (job: Job) => job.status === "running" && job.live.class === "TextGenerate";
+
 /** True while the latent is being turned into pixels (no step counter exists for it). */
 export const isDecoding = (job: Job) => job.status === "running" && (job.live.class === "VAEDecode" || job.live.class === "VAEDecodeTiled");
 

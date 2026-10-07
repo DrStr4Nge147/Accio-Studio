@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { isEnhancing, describe, expect, it } from "vitest";
 import type { Job } from "../api/types";
 import { formatDuration, nextDecodePhase } from "./jobView";
 
@@ -25,5 +25,14 @@ describe("nextDecodePhase", () => {
     p = nextDecodePhase(p, job("running", { node: "265", class: "KSampler", step: 1, max: 4 })); // pass 2 starts
     expect(p).toBe(false);
     expect(nextDecodePhase(true, job("done", {}))).toBe(false);
+  });
+});
+
+describe("isEnhancing", () => {
+  const job = (status: string, cls: string | null) => ({ status, live: { class: cls, step: 16, max: 512 } }) as never;
+  it("is true only while the text model runs, so its token count is not shown as image steps", () => {
+    expect(isEnhancing(job("running", "TextGenerate"))).toBe(true);
+    expect(isEnhancing(job("running", "KSampler"))).toBe(false);
+    expect(isEnhancing(job("queued", "TextGenerate"))).toBe(false);
   });
 });

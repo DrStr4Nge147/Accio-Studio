@@ -1,7 +1,7 @@
 import { Loader2, X } from "lucide-react";
 import type { Job } from "../../api/types";
 import { requestCancel } from "../../features/create/actions";
-import { formatEta, jobSize, passOf, useDecodePhase, useEta } from "../../lib/jobView";
+import { formatEta, isEnhancing, jobSize, passOf, useDecodePhase, useEta } from "../../lib/jobView";
 import { useJobs } from "../../store/jobs";
 import { Ring } from "../Wordmark";
 import { Box } from "./Box";
@@ -53,12 +53,13 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
   const queued = job.status === "queued" || (job.live.node === undefined && !max);
   const pass = passOf(job);
   const decoding = useDecodePhase(job);
+  const enhancing = isEnhancing(job);
   const cancelling = useJobs((s) => !!s.cancelling[job.id]);
   const pct = max ? Math.min(100, ((step ?? 0) / max) * 100) : 0;
   const waiting = ahead ? `${ahead} job${ahead === 1 ? "" : "s"} ahead in the queue` : null;
 
   return (
-    <Box w={w} h={h} className={`${decoding || cancelling ? "" : "shimmer"} overflow-hidden rounded-m border border-line bg-raised`}>
+    <Box w={w} h={h} className={`${decoding || cancelling || enhancing ? "" : "shimmer"} overflow-hidden rounded-m border border-line bg-raised`}>
       {preview && job.status === "running" ? (
         <img src={preview} alt="" className={`absolute inset-0 h-full w-full scale-110 object-cover opacity-90 saturate-125 transition-[filter] duration-700 ${decoding ? "blur-[5px]" : "blur-[14px]"}`} />
       ) : (
@@ -69,9 +70,11 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
       {cancelling ? <div className="absolute inset-0 z-[1] bg-black/35 fade-in" aria-hidden /> : decoding ? <Ripples /> : <Bubbles />}
       <div className="absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-[rgba(8,7,12,0.9)] to-transparent p-3.5 pt-10 text-[#f1eadb]">
         <div className="mb-2 flex items-baseline justify-between gap-3 text-[13px] font-medium">
-          <span>{cancelling ? "Cancelling…" : decoding ? "Developing the image…" : queued ? "Waiting for the GPU…" : "Summoning…"}</span>
+          <span>{cancelling ? "Cancelling…" : enhancing ? "Improving your prompt…" : decoding ? "Developing the image…" : queued ? "Waiting for the GPU…" : "Summoning…"}</span>
           {cancelling ? (
             <span className="font-mono text-gold-hi">stopping</span>
+          ) : enhancing ? (
+            <span className="font-mono text-gold-hi">writing</span>
           ) : decoding ? (
             <span className="font-mono text-gold-hi">decoding</span>
           ) : max ? (
@@ -86,12 +89,12 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
           aria-label="Generation progress"
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuenow={decoding || cancelling ? undefined : Math.round(pct)}
+          aria-valuenow={decoding || cancelling || enhancing ? undefined : Math.round(pct)}
           className="h-[3px] overflow-hidden rounded-full bg-white/20"
         >
           {cancelling ? (
             <div className="breathe h-full w-full animate-[breathe_0.9s_ease-in-out_infinite] rounded-full bg-text-2" />
-          ) : decoding ? (
+          ) : decoding || enhancing ? (
             <div className="breathe h-full w-full animate-[breathe_1.6s_ease-in-out_infinite] rounded-full bg-gold" />
           ) : (
             <div className="h-full rounded-full bg-gold transition-[width] duration-200" style={{ width: `${pct}%` }} />
@@ -101,7 +104,9 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
           <span>
             {cancelling
               ? "Waiting for the backend to reach a stopping point…"
-              : [!decoding && eta !== null && !compact ? `${formatEta(eta)} left in this pass` : null, waiting].filter(Boolean).join(" · ") ||
+              : enhancing
+                ? "The enhancer rewrites your instruction first; the image comes next."
+                : [!decoding && eta !== null && !compact ? `${formatEta(eta)} left in this pass` : null, waiting].filter(Boolean).join(" · ") ||
                 (queued ? "Starting…" : "Working…")}
           </span>
           <button

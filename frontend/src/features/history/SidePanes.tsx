@@ -2,7 +2,7 @@ import { Loader2, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { requestCancel } from "../../features/create/actions";
 import type { Job } from "../../api/types";
-import { jobGroup, shortLabel, type JobGroup } from "../../lib/jobView";
+import { isEnhancing, jobGroup, shortLabel, type JobGroup } from "../../lib/jobView";
 import { isActive, useJobs } from "../../store/jobs";
 import { openJob } from "./open";
 import { Thumb } from "./Thumb";
@@ -35,8 +35,8 @@ export function QueuePane() {
                 <button type="button" onClick={() => openJob(j)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
                   <Thumb job={j} className="h-10 w-10 flex-none rounded-lg" />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate">{cancelling[j.id] ? "Cancelling…" : j.status === "running" ? "Running" : "Waiting"}</span>
-                    {j.status === "running" && max ? (
+                    <span className="block truncate">{cancelling[j.id] ? "Cancelling…" : isEnhancing(j) ? "Improving prompt" : j.status === "running" ? "Running" : "Waiting"}</span>
+                    {j.status === "running" && max && !isEnhancing(j) ? (
                       <span className="mt-1.5 block h-[3px] overflow-hidden rounded-full bg-track">
                         <span className="block h-full rounded-full bg-gold-ui" style={{ width: `${((step ?? 0) / max) * 100}%` }} />
                       </span>
