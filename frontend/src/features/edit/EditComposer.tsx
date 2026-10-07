@@ -48,6 +48,7 @@ export function EditComposer({ layout, above }: { layout: "dock" | "pane"; above
             }
       }
       tags={mode === "multiedit" ? ws.slots.map((s, i) => ({ n: i + 1, name: s.name, thumb: s.url })) : undefined}
+      loraCount={edit.loras[mode].filter((l) => l.on).length}
       prompt={prompt}
       onPrompt={(v) => edit.setPrompt(mode, v)}
       placeholder={PLACEHOLDERS[mode]}

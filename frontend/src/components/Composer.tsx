@@ -32,7 +32,8 @@ export function Composer({
   tags,
   fieldHeader,
   collapse,
-  generateIcon = <Sparkles size={20} strokeWidth={1.7} />,
+  loraCount = 0,
+  generateIcon =<Sparkles size={20} strokeWidth={1.7} />,
 }: {
   layout: "dock" | "pane";
   prompt: string;
@@ -57,6 +58,8 @@ export function Composer({
   fieldHeader?: ReactNode;
   /** makes the prompt (and its header) foldable; folded, a one-line row stands in for it */
   collapse?: { collapsed: boolean; onToggle: () => void; label: string; hint: string };
+  /** number of LoRAs that will be applied; when above 0 a glowing "LoRA enabled" note sits under the prompt box */
+  loraCount?: number;
   generateIcon?: ReactNode;
 }) {
   const area = useRef<HTMLTextAreaElement>(null);
@@ -186,6 +189,12 @@ export function Composer({
           {fieldHeader}
           {field}
         </>
+      )}
+      {loraCount > 0 && (
+        <p role="status" className="mt-1.5 flex items-center gap-1.5 text-[12px] font-medium text-gold-text [text-shadow:0_0_8px_var(--gold)]">
+          <Sparkles size={13} strokeWidth={1.7} className="flex-none drop-shadow-[0_0_4px_var(--gold)]" />
+          {loraCount === 1 ? "LoRA enabled" : `${loraCount} LoRAs enabled`}
+        </p>
       )}
     </>
   );

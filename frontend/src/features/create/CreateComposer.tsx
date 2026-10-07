@@ -11,6 +11,7 @@ import { useCreate } from "./store";
 export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; above?: ReactNode }) {
   const prompt = useCreate((s) => s.prompt);
   const patch = useCreate((s) => s.patch);
+  const loraCount = useCreate((s) => s.loras.filter((l) => l.on).length);
   const { busy, error } = useSubmit();
   const running = useJobs((s) => s.order.some((id) => isActive(s.jobs[id])));
   const cancelling = useJobs((s) => s.order.some((id) => isActive(s.jobs[id]) && !!s.cancelling[id]));
@@ -23,6 +24,7 @@ export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; abo
       above={above}
       prompt={prompt}
       onPrompt={(prompt) => patch({ prompt })}
+      loraCount={loraCount}
       placeholder="Describe what to create…"
       controls={layout === "dock" ? <CreateChips /> : <CreateToggles />}
       running={running}
