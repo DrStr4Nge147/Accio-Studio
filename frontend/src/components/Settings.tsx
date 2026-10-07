@@ -5,6 +5,7 @@ import { AccountSection } from "../features/settings/AccountSection";
 import { ConnectionSection } from "../features/settings/ConnectionSection";
 import { InstallApp } from "../features/settings/InstallApp";
 import { useUi, type Theme } from "../store/ui";
+import { useIsDesktop } from "../lib/useMedia";
 import { Label, Segmented } from "./ui/controls";
 import { Sheet } from "./ui/Sheet";
 
@@ -23,9 +24,8 @@ function Row({ k, v, ok }: { k: string; v: string; ok?: boolean }) {
   );
 }
 
-/** Settings: theme, connection (URLs + QR), install, account, and the setup check (spec 11.3): backend status, missing models and nodes. */
-export function Settings() {
-  const open = useUi((s) => s.settingsOpen);
+/** The settings content: theme, connection (URLs + QR), install, account, and the setup check (spec 11.3). `open` = visible, so polling pauses when it is not. */
+export function SettingsBody({ open }: { open: boolean }) {
   const theme = useUi((s) => s.theme);
   const set = useUi((s) => s.set);
   const { health, unreachable, refreshHealth } = useServer();
@@ -36,8 +36,7 @@ export function Settings() {
   }, [open, refreshHealth]);
 
   return (
-    <Sheet open={open} onClose={() => set({ settingsOpen: false })} title="Settings">
-      <div className="space-y-5">
+      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8 lg:space-y-0 lg:[&>*]:mb-5">
         <div>
           <Label>Theme</Label>
           <div className="mt-1.5">
@@ -88,6 +87,17 @@ export function Settings() {
           Check again
         </button>
       </div>
+  );
+}
+
+/** Desktop: Settings as a modal. On mobile it is the fourth tab (MobileLayout), so the sheet never opens there. */
+export function Settings() {
+  const open = useUi((s) => s.settingsOpen);
+  const set = useUi((s) => s.set);
+  const desktop = useIsDesktop();
+  return (
+    <Sheet open={open && desktop} onClose={() => set({ settingsOpen: false })} title="Settings" desktopModalWidth={760}>
+      <SettingsBody open={open && desktop} />
     </Sheet>
   );
 }

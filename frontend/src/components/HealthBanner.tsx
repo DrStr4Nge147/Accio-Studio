@@ -1,5 +1,5 @@
 import { useServer } from "../store/health";
-import { useUi } from "../store/ui";
+import { openSettings } from "../store/ui";
 
 /** One calm line when something stops generation from working. Details live in Settings. */
 export function HealthBanner() {
@@ -20,7 +20,7 @@ export function HealthBanner() {
         <button type="button" onClick={() => void refreshHealth()} className="hover-wash h-11 rounded-full px-3 text-gold-text">
           Check again
         </button>
-        <button type="button" onClick={() => useUi.getState().set({ settingsOpen: true })} className="hover-wash h-11 rounded-full px-3 text-text-2 hover:text-text">
+        <button type="button" onClick={openSettings} className="hover-wash h-11 rounded-full px-3 text-text-2 hover:text-text">
           Details
         </button>
       </span>

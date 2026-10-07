@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { useIsDesktop } from "../../lib/useMedia";
 import { IconButton } from "./controls";
 
 /** Modal bottom sheet (mobile) with scrim, Esc, focus handling and drag-down-to-close on the handle. */
@@ -9,13 +10,17 @@ export function Sheet({
   title,
   children,
   height = "78%",
+  desktopModalWidth,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   height?: string;
+  /** Desktop only: render as a centered modal of this width (px) instead of a floating bottom sheet. */
+  desktopModalWidth?: number;
 }) {
+  const modal = useIsDesktop() && desktopModalWidth !== undefined;
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number } | null>(null);
 
@@ -32,6 +37,30 @@ export function Sheet({
   }, [open, onClose]);
 
   if (!open) return null;
+  if (modal) {
+    return (
+      <div className="fixed inset-0 z-40 flex items-center justify-center p-8">
+        <div className="fade-in absolute inset-0 bg-[var(--scrim)]" onClick={onClose} aria-hidden />
+        <div
+          ref={ref}
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          tabIndex={-1}
+          style={{ width: desktopModalWidth, maxHeight: "85vh" }}
+          className="fade-in relative flex max-w-full flex-col rounded-[20px] border border-line-strong bg-surface shadow-float outline-none"
+        >
+          <div className="flex items-center justify-between border-b border-line px-6 py-4">
+            <h2 className="serif text-[22px] font-medium">{title}</h2>
+            <IconButton label="Close" onClick={onClose}>
+              <X size={20} strokeWidth={1.7} />
+            </IconButton>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="fixed inset-0 z-40">
       <div className="fade-in absolute inset-0 bg-[var(--scrim)]" onClick={onClose} aria-hidden />

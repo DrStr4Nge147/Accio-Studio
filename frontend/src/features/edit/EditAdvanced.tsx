@@ -172,6 +172,12 @@ export function EditAdvanced({ withPadding }: { withPadding?: boolean }) {
   const setLoras = useEdit((s) => s.setLoras);
   const loraLastMode = useEdit((s) => s.loraLastMode);
   const reset = useEdit((s) => s.reset);
+  const enhancerAll = useEdit((s) => s.enhancer);
+  const enhancer = enhancerAll[mode as keyof typeof enhancerAll] ?? false;
+  const patch = useEdit((s) => s.patch);
+  const multi = useEdit((s) => s.multi);
+  const setMulti = useEdit((s) => s.setMulti);
+  const setPixelDrift = useEdit((s) => s.setPixelDrift);
 
   return (
     <div className="space-y-4 pb-2">
@@ -181,6 +187,17 @@ export function EditAdvanced({ withPadding }: { withPadding?: boolean }) {
           <div className="mt-1">
             <PaddingFields />
           </div>
+        </div>
+      )}
+      {withPadding && mode !== "outpaint" && (
+        <div>
+          <Toggle on={enhancer} onChange={(on) => patch({ enhancer: { ...enhancerAll, [mode]: on } })} label="Prompt enhancer" sub={T.enhancer} />
+          {mode === "multiedit" && (
+            <>
+              <Toggle on={multi.keepOriginal} onChange={(keepOriginal) => setMulti({ keepOriginal })} label="Keep original resolution" sub={T.keepOriginal} />
+              <Toggle on={multi.pixelDrift} onChange={(on) => setPixelDrift(on)} label="Pixel Drift Fix" sub={T.pixelDrift} />
+            </>
+          )}
         </div>
       )}
       <SeedField mode={mode} />

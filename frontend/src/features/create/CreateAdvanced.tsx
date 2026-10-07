@@ -20,6 +20,16 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
 
   return (
     <div className="space-y-4 pb-2">
+      {withAspect && (
+        <div>
+          <Label>Finishing</Label>
+          <div className="mt-0.5">
+            <Toggle on={s.seedVariance} onChange={(seedVariance) => s.patch({ seedVariance })} label="Variance" sub={TIPS.seedVariance} />
+            <Toggle on={s.sharpen} onChange={(sharpen) => s.patch({ sharpen })} label="Sharpen" sub={TIPS.sharpen} />
+            <Toggle on={s.tEnhancer} onChange={(tEnhancer) => s.patch({ tEnhancer })} label="T-Enhancer" sub={TIPS.tEnhancer} />
+          </div>
+        </div>
+      )}
       {withAspect && <AspectPicker />}
       <SeedFields />
 
@@ -96,23 +106,6 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
       )}
       {s.seedVariance && <VarianceFields />}
       <LoraSection />
-
-      {withAspect && (
-        <dl className="space-y-1.5 rounded-m border border-line p-3 text-[12px] leading-snug text-text-3">
-          {(
-            [
-              ["Variance", TIPS.seedVariance],
-              ["Sharpen", TIPS.sharpen],
-              ["T-Enhancer", TIPS.tEnhancer],
-            ] as const
-          ).map(([k, v]) => (
-            <div key={k}>
-              <dt className="inline font-medium text-text-2">{k}: </dt>
-              <dd className="inline">{v}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
 
       <button
         type="button"

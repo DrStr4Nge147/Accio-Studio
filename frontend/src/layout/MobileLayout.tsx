@@ -1,7 +1,7 @@
-import { ChevronLeft, LayoutGrid, Settings as GearIcon, Sparkles, Terminal, WandSparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, Settings as GearIcon, Sparkles, Terminal, WandSparkles } from "lucide-react";
 import { Wordmark } from "../components/Wordmark";
 import { HealthBanner } from "../components/HealthBanner";
-import { IconButton } from "../components/ui/controls";
+import { SettingsBody } from "../components/Settings";
 import { Sheet } from "../components/ui/Sheet";
 import { ConsoleActions, ConsoleLog, useConsolePolling } from "../features/console/ConsoleDrawer";
 import { CreateAdvanced } from "../features/create/CreateAdvanced";
@@ -25,6 +25,7 @@ const TABS: { id: Tab; label: string; icon: typeof Sparkles }[] = [
   { id: "create", label: "Create", icon: Sparkles },
   { id: "edit", label: "Edit", icon: WandSparkles },
   { id: "gallery", label: "Gallery", icon: LayoutGrid },
+  { id: "settings", label: "Settings", icon: GearIcon },
 ];
 
 /** Feed of finished results; tapping one opens it full screen. */
@@ -113,6 +114,27 @@ function EditMobile() {
   );
 }
 
+/** Settings as the fourth tab: connection, theme, install, account, backend status; the console is one row away. */
+function SettingsTab() {
+  const set = useUi((s) => s.set);
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-4">
+      <h1 className="serif mb-3 text-[22px] font-medium">Settings</h1>
+      <SettingsBody open />
+      <button
+        type="button"
+        onClick={() => set({ consoleOpen: true })}
+        className="hover-wash mt-5 flex h-11 w-full items-center justify-between rounded-m border border-line px-3 text-[14px] text-text-2 hover:text-text"
+      >
+        <span className="flex items-center gap-2">
+          <Terminal size={18} strokeWidth={1.7} /> Console
+        </span>
+        <ChevronRight size={18} strokeWidth={1.7} />
+      </button>
+    </div>
+  );
+}
+
 export function MobileLayout() {
   const tab = useUi((s) => s.tab);
   const set = useUi((s) => s.set);
@@ -120,17 +142,9 @@ export function MobileLayout() {
   useConsolePolling(consoleOpen, 1000);
   return (
     <div className="flex h-full flex-col bg-bg">
-      <header className="safe-t flex flex-none items-center justify-between px-3.5">
+      <header className="safe-t flex flex-none items-center px-3.5">
         <div className="flex h-12 items-center">
           <Wordmark size={24} />
-        </div>
-        <div className="flex">
-          <IconButton label="Console" onClick={() => set({ consoleOpen: true })}>
-            <Terminal size={20} strokeWidth={1.7} />
-          </IconButton>
-          <IconButton label="Settings" onClick={() => set({ settingsOpen: true })}>
-            <GearIcon size={20} strokeWidth={1.7} />
-          </IconButton>
         </div>
       </header>
       <Sheet open={consoleOpen} onClose={() => set({ consoleOpen: false })} title="Console" height="70%">
@@ -143,9 +157,9 @@ export function MobileLayout() {
       </Sheet>
       <HealthBanner />
       <main className="flex min-h-0 flex-1 flex-col">
-        {tab === "create" ? <CreateMobile /> : tab === "edit" ? <EditMobile /> : <LazyGallery />}
+        {tab === "create" ? <CreateMobile /> : tab === "edit" ? <EditMobile /> : tab === "settings" ? <SettingsTab /> : <LazyGallery />}
       </main>
-      <nav aria-label="Main" className="safe-b grid flex-none grid-cols-3 border-t border-line bg-surface">
+      <nav aria-label="Main" className="safe-b grid flex-none grid-cols-4 border-t border-line bg-surface">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}

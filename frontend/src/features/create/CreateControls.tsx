@@ -1,5 +1,5 @@
 import { ChevronDown, Info, SlidersHorizontal } from "lucide-react";
-import { Chip, IconButton, Label, Segmented, Toggle } from "../../components/ui/controls";
+import { Chip, Label, Segmented, Toggle } from "../../components/ui/controls";
 import { useUi } from "../../store/ui";
 import { AspectPicker } from "./AspectPicker";
 import { CreateAdvanced } from "./CreateAdvanced";
@@ -34,7 +34,16 @@ export function DetailedNote({ compact }: { compact?: boolean }) {
   );
 }
 
-/** Mobile main controls: one scrolling row of chips; aspect and everything else open the Advanced sheet. */
+/** Opens the mobile Options (Advanced) sheet. Always the last chip, so the row is at most three choices plus this. */
+export function OptionsChip() {
+  return (
+    <Chip toggle={false} onClick={() => useUi.getState().set({ advancedOpen: true })} label="Options" tip="Finishing toggles, aspect, sampler and more">
+      <SlidersHorizontal size={16} strokeWidth={1.7} /> Options
+    </Chip>
+  );
+}
+
+/** Mobile main controls: mode, aspect, count and Options; everything else lives in the Options sheet. */
 export function CreateChips() {
   const s = useCreate();
   const size = s.sizes[s.variant];
@@ -42,9 +51,6 @@ export function CreateChips() {
   return (
     <>
     <div className="no-scrollbar -mx-3.5 flex items-center gap-1.5 overflow-x-auto px-3.5 py-1">
-      <IconButton label="Advanced settings" onClick={openAdvanced} className="-ml-2 border border-line-strong">
-        <SlidersHorizontal size={18} strokeWidth={1.7} />
-      </IconButton>
       <Chip toggle={false} onClick={() => s.patch({ variant: next(["standard", "detailed"] as Variant[], s.variant) })} label={`Mode: ${s.variant}. Tap to switch`} tip={s.variant === "standard" ? TIPS.standard : TIPS.detailed}>
         {s.variant === "standard" ? "Standard" : "Detailed"}
       </Chip>
@@ -54,15 +60,7 @@ export function CreateChips() {
       <Chip toggle={false} onClick={() => s.patch({ batch: next(BATCHES, s.batch) })} label={`Images per run: ${s.batch}. Tap to change`} tip={TIPS.batch}>
         ×{s.batch}
       </Chip>
-      <Chip on={s.seedVariance} onClick={() => s.patch({ seedVariance: !s.seedVariance })} tip={TIPS.seedVariance}>
-        Variance
-      </Chip>
-      <Chip on={s.sharpen} onClick={() => s.patch({ sharpen: !s.sharpen })} tip={TIPS.sharpen}>
-        Sharpen
-      </Chip>
-      <Chip on={s.tEnhancer} onClick={() => s.patch({ tEnhancer: !s.tEnhancer })} tip={TIPS.tEnhancer}>
-        T-Enhancer
-      </Chip>
+      <OptionsChip />
     </div>
     {s.variant === "detailed" && <DetailedNote compact />}
     </>

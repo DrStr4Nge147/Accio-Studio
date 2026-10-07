@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type Theme = "dark" | "light" | "system";
-export type Tab = "create" | "edit" | "gallery";
+export type Tab = "create" | "edit" | "gallery" | "settings";
 
 interface UiState {
   theme: Theme;
@@ -34,7 +34,7 @@ export const useUi = create<UiState>()(
     {
       name: "accio.ui",
       version: 1,
-      partialize: (s) => ({ theme: s.theme, tab: s.tab, advancedInline: s.advancedInline, consoleOpen: s.consoleOpen }),
+      partialize: (s) => ({ theme: s.theme, tab: s.tab === "settings" ? "create" : s.tab, advancedInline: s.advancedInline, consoleOpen: s.consoleOpen }),
     },
   ),
 );
@@ -44,7 +44,7 @@ const dark = window.matchMedia("(prefers-color-scheme: dark)");
 export function applyTheme(theme: Theme) {
   const resolved = theme === "system" ? (dark.matches ? "dark" : "light") : theme;
   document.documentElement.dataset.theme = resolved;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "dark" ? "#0b0a0f" : "#f5f0e5");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "dark" ? "#0b0a0f" : "#f3f4fa");
 }
 
 /** Keep <html data-theme> in sync with the stored choice and the OS setting. Call once at startup. */
@@ -52,4 +52,10 @@ export function watchTheme() {
   applyTheme(useUi.getState().theme);
   useUi.subscribe((s, prev) => s.theme !== prev.theme && applyTheme(s.theme));
   dark.addEventListener("change", () => applyTheme(useUi.getState().theme));
+}
+
+/** Settings is a modal on desktop and the fourth tab on mobile. */
+export function openSettings() {
+  if (window.matchMedia("(min-width: 1024px)").matches) useUi.getState().set({ settingsOpen: true });
+  else useUi.getState().set({ tab: "settings" });
 }

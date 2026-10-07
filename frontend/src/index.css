@@ -46,15 +46,15 @@
   color-scheme: dark;
 }
 :root[data-theme="light"] {
-  --bg: #f5f0e5;
-  --surface: #fbf8f1;
-  --raised: #efe9db;
-  --overlay: #e6dfcd;
-  --line: #ddd5c1;
-  --line-strong: #c9bfa6;
-  --text: #1b1810;
-  --text-2: #554e3f;
-  --text-3: #675f4d;
+  --bg: #f3f4fa;
+  --surface: #fbfbfe;
+  --raised: #eaecf5;
+  --overlay: #dfe2ef;
+  --line: #d8dbe9;
+  --line-strong: #bfc4d9;
+  --text: #14162e;
+  --text-2: #454a68;
+  --text-3: #5d6280;
   --gold: #d9992a;
   --gold-hi: #e8b04a;
   --gold-text: #85560a;
@@ -64,9 +64,9 @@
   --on-gold: #17120a;
   --ok: #2f7d4f;
   --danger: #b3392b;
-  --track: #8f8463;
-  --scrim: rgba(40, 32, 12, 0.35);
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 10px 28px rgba(60, 45, 10, 0.14);
+  --track: #8a90ad;
+  --scrim: rgba(20, 22, 46, 0.35);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 10px 28px rgba(20, 22, 60, 0.14);
   color-scheme: light;
 }
 
