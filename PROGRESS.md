@@ -1,6 +1,6 @@
 # Accio Studio - progress
 
-Read `APP_SPEC.md` first; this file records state, decisions and how to run. Last updated: 2026-10-07 (Phase 5).
+Read `APP_SPEC.md` first; this file records state, decisions and how to run. Last updated: 2026-10-07 (Phase 7).
 
 ## Status
 
@@ -12,10 +12,11 @@ Read `APP_SPEC.md` first; this file records state, decisions and how to run. Las
 | 3. Design proposal | **Done, approved by user 2026-10-07** (see "Approved design" below; user: "a good start, we can always edit it") |
 | 4. Create mode | **Done** (see "Phase 4 results"; awaiting the user's demo/test) |
 | 5. Edit modes | **Done** (see "Phase 5 results"; awaiting the user's test) |
-| 6. Gallery, history, PWA | **Next** |
-| 7-8 | Not started |
+| 6. Gallery, history, PWA | **Done** (see "Phase 6 + 7 results"; awaiting the user's test) |
+| 7. Security + tunnels | **Done in code; Cloudflare / zrok not run live** (see below) |
+| 8. Parity + polish | **Next** |
 
-Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio`. Git: all work is on branch `dev`, **committed phase by phase directly on `dev` (user decision 2026-10-07: no feature branches, no new branches; this overrides APP_SPEC section 10's "feature branch")**. History: Phase 1+2, Phase 2b, Phase 3 design, Phase 4 Create, Phase 5 Edit. Commit at the end of each phase without asking. `main` is the default branch and is not used yet.
+Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio`. Git: all work is on branch `dev`, **committed phase by phase directly on `dev` (user decision 2026-10-07: no feature branches, no new branches; this overrides APP_SPEC section 10's "feature branch")**. History: Phase 1+2, Phase 2b, Phase 3 design, Phase 4 Create, Phase 5 Edit, Phase 6+7 (one commit). Commit at the end of each phase without asking. `main` is the default branch and is not used yet.
 
 ## Spec change recorded after Phase 2 (APP_SPEC rule 3, 5.1, 9.2 step 1, new section 11)
 
@@ -42,6 +43,32 @@ Accio now ships its **own portable ComfyUI** (v0.38.0, port **8189**) installed 
 - Interactive prompts (models-folder question, optional-LoRA question, GPU menu): only the `--yes`/arguments path was run.
 - Release packaging (`scripts\make_release`, section 11.5): not part of 2b, not built. `Update.bat`, `Run_Accio-zrok-only.bat`, `Setup_Zrok.bat`: later phases.
 - The "Download missing models" UI action and the setup-check screen (section 11.3): server side `/api/health` reports missing models/nodes and a ComfyUI-version warning (non-blocking), the UI and the download action come with the frontend phases.
+
+## Phase 6 + 7 results (Gallery, PWA, login, tunnels, 2026-10-07)
+
+**Verified:** `pytest tests -q` 167 passed (new: `test_auth.py` 24, `test_gallery.py` 9; the older route tests sign in through a `session_token` fixture). `npm test` 84 passed (new: virtual grid maths, setup-form rules). `npm run build` clean, **initial JS 110 KB gzipped**, Gallery is a 2.9 KB lazy chunk. Live, against a scratch copy of the data via a test launcher (the user's `data\`, `settings.json` and running server were not touched): first-run setup from localhost without a code, login, gallery over 78 real jobs, thumbnails (18-21 KB WebP instead of ~1 MB PNG; 24 DOM cells for 78 jobs, no horizontal overflow), open from gallery, select + remove (history record + cached thumbnails only), Settings (connection, account, install text). In **real Chrome**: service worker `activated` and controlling, manifest with 4 icons, wrong / right login, nothing under `/api` in the SW cache, session cookie not readable by JS.
+
+### Phase 6
+- **Thumbnails:** `GET /api/jobs/{id}/image/{i}?size=384|1024` gives a WebP made once from the full result (Pillow, LANCZOS, never enlarges), cached in `data\thumbs\`, `immutable` headers; other sizes get 422. Without `size` the full image is served as before. Lists use thumbs (`Thumb` has a `size` prop; mobile feed 1024, others 384, result output strip 384).
+- **Gallery** (`features/gallery/`, lazy chunk): own fixed-cell virtualized grid (no dependency; `lib/virtualGrid.ts`), square cells, paged with `GET /api/jobs?status=done&group=create|edit&before=<created_at>&limit=60`, filter All / Create / Edit, Select + Remove (confirm; history only, the output file stays in the backend's folder). Opening an image goes to Create or Edit with the result on the canvas, where Reuse settings / Send to Edit / Edit this result already live. New `DELETE /api/jobs/{id}` (finished jobs only). `History.list` got `status` / `group` filters.
+- **PWA:** icons drawn by `scripts/make_icons.py` into `frontend/public` (192 / 512 any, 512 maskable, monochrome, apple-touch 180, favicon.svg); manifest with id / scope / icons; iOS meta tags; Settings has "Install as an app" (real button when the browser offers it, iOS steps, or why not: browsers only install on https or localhost, so plain-http LAN can't). `ComingSoon.tsx` removed. The service worker still caches only the app shell.
+
+### Phase 7
+- **Login** (`server/auth.py`, `authapi.py`): no default password. First run shows "Choose a password" (min 10 chars). From this PC's own browser on plain localhost no setup code is needed; from any other device, and always while a tunnel runs, the one-time code printed in the server window is required, so a stranger who finds the URL first cannot claim the app. scrypt (n=2^15, random salt) stored under `_auth` in `settings.json` (git-ignored; no `.env` was created or touched). Sessions: random token, only its SHA-256 kept in `data\sessions.json`, 14 days (`session_days`), httpOnly + SameSite=Lax cookie, `Secure` when the request is https (tunnels); over plain-http LAN the cookie is not Secure because browsers would drop it. Logout deletes the session; changing the password signs every other device out. Failed logins: 5 per 10 min per client (client = forwarded address, trusted only when the peer is loopback) and 40 global; constant-time compares; the KDF always runs.
+- **Guard:** pure ASGI middleware in front of everything: all `/api/*` (WebSocket closed with 4401) and `/dev` need a session; the built app and its assets are public (they hold no data). Unsafe methods and WebSocket upgrades whose `Origin` is not our own host get 403. No CORS middleware. Security headers (nosniff, DENY framing, no-referrer). The existing validation (pydantic `extra=forbid`, ranges, enums, filenames, LoRA names, upload magic bytes and size) and friendly error mapping are unchanged; a test checks a validation error leaks no internals.
+- **Frontend:** `AuthScreen` (login / first-run setup); the app renders nothing private until `/api/auth/status` confirms a session; any 401 returns to the login; the socket stops reconnecting once signed out. Settings: Connection (mode, URLs, QR as SVG made by the server), Account (change password, sign out).
+- **Tunnels** (`server/tunnels.py`): `--tunnel cloudflare` downloads `cloudflared.exe` on first use, runs `tunnel --url http://127.0.0.1:7862`, parses the trycloudflare URL, prints it with an ASCII QR, restarts if it exits. `--tunnel zrok` runs `zrok share reserved <name> --headless` (name from `.zrok_share`, else `share public`) in an endless reconnect loop with QR. Both record the URL for Settings. `Run_Accio.bat` keeps the user's 4 menu options (1 local, 2 Cloudflare, 3 zrok, 4 same network) and checks for `zrok.exe` before option 3. `Run_Accio-zrok-only.bat` is a thin wrapper (`Run_Accio.bat zrok`, no menu). `Setup_Zrok.bat`: pinned zrok 1.1.11 download, skips the token step when `%USERPROFILE%\.zrok\environment.json` exists, asks for a NEW name, reserves it for `http://127.0.0.1:<port>`, saves `.zrok_share`, offers to keep an existing one (Z-Fusion's name is never touched). `Reset_Password.bat` runs `settings_cli.py reset_password` (removes `_auth` and sessions).
+- **Auto-unload idle** (spec 9.3): setting `auto_unload_minutes`, default 0 = off; calls the backend's `/free` once after that many idle minutes. New settings keys: `session_days`, `auto_unload_minutes`.
+- `lan_access` / option 4 bind 0.0.0.0 only on request; the default stays loopback (deliberate deviation from spec 9.2's "local mode binds 0.0.0.0").
+
+**Not verified (read this):**
+- **Cloudflare and zrok were NOT run live.** The URL regexes and flags (`--headless`, `--no-autoupdate`, `share reserved`, `reserve public --unique-name`) were checked only against the local `--help` of Z-Fusion's `zrok.exe` v1.1.11 and `cloudflared.exe`; the zrok download URL answers HTTP 200. I did not expose the app publicly during testing. `Setup_Zrok.bat` and the `.bat` menus were not executed. Unknown: whether zrok rewrites the Host header (hence setup always asks for the code while a tunnel runs).
+- Login over a real tunnel (Secure cookie via `x-forwarded-proto`) is a unit test only; WebSocket progress through a tunnel; PWA install on a phone; Lighthouse; a second gallery page (more than 60 jobs: the paging query and grid maths are tested, the scroll-triggered load was not exercised against a real 2nd page); mobile layout of the gallery and login screens (not looked at); swipe-through-history on mobile (not built); setup from a second device with the code (test client only).
+- **The Accio server that was already running when I started (old code, listening on 0.0.0.0, no login) was left running.** Run `Stop_Accio.bat`, then `Run_Accio.bat`; the password screen appears on first start.
+
+**Open question (user):** zrok vs Tailscale was raised in chat. Recommendation: keep zrok + Cloudflare as specced; Tailscale (private tailnet, `tailscale serve`) could be an optional menu extra, but it needs a system-wide install so it cannot be bundled. Not built; waiting for the user's call.
+
+**How to test Phase 6 / 7:** `Stop_Accio.bat`, `Run_Accio.bat` (pick 1): set the password in the browser that opens. Gallery tab: scroll, filter, open, Select + Remove. Settings: Connection, Change password, Sign out. Option 3 only after running `Setup_Zrok.bat` once; the URL and QR print in the window and show in Settings.
 
 ## Phase 5 results (Edit modes, 2026-10-07)
 
@@ -233,6 +260,6 @@ Radii 10 / 14 / 22 / pill. Three surface levels separated by 1 px hairlines. Lin
 
 **Deviations / caveats:** the prototype uses gradients as image stand-ins and is not responsive between the phone and desktop frames (the real app switches at 1024 px). Prototype lives in `design/` and is not shipped (excluded from release packaging).
 
-## Next (Phase 6: Gallery, history, PWA)
+## Next (Phase 8: Parity + polish)
 
-Server-side WebP thumbnails (384 / 1024 px, cached on disk) and a virtualized, paged gallery (the Gallery tab is still `ComingSoon`); "Reuse settings" / "Send to Edit" already exist (Phase 4 / 5) and should be wired into the gallery; PWA install (app icons, service worker check in real Chrome); revisit mobile Edit history (only a compact Recent strip exists). Then Phase 7 (login, tunnels) and Phase 8 (GPU parity, polish, README).
+GPU pixel-parity runs (spec 7.2), error paths (backend offline, missing model, validation error, execution error, cancel), performance checks (spec 6.1a, Lighthouse on mobile), real-tunnel runs (Cloudflare + zrok, spec 7.3), phone tests (touch painting, install), `Update.bat`, `scripts\make_release`, README (daily use, reset password, model licences). Final review by the user.

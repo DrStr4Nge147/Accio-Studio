@@ -1,6 +1,9 @@
 import { useEffect } from "react";
 import { useServer } from "../store/health";
 import { useJobs } from "../store/jobs";
+import { AccountSection } from "../features/settings/AccountSection";
+import { ConnectionSection } from "../features/settings/ConnectionSection";
+import { InstallApp } from "../features/settings/InstallApp";
 import { useUi, type Theme } from "../store/ui";
 import { Label, Segmented } from "./ui/controls";
 import { Sheet } from "./ui/Sheet";
@@ -20,7 +23,7 @@ function Row({ k, v, ok }: { k: string; v: string; ok?: boolean }) {
   );
 }
 
-/** Settings and the setup check (spec 11.3): ComfyUI status, missing models and nodes. Tunnel/QR comes with phase 7. */
+/** Settings: theme, connection (URLs + QR), install, account, and the setup check (spec 11.3): backend status, missing models and nodes. */
 export function Settings() {
   const open = useUi((s) => s.settingsOpen);
   const theme = useUi((s) => s.theme);
@@ -41,6 +44,9 @@ export function Settings() {
             <Segmented<Theme> label="Theme" value={theme} options={THEMES} onChange={(t) => set({ theme: t })} />
           </div>
         </div>
+        <ConnectionSection open={open} />
+        <InstallApp />
+        <AccountSection />
         <div className="divide-y divide-line rounded-m border border-line px-3">
           <Row k="Accio server" v={unreachable ? "Unreachable" : "Running"} ok={!unreachable} />
           <Row k="Live updates" v={connected ? "Connected" : "Reconnecting…"} ok={connected} />

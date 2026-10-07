@@ -6,11 +6,11 @@ import { Wordmark } from "../components/Wordmark";
 import { ConsoleDrawer } from "../features/console/ConsoleDrawer";
 import { CreateComposer } from "../features/create/CreateComposer";
 import { useCreate } from "../features/create/store";
-import { GallerySoon } from "../features/edit/ComingSoon";
 import { EditCanvas } from "../features/edit/EditCanvas";
 import { EditComposer } from "../features/edit/EditComposer";
 import { EditModeSwitch } from "../features/edit/EditControls";
 import { EDIT_MODES, useEdit } from "../features/edit/store";
+import { LazyGallery } from "../features/gallery/LazyGallery";
 import { HistoryPane, QueuePane, RecentStrip } from "../features/history/SidePanes";
 import { jobGroup, jobSize, passOf, shortLabel } from "../lib/jobView";
 import { useJobs } from "../store/jobs";
@@ -96,7 +96,7 @@ export function DesktopLayout() {
         ) : (
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3.5">
             {nav}
-            <p className="text-[13px] text-text-3">Controls for this mode arrive with it.</p>
+            <p className="text-[13px] text-text-3">Open an image to see it large, reuse its settings or send it to Edit. Use Select to remove images from the history.</p>
           </div>
         )}
       </aside>
@@ -106,14 +106,14 @@ export function DesktopLayout() {
         <div className="flex h-14 flex-none items-center px-4">
           <ContextLine />
         </div>
-        <div className="min-h-0 flex-1 px-4 pb-4">{tab === "create" ? <SelectedStage /> : tab === "edit" ? <EditCanvas /> : <GallerySoon />}</div>
+        <div className="min-h-0 flex-1 px-4 pb-4">{tab === "create" ? <SelectedStage /> : tab === "edit" ? <EditCanvas /> : <LazyGallery />}</div>
         {tab !== "gallery" && <RecentStrip group={tab === "edit" ? "edit" : "create"} />}
         <ConsoleDrawer />
       </section>
 
       <aside className="flex min-h-0 flex-col border-l border-line bg-surface" aria-label="Queue and history">
         <QueuePane />
-        <HistoryPane group={tab === "edit" ? "edit" : "create"} />
+        {tab !== "gallery" && <HistoryPane group={tab === "edit" ? "edit" : "create"} />}
       </aside>
     </div>
   );

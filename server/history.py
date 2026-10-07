@@ -82,15 +82,33 @@ class History:
         with self._lock:
             return self._row(self._db.execute("SELECT * FROM jobs WHERE prompt_id = ?", (prompt_id,)).fetchone())
 
-    def list(self, limit: int = 30, before: float | None = None) -> list[dict[str, Any]]:
-        q, args = "SELECT * FROM jobs", []
+    def list(
+        self, limit: int = 30, before: float | None = None, status: str | None = None, group: str | None = None
+    ) -> list[dict[str, Any]]:
+        """Newest first. `group` is "create" or "edit" (everything that is not create)."""
+        where, args = [], []
         if before is not None:
-            q += " WHERE created_at < ?"
+            where.append("created_at < ?")
             args.append(before)
+        if status is not None:
+            where.append("status = ?")
+            args.append(status)
+        if group == "create":
+            where.append("mode = 'create'")
+        elif group == "edit":
+            where.append("mode != 'create'")
+        q = "SELECT * FROM jobs" + (" WHERE " + " AND ".join(where) if where else "")
         q += " ORDER BY created_at DESC LIMIT ?"
         args.append(limit)
         with self._lock:
             return [self._row(r) for r in self._db.execute(q, args).fetchall()]
+
+    def delete(self, job_id: str) -> bool:
+        """Remove a finished job's record. The image file stays in the backend's output folder."""
+        with self._lock:
+            cur = self._db.execute("DELETE FROM jobs WHERE id = ? AND status NOT IN ('queued', 'running')", (job_id,))
+            self._db.commit()
+            return cur.rowcount > 0
 
     def active(self) -> list[dict[str, Any]]:
         with self._lock:

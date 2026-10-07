@@ -1,6 +1,7 @@
 """Accio Studio server. One origin, one port (default 7862): REST + WebSocket API and the built frontend.
 
-Phase 1-2: no login yet, so the server listens on loopback unless `lan_access` is set in settings.json.
+Login is required for the API (auth.py). The server listens on loopback unless `lan_access` is set in settings.json
+or `--host 0.0.0.0` is passed (Run_Accio.bat option 4).
 """
 from __future__ import annotations
 
@@ -25,6 +26,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import engine
+import thumbs
+import tunnels
+from auth import Auth
+from authapi import GuardMiddleware, router as auth_router
 from comfy import ComfyClient, ComfyError
 from config import DATA_DIR, FRONTEND_DIST, ROOT, comfy_url, load_manifest, load_settings, template_files
 from history import History
@@ -40,6 +45,7 @@ REQUIRED_MODELS: dict[str, list[str]] = {}
 for _m in MANIFEST["models"]:
     if _m["required"]:
         REQUIRED_MODELS.setdefault(_m["folder"], []).append(_m["file"])
+THUMBS_DIR = DATA_DIR / "thumbs"
 UPLOADS_DIR = DATA_DIR / "uploads"  # our own copy of every upload, so previews never wait on the busy backend
 INPUT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 UPLOAD_KINDS = {"media": engine.MEDIA_SUBFOLDER, "image": engine.UPLOAD_SUBFOLDER, "mask": engine.UPLOAD_SUBFOLDER}
@@ -72,6 +78,24 @@ def png_has_alpha(head: bytes) -> bool:
     return len(head) > 25 and head[25] == 6  # IHDR colour type 6 = RGBA
 
 
+async def auto_unload(app: FastAPI, minutes: float) -> None:
+    """Free the backend's GPU memory once nothing has run for `minutes` (setting `auto_unload_minutes`, default off)."""
+    freed_for = None  # the last-activity time we already freed after
+    while True:
+        await asyncio.sleep(30)
+        try:
+            if app.state.history.active():
+                continue
+            last = app.state.history.list(1)
+            idle_since = (last[0]["finished_at"] or last[0]["created_at"]) if last else 0.0
+            if idle_since != freed_for and time.time() - idle_since >= minutes * 60:
+                await app.state.comfy.free()
+                freed_for = idle_since
+                log.info("auto-unload: freed backend memory after %.0f idle minutes", minutes)
+        except ComfyError:
+            continue
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = load_settings()
@@ -80,9 +104,18 @@ async def lifespan(app: FastAPI):
     app.state.comfy = ComfyClient(comfy_url(settings))
     app.state.history = History(DATA_DIR / "history.db")
     app.state.jobs = JobManager(app.state.comfy, app.state.history)
+    app.state.auth = Auth(DATA_DIR / "sessions.json", settings["session_days"])
     app.state.cache = {}
     await app.state.jobs.start()
+    unload = float(settings["auto_unload_minutes"])
+    unloader = asyncio.create_task(auto_unload(app, unload), name="auto-unload") if unload > 0 else None
+    if app.state.auth.setup_code:
+        print("\n  FIRST RUN: no password is set yet.")
+        print("  Open Accio on this PC to set it. From another device, the setup code is:")
+        print(f"      {app.state.auth.setup_code}\n", flush=True)
     yield
+    if unloader:
+        unloader.cancel()
     await app.state.jobs.stop()
     await app.state.comfy.aclose()
 
@@ -105,6 +138,8 @@ class SkipImageGZip:
 
 
 app.add_middleware(SkipImageGZip)
+app.add_middleware(GuardMiddleware)  # added last = outermost: nothing private runs before the session check
+app.include_router(auth_router)
 
 
 # --------------------------------------------------------------------------- error mapping
@@ -233,8 +268,12 @@ async def create_job(req: JobRequest, request: Request):
 
 
 @app.get("/api/jobs")
-async def list_jobs(request: Request, limit: int = 30, before: float | None = None):
-    jobs = request.app.state.history.list(max(1, min(limit, 100)), before)
+async def list_jobs(
+    request: Request, limit: int = 30, before: float | None = None, status: str | None = None, group: str | None = None
+):
+    if status not in (None, "queued", "running", "done", "error", "cancelled") or group not in (None, "create", "edit"):
+        raise HTTPException(422, "Unknown filter.")
+    jobs = request.app.state.history.list(max(1, min(limit, 100)), before, status, group)
     return {"jobs": [request.app.state.jobs.public(j["id"]) for j in jobs]}
 
 
@@ -246,6 +285,15 @@ async def get_job(job_id: str, request: Request):
     return job
 
 
+@app.delete("/api/jobs/{job_id}")
+async def delete_job(job_id: str, request: Request):
+    """Remove a finished job from the history (and its cached thumbnails). The backend keeps its output file."""
+    if not request.app.state.history.delete(job_id):
+        raise HTTPException(404, "Job not found, or it is still running.")
+    await asyncio.to_thread(thumbs.remove_for_job, THUMBS_DIR, job_id)
+    return {"ok": True}
+
+
 @app.post("/api/jobs/{job_id}/cancel")
 async def cancel_job(job_id: str, request: Request):
     job = await request.app.state.jobs.cancel(job_id)
@@ -255,12 +303,25 @@ async def cancel_job(job_id: str, request: Request):
 
 
 @app.get("/api/jobs/{job_id}/image/{index}")
-async def job_image(job_id: str, index: int, request: Request):
+async def job_image(job_id: str, index: int, request: Request, size: int | None = None):
+    """The full result, or with ?size=384|1024 a cached WebP thumbnail (display only)."""
     job = request.app.state.history.get(job_id)
     if not job or not (0 <= index < len(job["outputs"])):
         raise HTTPException(404, "Image not found.")
     o = job["outputs"][index]  # filename/subfolder come from our own history, never from the client
     comfy: ComfyClient = request.app.state.comfy
+    if size is not None:
+        if size not in thumbs.SIZES:
+            raise HTTPException(422, "Unsupported thumbnail size.")
+
+        async def source() -> bytes | None:
+            r = await comfy.send(comfy.view_stream(o["filename"], o["subfolder"], o["type"]))
+            return r.content if r.status_code == 200 else None
+
+        path = await thumbs.get_or_create(THUMBS_DIR, job_id, index, size, source)
+        if not path:
+            raise HTTPException(404, "Image not found.")
+        return FileResponse(path, media_type="image/webp", headers={"Cache-Control": "private, max-age=31536000, immutable"})
     upstream = await comfy.send(comfy.view_stream(o["filename"], o["subfolder"], o["type"]), stream=True)
     if upstream.status_code != 200:
         await upstream.aclose()
@@ -277,6 +338,25 @@ async def job_image(job_id: str, index: int, request: Request):
 
     headers = {"Cache-Control": "private, max-age=31536000, immutable"}
     return StreamingResponse(body(), media_type=upstream.headers.get("content-type", "image/png"), headers=headers)
+
+
+@app.get("/api/connection")
+async def connection(request: Request):
+    """How this server can be reached (settings page: URLs and a QR code to pair a phone)."""
+    st = request.app.state
+    port, host = getattr(st, "port", int(st.settings["port"])), getattr(st, "host", "127.0.0.1")
+    urls = {"local": f"http://127.0.0.1:{port}", "lan": f"http://{lan_ip()}:{port}" if host == "0.0.0.0" else None}
+    public = tunnels.state["public_url"] if tunnels.state["mode"] != "local" else None
+    best = public or urls["lan"] or urls["local"]
+    return {
+        "mode": tunnels.state["mode"],
+        "status": tunnels.state["status"],
+        "public_url": public,
+        "urls": urls,
+        "qr": await asyncio.to_thread(tunnels.qr_svg_data_uri, best),
+        "qr_url": best,
+        "auto_unload_minutes": float(st.settings["auto_unload_minutes"]),
+    }
 
 
 @app.get("/api/queue")
@@ -395,7 +475,7 @@ def open_browser_when_ready(port: int) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Accio Studio server")
     parser.add_argument("--open-browser", action="store_true", help="open the app in the default browser once it is up")
     parser.add_argument("--tunnel", choices=["local", "cloudflare", "zrok"], default="local")
     parser.add_argument("--host")
@@ -406,14 +486,20 @@ def main() -> None:
     port = args.port or int(s["port"])
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
-    if args.tunnel != "local":
-        print(f"[!] --tunnel {args.tunnel} arrives with login and tunnels (phase 7); running local only.")
-    print(f"\n  Accio Studio on  http://127.0.0.1:{port}")
+    app.state.tunnel_mode, app.state.host, app.state.port = args.tunnel, host, port
+    tunnels.state["mode"] = args.tunnel
+    print(f"\n  Accio Studio on  http://127.0.0.1:{port}   (login required)")
     if host == "0.0.0.0":
-        print(f"  LAN address      http://{lan_ip()}:{port}")
+        lan = f"http://{lan_ip()}:{port}"
+        print(f"  LAN address      {lan}")
+        print(tunnels.qr_ascii(lan))
     else:
-        print("  (loopback only until login exists; set lan_access in settings.json to open it to the LAN)")
-    print(f"  ComfyUI backend  {comfy_url(s)}\n")
+        print("  Reachable from this PC only. For other devices use the same-network or a tunnel option in Run_Accio.bat.")
+    print(f"  ComfyUI backend  {comfy_url(s)}\n", flush=True)
+    if args.tunnel == "cloudflare":
+        tunnels.run_cloudflare(port)
+    elif args.tunnel == "zrok":
+        tunnels.run_zrok(port)
     if args.open_browser:
         open_browser_when_ready(port)
     uvicorn.run(app, host=host, port=port, log_level="warning")

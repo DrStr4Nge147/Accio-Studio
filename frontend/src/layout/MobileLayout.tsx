@@ -6,12 +6,12 @@ import { Sheet } from "../components/ui/Sheet";
 import { ConsoleActions, ConsoleLog, useConsolePolling } from "../features/console/ConsoleDrawer";
 import { CreateAdvanced } from "../features/create/CreateAdvanced";
 import { CreateComposer } from "../features/create/CreateComposer";
-import { GallerySoon } from "../features/edit/ComingSoon";
 import { EditAdvanced } from "../features/edit/EditAdvanced";
 import { EditCanvas } from "../features/edit/EditCanvas";
 import { EditComposer } from "../features/edit/EditComposer";
 import { EditModeSwitch } from "../features/edit/EditControls";
 import { EDIT_MODES, useEdit } from "../features/edit/store";
+import { LazyGallery } from "../features/gallery/LazyGallery";
 import { RecentStrip } from "../features/history/SidePanes";
 import { Thumb } from "../features/history/Thumb";
 import { SelectedStage, EmptyStage } from "../components/stage/Stage";
@@ -47,7 +47,7 @@ function Feed() {
               className="block w-full overflow-hidden rounded-m border border-line"
               style={{ aspectRatio: `${w} / ${h}` }}
             >
-              <Thumb job={j} className="h-full w-full" />
+              <Thumb job={j} size={1024} className="h-full w-full" />
             </button>
           </li>
         );
@@ -143,7 +143,7 @@ export function MobileLayout() {
       </Sheet>
       <HealthBanner />
       <main className="flex min-h-0 flex-1 flex-col">
-        {tab === "create" ? <CreateMobile /> : tab === "edit" ? <EditMobile /> : <GallerySoon />}
+        {tab === "create" ? <CreateMobile /> : tab === "edit" ? <EditMobile /> : <LazyGallery />}
       </main>
       <nav aria-label="Main" className="safe-b grid flex-none grid-cols-3 border-t border-line bg-surface">
         {TABS.map(({ id, label, icon: Icon }) => (

@@ -5,11 +5,21 @@ title Accio Studio
 
 cd /d "%~dp0"
 
+:: "Run_Accio.bat zrok" (used by Run_Accio-zrok-only.bat) skips the connection menu and goes straight to zrok.
+set "TUNNEL="
+if /i "%~1"=="zrok" set "TUNNEL=zrok"
+
 echo.
 echo =================================================================
 echo Accio Studio
 echo =================================================================
 echo.
+
+if "%TUNNEL%"=="zrok" if not exist "zrok.exe" (
+    echo [ERROR] zrok is not set up yet. Run Setup_Zrok.bat first.
+    pause
+    exit /b 1
+)
 
 :: Self-heal: environment
 if not exist "env\Scripts\python.exe" (
@@ -85,17 +95,18 @@ if not exist "frontend\dist\index.html" (
 )
 
 :: Step 3: Connection mode
+set "HOST_ARG="
+if "%TUNNEL%"=="zrok" goto :launch
 echo.
 echo =================================================================
 echo Choose Connection Mode
 echo =================================================================
 echo 1. LOCAL ONLY ^(this PC, 127.0.0.1^)
-echo 2. CLOUDFLARE ^(random URL^)
-echo 3. ZROK ^(persistent URL^)
+echo 2. CLOUDFLARE ^(random URL, downloads cloudflared on first use^)
+echo 3. ZROK ^(persistent URL, run Setup_Zrok.bat once first^)
 echo 4. SAME NETWORK ^(other devices on your Wi-Fi / LAN^)
 echo =================================================================
 set "TUNNEL=local"
-set "HOST_ARG="
 set /p CHOICE="Selection [1-4, Default=1]: "
 if "%CHOICE%"=="2" set "TUNNEL=cloudflare"
 if "%CHOICE%"=="3" set "TUNNEL=zrok"
@@ -103,12 +114,19 @@ if "%CHOICE%"=="4" (
     set "HOST_ARG=--host 0.0.0.0"
     echo.
     echo       Other devices on this network can open the LAN address shown below.
-    echo       There is no login yet, so anyone on the network can use Accio.
-    echo       If Windows Firewall asks, allow access on private networks.
+    echo       Everything is behind your Accio password. If Windows Firewall asks, allow access on private networks.
+)
+if "%TUNNEL%"=="zrok" if not exist "zrok.exe" (
+    echo.
+    echo [ERROR] zrok is not set up yet. Run Setup_Zrok.bat first, then start this again.
+    pause
+    exit /b 1
 )
 
+:launch
 echo.
 echo [3/3] Launching Accio Studio ^(%TUNNEL%^)...
+echo       The first time, the app asks you to set a password. Forgot it? Run Reset_Password.bat.
 env\Scripts\python.exe server\main.py --tunnel %TUNNEL% %HOST_ARG% --open-browser
 
 if %ERRORLEVEL% neq 0 (

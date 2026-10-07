@@ -1,6 +1,7 @@
 """The ComfyUI console log is read by byte offset; a restarted (truncated) log must reset the reader."""
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 import logtail
@@ -8,6 +9,13 @@ from logtail import read_log
 from main import app
 
 client = TestClient(app, raise_server_exceptions=False)
+
+
+@pytest.fixture(autouse=True)
+def signed_in(session_token):
+    client.cookies.set("accio_session", session_token)
+    yield
+    client.cookies.clear()
 
 
 def test_missing_log_is_unavailable(tmp_path):

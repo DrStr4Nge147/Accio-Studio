@@ -1,4 +1,4 @@
-import { get, post } from "./http";
+import { del, get, post } from "./http";
 import type { Catalog, Health, Job } from "./types";
 
 export const fetchHealth = () => get<Health>("/api/health");
@@ -16,3 +16,41 @@ export interface LogChunk {
   reset: boolean;
 }
 export const fetchComfyLog = (after: number | null) => get<LogChunk>(after === null ? "/api/logs/comfy" : `/api/logs/comfy?after=${after}`);
+
+export interface AuthStatus {
+  configured: boolean;
+  authenticated: boolean;
+  /** First-run setup from another device needs the code printed in the server window. */
+  setup_code_needed: boolean;
+}
+export const fetchAuthStatus = () => get<AuthStatus>("/api/auth/status");
+export const setupPassword = (password: string, code?: string) => post<{ ok: true }>("/api/auth/setup", { password, code: code || undefined });
+export const login = (password: string) => post<{ ok: true }>("/api/auth/login", { password });
+export const logout = () => post<{ ok: true }>("/api/auth/logout");
+export const changePassword = (current: string, next: string) => post<{ ok: true }>("/api/auth/password", { current, new: next });
+
+export interface Connection {
+  mode: "local" | "cloudflare" | "zrok";
+  status: string;
+  public_url: string | null;
+  urls: { local: string; lan: string | null };
+  /** SVG data URI of a QR code for `qr_url`. */
+  qr: string;
+  qr_url: string;
+  auto_unload_minutes: number;
+}
+export const fetchConnection = () => get<Connection>("/api/connection");
+
+export interface JobsPage {
+  before?: number;
+  group?: "create" | "edit";
+  limit?: number;
+}
+/** Finished jobs, newest first; pass the last job's created_at as `before` for the next page. */
+export const fetchDoneJobs = ({ before, group, limit = 60 }: JobsPage = {}) => {
+  const q = new URLSearchParams({ status: "done", limit: String(limit) });
+  if (before !== undefined) q.set("before", String(before));
+  if (group) q.set("group", group);
+  return get<{ jobs: Job[] }>(`/api/jobs?${q}`).then((r) => r.jobs);
+};
+export const deleteJob = (id: string) => del<{ ok: true }>(`/api/jobs/${id}`);

@@ -164,7 +164,7 @@ export function ResultView({ job }: { job: Job }) {
               onClick={() => setIndex(n)}
               className={`relative h-14 w-14 flex-none overflow-hidden rounded-s border ${n === index ? "border-gold" : "border-line-strong hover:border-text-3"}`}
             >
-              <img src={imageUrl(job.id, it.i)} alt="" loading="lazy" className="h-full w-full object-cover" />
+              <img src={imageUrl(job.id, it.i, 384)} alt="" loading="lazy" className="h-full w-full object-cover" />
               {it.o.role !== "final" && <span className="absolute inset-x-0 bottom-0 bg-black/60 text-[9px] text-white">1st pass</span>}
             </button>
           ))}

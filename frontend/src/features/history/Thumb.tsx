@@ -10,15 +10,15 @@ export const coverIndex = (job: Job) => {
 };
 
 /**
- * Job thumbnail; a job that is still generating gets the same sliding light as its canvas card. Until the gallery phase adds server-side thumbnails this loads the full image lazily, so keep
- * the number of thumbnails on screen small.
+ * Job thumbnail (a cached WebP from the server, 384 px by default; pass 1024 for big tiles). A job that is still
+ * generating gets the same sliding light as its canvas card.
  */
-export function Thumb({ job, className = "" }: { job: Job; className?: string }) {
+export function Thumb({ job, className = "", size = 384 }: { job: Job; className?: string; size?: 384 | 1024 }) {
   const has = job.status === "done" && job.outputs.length > 0;
   return (
     <div className={`relative overflow-hidden bg-raised ${isActive(job) ? "shimmer" : ""} ${className}`}>
       {has ? (
-        <img src={imageUrl(job.id, coverIndex(job))} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+        <img src={imageUrl(job.id, coverIndex(job), size)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
       ) : (
         <div className="grid h-full w-full place-items-center text-text-3">
           <Ring className="h-1/2 w-1/2" spark={job.status !== "error"} />

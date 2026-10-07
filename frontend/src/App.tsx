@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { startSocket } from "./api/socket";
+import { AuthScreen } from "./features/auth/AuthScreen";
+import { useAuth } from "./store/auth";
 import { ReuseSeedPrompt } from "./components/ReuseSeedPrompt";
 import { Settings } from "./components/Settings";
 import { TooltipLayer } from "./components/ui/Tooltip";
@@ -55,7 +57,7 @@ function useShortcuts(desktop: boolean) {
   }, [desktop]);
 }
 
-export function App() {
+function Main() {
   const desktop = useIsDesktop();
   useStartup();
   useShortcuts(desktop);
@@ -67,4 +69,30 @@ export function App() {
       <TooltipLayer />
     </>
   );
+}
+
+/** Nothing private is shown (or fetched) until the server confirms a session. */
+export function App() {
+  const status = useAuth((s) => s.status);
+  const unreachable = useAuth((s) => s.unreachable);
+  useEffect(() => {
+    void useAuth.getState().refresh();
+  }, []);
+  useEffect(() => {
+    if (status || !unreachable) return;
+    const t = setInterval(() => void useAuth.getState().refresh(), 3000);
+    return () => clearInterval(t);
+  }, [status, unreachable]);
+  if (!status) {
+    return <div className="grid h-full place-items-center bg-bg text-[14px] text-text-3">{unreachable ? "Can't reach the Accio server. Retrying…" : ""}</div>;
+  }
+  if (!status.authenticated) {
+    return (
+      <>
+        <AuthScreen />
+        <TooltipLayer />
+      </>
+    );
+  }
+  return <Main />;
 }

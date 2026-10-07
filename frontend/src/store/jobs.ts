@@ -17,6 +17,8 @@ interface JobsState {
   /** Jobs whose cancel was requested and has not taken effect yet (the UI shows "cancelling"). */
   cancelling: Record<string, true>;
   upsert: (jobs: Job[]) => void;
+  /** Forget jobs that were deleted from the history. */
+  remove: (ids: string[]) => void;
   select: (id: string | null) => void;
   setConnected: (c: boolean) => void;
   setPreview: (url: string | null) => void;
@@ -54,6 +56,12 @@ export const useJobs = create<JobsState>((set) => ({
       // Nothing is selected until a job is generated here or picked from the history: no selection = blank canvas.
       const selectedId = s.selectedId && jobs[s.selectedId] ? s.selectedId : null;
       return { jobs, order, selectedId, reveal, preview, cancelling };
+    }),
+  remove: (ids) =>
+    set((s) => {
+      const gone = new Set(ids);
+      const jobs = Object.fromEntries(Object.entries(s.jobs).filter(([id]) => !gone.has(id)));
+      return { jobs, order: s.order.filter((id) => !gone.has(id)), selectedId: s.selectedId && gone.has(s.selectedId) ? null : s.selectedId };
     }),
   select: (selectedId) => set({ selectedId }),
   setConnected: (connected) => set({ connected }),

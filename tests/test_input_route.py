@@ -6,7 +6,14 @@ from fastapi.testclient import TestClient
 
 from main import INPUT_NAME, app
 
-client = TestClient(app, raise_server_exceptions=False)  # no lifespan: bad requests must be refused before any upstream call
+client = TestClient(app, raise_server_exceptions=False)
+
+
+@pytest.fixture(autouse=True)
+def signed_in(session_token):
+    client.cookies.set("accio_session", session_token)
+    yield
+    client.cookies.clear()  # no lifespan: bad requests must be refused before any upstream call
 
 
 @pytest.mark.parametrize("name", ["a1b2.png", "0123456789abcdef0123456789abcdef.jpg", "x_y-z.webp"])

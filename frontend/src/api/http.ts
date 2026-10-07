@@ -9,6 +9,12 @@ export class ApiError extends Error {
   }
 }
 
+let authLost: (() => void) | null = null;
+/** Called when the server says the session is gone (expired, signed out elsewhere, password changed). */
+export const setAuthLostHandler = (fn: () => void) => {
+  authLost = fn;
+};
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
@@ -31,6 +37,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     } catch {
       /* non-JSON error body */
     }
+    if (res.status === 401 && (code === "auth" || code === "setup_required") && !url.startsWith("/api/auth/")) authLost?.();
     throw new ApiError(message, res.status, code);
   }
   return (await res.json()) as T;
@@ -44,4 +51,8 @@ export const post = <T,>(url: string, body?: unknown) =>
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
-export const imageUrl = (jobId: string, index: number) => `/api/jobs/${jobId}/image/${index}`;
+export const del = <T,>(url: string) => request<T>(url, { method: "DELETE" });
+
+/** Full-size result, or a cached WebP thumbnail (longest side 384 or 1024 px) for lists. */
+export const imageUrl = (jobId: string, index: number, size?: 384 | 1024) =>
+  `/api/jobs/${jobId}/image/${index}${size ? `?size=${size}` : ""}`;

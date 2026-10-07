@@ -1,5 +1,6 @@
 import { fetchJob, fetchJobs } from "./endpoints";
 import type { Job } from "./types";
+import { useAuth } from "../store/auth";
 import { isActive, useJobs } from "../store/jobs";
 
 /** One app WebSocket with auto-reconnect. Jobs live on the server: after every (re)connect we re-fetch state. */
@@ -54,8 +55,18 @@ export function startSocket() {
     };
     ws.onclose = () => {
       useJobs.getState().setConnected(false);
-      setTimeout(connect, delay);
-      delay = Math.min(delay * 2, 10000);
+      // A refused socket may mean the session ended: ask the server before retrying, and stop if we are signed out.
+      void useAuth
+        .getState()
+        .refresh()
+        .then(() => {
+          if (useAuth.getState().status?.authenticated === false) {
+            started = false;
+            return;
+          }
+          setTimeout(connect, delay);
+          delay = Math.min(delay * 2, 10000);
+        });
     };
     ws.onerror = () => ws.close();
   };
