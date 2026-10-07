@@ -184,4 +184,6 @@ Radii 10 / 14 / 22 / pill. Three surface levels separated by 1 px hairlines. Lin
 
 ## Next (Phase 5: Edit modes)
 
+Phase 5 starts in a fresh session (user decision 2026-10-07): read `APP_SPEC.md` and this file first.
+
 Multi-Edit (MiniMax upload, 9-slot tray), Inpaint (mask canvas, RGBA mask per spec 5.3), Outpaint (pad editor), enhancer "Prompt used" panel, presets, Send to Edit. **Ask the user the spec 6.4 Remove/Move question first.** Reuse the Phase 4 pieces: `Composer`, `Sheet`, `ui/controls`, `stage/` (add the before/after compare slider to `ResultView`), the jobs store and WebSocket. The Edit tab currently renders `features/edit/ComingSoon.tsx`; the Edit sub-modes become a segmented control in the mobile top bar (design). The server already supports all three Edit modes (`/api/upload?kind=media|image|mask`, `/api/jobs`).
