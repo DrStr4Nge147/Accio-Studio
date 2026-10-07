@@ -9,8 +9,9 @@ Read `APP_SPEC.md` first; this file records state, decisions and how to run. Las
 | 1. Scaffold | **Done** |
 | 2. Template engine | **Done** (structural parity 20/20) |
 | 2b. Portable bundle | **Done** (see below) |
-| 3. Design proposal | **Next. Stop for user approval before any UI work** |
-| 4-8 | Not started |
+| 3. Design proposal | **Done, approved by user 2026-10-07** (see "Approved design" below; user: "a good start, we can always edit it") |
+| 4. Create mode | **Next** |
+| 5-8 | Not started |
 
 Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio` (`git init` done on branch `main`, **nothing committed yet**: ask the user before the first commit, and branch first).
 
@@ -75,6 +76,7 @@ Structural parity (spec 7.1) for all 20 templates: **PASS** (fresh re-export fro
 
 ## Open questions (user)
 
+- (Answered 2026-10-07) Design direction approved as in "Approved design"; further edits welcome later.
 - Remove/Move object presets (spec 6.4): confirm the intended input (red box burned into RGB + mask?). **Ask before Phase 5.**
 - OK to make the first commit (and on which branch name)?
 
@@ -89,6 +91,51 @@ cd frontend; npm run dev           # Vite dev server, proxies /api to :7862
 
 Dry-run any request without queueing: `POST /api/build` with `{"params": {...}}`.
 
-## Next (Phase 3, stop for approval)
+## Approved design (Phase 3, approved 2026-10-07)
 
-Design proposal per spec 6.1b: palette, type, wordmark/icon direction, mobile + desktop mockups (HTML prototype), navigation model. Do not copy Z-Fusion's look. Wait for approval before Phase 4.
+Reference prototype: `design/proposal.html` (static HTML, open in a browser; has a light-theme toggle and the reveal animation). It is the source of truth for tokens and layouts; the user approved it as a starting point and expects edits later. Nothing in the real UI is built yet. Not Z-Fusion's look by design (spec 6.1b).
+
+**Direction: "Lamplight on ink".** Ink surfaces, parchment text, one gold accent. Gold only marks active / primary / progressing, never decoration. Image content is never tinted. Green/red only for success/error. Dark-first, light theme included.
+
+**Tokens (CSS variables, mapped into Tailwind):**
+
+| Token | Dark | Light |
+|---|---|---|
+| bg | `#0B0A0F` | `#F5F0E5` |
+| surface | `#121118` | `#FBF8F1` |
+| raised | `#1A1922` | `#EFE9DB` |
+| overlay | `#24222E` | `#E6DFCD` |
+| line / line-strong | `#2C2A37` / `#3D3A4B` | `#DDD5C1` / `#C9BFA6` |
+| text / text-2 / text-3 | `#F1EADB` / `#B9B2A3` / `#8A8478` | `#1B1810` / `#554E3F` / `#756D5B` |
+| gold (fill) | `#E8B04A`, hi `#F6CD7C` | `#D9992A`, hi `#E8B04A` |
+| gold-text (small text) | `#E8B04A` | `#85560A` |
+| on-gold (label on gold fill) | `#17120A` | `#17120A` |
+| success / error | `#7FC79A` / `#EF7B6C` | `#2F7D4F` / `#B3392B` |
+
+Radii 10 / 14 / 22 / pill. Three surface levels separated by 1 px hairlines. Line icons, 1.7 px stroke, 20-24 px (lucide-react), 44 px touch areas. Contrast ratios in the prototype are estimates: run a real contrast check in Phase 4 and fix anything under 4.5:1 (3:1 for large text / icons).
+
+**Type:** Fraunces (variable, SOFT 100, wordmark / empty states / sheet titles only), Instrument Sans (UI, weights 400/500/600, 15 px base), JetBrains Mono (seeds, step counts). Self-host variable WOFF2, Latin subset, about 60 KB, `font-display: swap` (the prototype uses Google Fonts only for convenience). Scale 12/13/15/17/22/28/40. Sentence case everywhere.
+
+**Wordmark / icon:** lowercase "accio" in Fraunces; the final "o" is an open ring (one 11-unit stroke with a gap, round caps) with a four-point gold spark entering it. The ring is the app icon (on an ink rounded square, inside the 80% maskable safe zone), loading spinner and completion flash. Add a monochrome icon variant. SVG is in the prototype (`#ring` symbol).
+
+**Navigation:**
+- Mobile: bottom tab bar Create / Edit / Gallery. Settings + connection (QR, tunnel URL, ComfyUI status) behind a gear in the top bar, no 4th tab. Edit sub-modes (Multi-edit / Inpaint / Outpaint) = segmented control in the top bar. Composer is a bottom sheet: collapsed = prompt + chips + Generate, drag up = Advanced.
+- Desktop (>= 1024 px): three panes. Left 316 px = mode nav + composer (Generate pinned at the bottom of the pane); center = canvas (result viewer, compare slider, brush, outpaint handles) with a "this session" strip; right 272 px = queue above, history below (click to view, drag to a reference slot).
+- One composer component for all modes: prompt, main-toggle chips (mobile) / toggles (desktop), Generate. Never covers the image. Advanced = sheet (mobile) / collapsible section (desktop).
+- Desktop shortcuts: Ctrl+Enter generate, Esc cancel, `[` `]` brush size, Ctrl+Z undo, Space+drag pan, 1/2/3 switch Create/Edit/Gallery, left/right arrows on the compare slider.
+
+**Screens in the prototype:** mobile (360x740): Create ready, Create generating, Advanced sheet, Multi-edit (9-slot tray, numbered, 1 = base with gold outline, "Prompt used" overlay), Inpaint (full-bleed canvas, floating pill toolbar), Outpaint (hatched canvas, four drag handles, live padding numbers), Gallery (3-col grid). Desktop (1180x700): Create Detailed mid-run, Inpaint, Multi-edit with before/after slider + Prompt used + seeds panel. Also described, not drawn: first-run empty state, setup-check screen (per-item found/missing + "Download missing models"), error cards (friendly text, Retry, Details without paths or traces).
+
+**Motion:** CSS transitions/transforms only (150-250 ms ease-out), animate `transform`/`opacity`/`clip-path` never layout, no animation library in the first bundle. The summon reveal (1.1 s: ring of light opens from the centre while the blurred preview resolves) plays once per finished image for the job on screen only. `prefers-reduced-motion`: reveal becomes a 250 ms fade, shimmer stops. Progress/preview updates throttled to 10/s. Skeletons instead of spinners where layout is known.
+
+**Decisions made in this phase:**
+- Generate button label stays plainly "Generate" (spec: no spell names for modes); the summoning feel lives in the reveal and progress copy ("Summoning...").
+- No stack additions beyond the spec baseline (React, Vite, Tailwind, lucide-react, Zustand).
+- Aspect presets (spec 6.3, unverified with Krea2) stay as proposed there.
+- Chips are 36 px tall visually, with 44 px hit areas via padding in the real build.
+
+**Deviations / caveats:** the prototype uses gradients as image stand-ins and is not responsive between the phone and desktop frames (the real app switches at 1024 px). Prototype lives in `design/` and is not shipped (excluded from release packaging).
+
+## Next (Phase 4: Create mode, short demo at the end)
+
+Build the frontend foundation from the approved design (tokens as CSS variables + Tailwind, self-hosted fonts, app shell with the mobile tab bar and desktop three-pane layout, theme switch, shared composer component), then Create mode: Standard + Detailed, toggles, Advanced, LoRAs, live progress/preview/cancel in the result slot, results feed. Backend API already exists (Phase 2). Edit modes stay stubs until Phase 5; ask the spec 6.4 Remove/Move question before Phase 5.

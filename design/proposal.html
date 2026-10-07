@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accio Studio design proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,0..100&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink-0:#0b0a0f; --ink-1:#121118; --ink-2:#1a1922; --ink-3:#24222e; --ink-4:#34313f;
+  --bg:var(--ink-0); --surface:var(--ink-1); --raised:var(--ink-2); --overlay:var(--ink-3); --line:#2c2a37; --line-strong:#3d3a4b;
+  --text:#f1eadb; --text-2:#b9b2a3; --text-3:#8a8478;
+  --gold:#e8b04a; --gold-hi:#f6cd7c; --gold-lo:#9a6a1c; --on-gold:#17120a; --gold-text:#e8b04a;
+  --gold-wash:rgba(232,176,74,.12);
+  --ok:#7fc79a; --danger:#ef7b6c;
+  --shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px rgba(0,0,0,.45);
+  --sans:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --serif:'Fraunces',Georgia,serif;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --r-s:10px; --r-m:14px; --r-l:22px;
+}
+[data-theme=light]{
+  --bg:#f5f0e5; --surface:#fbf8f1; --raised:#efe9db; --overlay:#e6dfcd; --line:#ddd5c1; --line-strong:#c9bfa6;
+  --text:#1b1810; --text-2:#554e3f; --text-3:#756d5b;
+  --gold:#d9992a; --gold-hi:#e8b04a; --gold-lo:#8a5a06; --on-gold:#17120a; --gold-text:#85560a;
+  --gold-wash:rgba(217,153,42,.16);
+  --ok:#2f7d4f; --danger:#b3392b;
+  --shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 10px 28px rgba(60,45,10,.14);
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px 80px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0;position:sticky;top:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);z-index:20;border-bottom:1px solid var(--line)}
+nav.jump{display:flex;gap:4px;flex-wrap:wrap;font-size:13px}
+nav.jump a{color:var(--text-2);text-decoration:none;padding:6px 10px;border-radius:999px}
+nav.jump a:hover{background:var(--raised);color:var(--text)}
+.btn{font:500 13px var(--sans);color:var(--text);background:var(--raised);border:1px solid var(--line-strong);border-radius:999px;padding:8px 14px;cursor:pointer;min-height:36px}
+.btn:hover{border-color:var(--gold)}
+h1{font:400 clamp(34px,6vw,60px)/1.05 var(--serif);font-variation-settings:'SOFT' 100,'opsz' 144;letter-spacing:-.02em;margin:56px 0 12px}
+h2{font:500 28px/1.2 var(--serif);font-variation-settings:'SOFT' 100;letter-spacing:-.01em;margin:72px 0 6px}
+h3{font:600 13px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin:28px 0 10px}
+p.lead{color:var(--text-2);max-width:68ch;font-size:17px}
+p.note{color:var(--text-2);max-width:72ch;margin:6px 0 14px}
+code,.mono{font-family:var(--mono);font-size:.88em}
+.grid{display:grid;gap:16px}
+.swatches{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.sw{border:1px solid var(--line);border-radius:var(--r-m);overflow:hidden;background:var(--surface)}
+.sw i{display:block;height:64px}
+.sw div{padding:8px 10px;font-size:12px;color:var(--text-2)}
+.sw b{display:block;color:var(--text);font-weight:600;font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:24px}
+.two{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t td,table.t th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.t th{color:var(--text-3);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.pill-ok{color:var(--ok)} .pill-bad{color:var(--danger)}
+
+/* type specimen */
+.spec-d{font:400 54px/1 var(--serif);font-variation-settings:'SOFT' 100,'opsz' 144;letter-spacing:-.02em}
+.spec-h{font:500 24px/1.2 var(--serif);font-variation-settings:'SOFT' 100}
+.spec-b{font:400 15px/1.5 var(--sans)}
+.spec-l{font:500 12px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+
+/* ---------- Device frames ---------- */
+.row{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:13px;color:var(--text-2);margin-top:10px;max-width:360px}
+.cap b{color:var(--text)}
+.phone{width:360px;height:740px;border-radius:38px;border:1px solid var(--line-strong);background:var(--bg);overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:var(--shadow);flex:none}
+.sb{height:30px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 24px 2px;font:500 12px var(--sans);color:var(--text-2);flex:none}
+.bar{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex:none}
+.stage{flex:1;position:relative;min-height:0;display:flex;flex-direction:column}
+.tabs{height:66px;flex:none;border-top:1px solid var(--line);background:var(--surface);display:grid;grid-template-columns:repeat(3,1fr);padding-bottom:6px}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:var(--text-3);font-weight:500}
+.tab svg{width:22px;height:22px}
+.tab.on{color:var(--gold-text)}
+.tab.on .dot{background:var(--gold)}
+.dot{width:16px;height:3px;border-radius:2px;background:transparent;margin-top:2px}
+.ico{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.iconbtn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--text-2);background:transparent;border:0}
+.iconbtn.fill{background:var(--raised);border:1px solid var(--line)}
+
+/* art placeholders: stand-ins for generated images */
+.art{position:relative;overflow:hidden;background:#222}
+.a1{background:radial-gradient(120% 70% at 70% 12%,#f3c97a 0,#c9703a 22%,transparent 46%),linear-gradient(180deg,#2a2150 0,#4a2c5e 45%,#1a1424 100%)}
+.a2{background:radial-gradient(90% 60% at 30% 30%,#8fd6c2 0,#2f7a74 35%,transparent 60%),linear-gradient(160deg,#10303a,#0b1a22)}
+.a3{background:radial-gradient(80% 60% at 60% 70%,#f2a3a0 0,#a24a6b 35%,transparent 62%),linear-gradient(200deg,#2b1630,#14101c)}
+.a4{background:radial-gradient(100% 70% at 20% 80%,#d9c27e 0,#7d6a2f 30%,transparent 55%),linear-gradient(120deg,#1d2a1c,#0f160f)}
+.a5{background:linear-gradient(135deg,#3a2f6b,#c46a4a 60%,#f0c068)}
+.art::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 2px,transparent 2px 4px);pointer-events:none}
+
+/* composer */
+.dock{background:var(--surface);border-top:1px solid var(--line);border-radius:24px 24px 0 0;padding:8px 14px 12px;flex:none;box-shadow:0 -10px 30px rgba(0,0,0,.25);position:relative;z-index:3}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--line-strong);margin:0 auto 8px}
+.prompt{background:var(--raised);border:1px solid var(--line);border-radius:var(--r-m);padding:10px 12px;font-size:14px;color:var(--text);min-height:58px;line-height:1.45}
+.prompt .ph{color:var(--text-3)}
+.chips{display:flex;gap:6px;overflow:hidden;margin:10px 0}
+.chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);font-size:13px;color:var(--text-2);white-space:nowrap;flex:none;background:transparent}
+.chip.on{background:var(--gold-wash);border-color:color-mix(in srgb,var(--gold) 55%,transparent);color:var(--gold-text)}
+.chip .k{width:7px;height:7px;border-radius:50%;background:var(--text-3)}
+.chip.on .k{background:var(--gold)}
+.gen{height:52px;border-radius:16px;background:linear-gradient(180deg,var(--gold-hi),var(--gold));color:var(--on-gold);font:600 16px var(--sans);display:flex;align-items:center;justify-content:center;gap:8px;border:0;width:100%;box-shadow:0 6px 20px color-mix(in srgb,var(--gold) 30%,transparent),0 1px 0 rgba(255,255,255,.4) inset}
+.gen small{font:500 12px var(--sans);opacity:.7}
+.gen.cancel{background:var(--raised);color:var(--text);box-shadow:none;border:1px solid var(--line-strong)}
+.seg{display:inline-flex;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px}
+.seg span{padding:0 14px;height:34px;display:grid;place-items:center;border-radius:9px;font-size:13px;font-weight:500;color:var(--text-2)}
+.seg span.on{background:var(--overlay);color:var(--text);box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
+.row2{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lbl{font-size:12px;color:var(--text-3);font-weight:500;letter-spacing:.03em}
+.asp{display:flex;gap:6px}
+.asp span{flex:1;height:44px;border-radius:10px;border:1px solid var(--line-strong);display:grid;place-items:center;font-size:12px;color:var(--text-2);gap:0}
+.asp span.on{border-color:var(--gold);color:var(--gold-text);background:var(--gold-wash)}
+.asp i{display:block;border:1.5px solid currentColor;border-radius:2px}
+.tog{display:flex;align-items:center;justify-content:space-between;min-height:44px;font-size:14px}
+.tog .sub{display:block;font-size:12px;color:var(--text-3)}
+.sw-on,.sw-off{width:44px;height:26px;border-radius:13px;position:relative;flex:none;background:var(--ink-4)}
+.sw-on{background:var(--gold)}
+.sw-on::after,.sw-off::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw-on::after{left:21px;background:var(--on-gold)}
+.slider{height:4px;border-radius:2px;background:var(--ink-4);position:relative;margin:14px 0}
+.slider b{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--gold)}
+.slider i{position:absolute;top:-8px;width:20px;height:20px;border-radius:50%;background:var(--text);border:3px solid var(--bg);box-shadow:0 0 0 1px var(--line-strong)}
+
+/* progress in place */
+.prog{position:absolute;left:0;right:0;bottom:0;padding:14px;background:linear-gradient(0deg,rgba(8,7,12,.88),transparent);color:#f1eadb;z-index:2}
+.prog .meta{display:flex;justify-content:space-between;font:500 13px var(--sans);margin-bottom:8px}
+.prog .meta .mono{color:var(--gold-hi)}
+.pbar{height:3px;background:rgba(255,255,255,.18);border-radius:2px;overflow:hidden}
+.pbar b{display:block;height:100%;background:var(--gold);border-radius:2px}
+.blurprev{position:absolute;inset:0;filter:blur(18px) saturate(1.2);transform:scale(1.15);opacity:.9}
+.shimmer::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(110deg,transparent 30%,rgba(246,205,124,.18) 50%,transparent 70%);background-size:250% 100%;animation:sh 2.4s linear infinite}
+@keyframes sh{from{background-position:150% 0}to{background-position:-100% 0}}
+.badge{position:absolute;top:10px;left:10px;z-index:3;font:500 11px var(--sans);padding:4px 9px;border-radius:999px;background:rgba(10,9,14,.62);backdrop-filter:blur(6px);color:#f1eadb;border:1px solid rgba(255,255,255,.12)}
+.fab{position:absolute;z-index:3;display:flex;flex-direction:column;gap:8px;right:10px;top:10px}
+.fab .iconbtn{background:rgba(10,9,14,.62);backdrop-filter:blur(6px);color:#f1eadb;border:1px solid rgba(255,255,255,.12)}
+.hint{font-size:12px;color:var(--text-3)}
+
+/* feed */
+.feed{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 10px 10px}
+.feed .art{border-radius:12px;aspect-ratio:9/16}
+.empty{flex:1;display:grid;place-items:center;text-align:center;padding:30px;color:var(--text-2)}
+
+/* tray */
+.tray{display:flex;gap:8px;padding:0 14px 10px;overflow:hidden;flex:none}
+.slot{width:56px;height:56px;border-radius:12px;position:relative;flex:none;border:1px solid var(--line-strong)}
+.slot.empty{border-style:dashed;display:grid;place-items:center;color:var(--text-3)}
+.slot .n{position:absolute;left:4px;top:4px;width:18px;height:18px;border-radius:50%;background:rgba(10,9,14,.72);color:#f1eadb;font:600 11px/18px var(--sans);text-align:center}
+.slot.base{outline:2px solid var(--gold);outline-offset:1px}
+.slot.base .n{background:var(--gold);color:var(--on-gold)}
+
+/* canvas tools */
+.toolbar{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;z-index:4;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:rgba(18,17,24,.86);backdrop-filter:blur(10px);border:1px solid var(--line-strong);box-shadow:var(--shadow);color:#f1eadb}
+.toolbar .iconbtn{color:#f1eadb;width:44px;height:44px}
+.toolbar .on{background:var(--gold);color:var(--on-gold)}
+.toolbar .sep{width:1px;height:22px;background:var(--line-strong);margin:0 4px}
+.maskov{position:absolute;background:rgba(232,100,90,.5);border:1.5px solid rgba(255,140,130,.9);border-radius:46% 54% 50% 50%/55% 45% 55% 45%}
+.handle{position:absolute;width:44px;height:44px;display:grid;place-items:center;z-index:3}
+.handle i{display:block;background:var(--gold);border-radius:3px;box-shadow:0 0 0 3px rgba(0,0,0,.35)}
+.padzone{position:absolute;background:repeating-linear-gradient(45deg,rgba(128,128,128,.55) 0 8px,rgba(150,150,150,.55) 8px 16px);border:1.5px dashed var(--gold)}
+.sheet-peek{position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-radius:24px 24px 0 0;border-top:1px solid var(--line-strong);padding:8px 16px 14px;box-shadow:0 -16px 40px rgba(0,0,0,.5)}
+.scrim{position:absolute;inset:0;background:rgba(5,4,8,.5);z-index:4}
+
+/* ---------- Desktop ---------- */
+.desk{width:100%;max-width:1180px;height:700px;border-radius:18px;border:1px solid var(--line-strong);background:var(--bg);overflow:hidden;display:grid;grid-template-columns:316px 1fr 272px;box-shadow:var(--shadow)}
+.pane{display:flex;flex-direction:column;min-height:0;background:var(--surface)}
+.pane.l{border-right:1px solid var(--line)}
+.pane.r{border-left:1px solid var(--line)}
+.ph-h{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--line);flex:none}
+.pane-body{flex:1;min-height:0;padding:14px 16px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.center{display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+.ctop{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex:none}
+.cmain{flex:1;min-height:0;padding:0 16px 16px;display:flex;gap:14px}
+.canvas{flex:1;border-radius:16px;position:relative;overflow:hidden;border:1px solid var(--line)}
+.cstrip{display:flex;gap:8px;flex:none;padding:0 16px 14px}
+.cstrip .art{width:72px;height:72px;border-radius:10px;border:1px solid var(--line-strong)}
+.hist{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.hist .art{aspect-ratio:1;border-radius:10px}
+.qitem{display:flex;gap:10px;align-items:center;padding:8px;border-radius:12px;background:var(--raised);border:1px solid var(--line);font-size:13px}
+.qitem .art{width:40px;height:40px;border-radius:8px;flex:none}
+.kbd{font:500 11px var(--mono);padding:2px 6px;border-radius:6px;border:1px solid var(--line-strong);color:var(--text-2);background:var(--raised)}
+.adv{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:14px;color:var(--text-2)}
+.cmp{position:absolute;inset:0}
+.cmp .after{position:absolute;inset:0;clip-path:inset(0 0 0 52%)}
+.cmp .rule{position:absolute;top:0;bottom:0;left:52%;width:2px;background:var(--gold-hi);z-index:3}
+.cmp .knob{position:absolute;left:52%;top:50%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;background:var(--gold);color:var(--on-gold);display:grid;place-items:center;z-index:4;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.railnav{display:flex;flex-direction:column;gap:4px}
+.nav{display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:12px;font-size:14px;font-weight:500;color:var(--text-2)}
+.nav.on{background:var(--gold-wash);color:var(--gold-text)}
+
+/* wordmark */
+.wm{font:400 40px/1 var(--serif);font-variation-settings:'SOFT' 100,'opsz' 144;letter-spacing:-.03em;display:inline-flex;align-items:center;color:var(--text)}
+.wm.sm{font-size:22px}
+.wm svg{height:.78em;width:.78em;margin:0 .02em}
+.iconsq{border-radius:22%;background:radial-gradient(90% 90% at 50% 0,#2b2540,#0b0a0f);display:grid;place-items:center;border:1px solid var(--line-strong)}
+
+/* reveal demo */
+.reveal{position:relative;height:300px;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+.reveal .art{position:absolute;inset:0}
+.reveal.go .art{animation:rv 1.1s cubic-bezier(.2,.7,.2,1) both}
+.reveal.go::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(246,205,124,.7),transparent 55%);animation:gl 1.1s ease-out both;pointer-events:none}
+@keyframes rv{0%{clip-path:circle(0% at 50% 50%);filter:blur(14px) brightness(1.6);transform:scale(1.06)}60%{filter:blur(2px) brightness(1.15)}100%{clip-path:circle(75% at 50% 50%);filter:none;transform:none}}
+@keyframes gl{0%{opacity:.9;transform:scale(.2)}100%{opacity:0;transform:scale(1.8)}}
+@media (prefers-reduced-motion:reduce){.reveal.go .art{animation:fade .25s both}.reveal.go::after{display:none}.shimmer::before{animation:none}@keyframes fade{from{opacity:0}to{opacity:1}}}
+@media (max-width:1000px){.desk{min-width:1000px}.deskwrap{overflow-x:auto}}
+.deskwrap{margin:8px 0 0}
+ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/></symbol>
+    <symbol id="i-wand" viewBox="0 0 24 24"><path d="M4 20L16 8"/><path d="M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/><path d="M19 12l.6 1.4L21 14l-1.4.6L19 16l-.6-1.4L17 14l1.4-.6z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6"/></symbol>
+    <symbol id="i-brush" viewBox="0 0 24 24"><path d="M14 4l6 6-8 8H6v-6z"/><path d="M4 21c2 0 3-1 3-3"/></symbol>
+    <symbol id="i-erase" viewBox="0 0 24 24"><path d="M8 20h12M5 15l9-9 5 5-6 6H8z"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7L4 12l5 5"/><path d="M4 12h10a6 6 0 010 8"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 7l5 5-5 5"/><path d="M20 12H10a6 6 0 000 8"/></symbol>
+    <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></symbol>
+    <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h12M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></symbol>
+    <symbol id="i-lr" viewBox="0 0 24 24"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/></symbol>
+    <symbol id="ring" viewBox="0 0 100 100"><path d="M82 24A40 40 0 1 0 90 52" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round"/><path d="M92 14l3.6 9.4L105 27l-9.4 3.6L92 40l-3.6-9.4L79 27l9.4-3.6z" transform="translate(-14 0)" fill="var(--gold)"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+<header class="top">
+  <span class="wm sm" aria-label="Accio Studio">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span>
+  <nav class="jump" aria-label="Sections">
+    <a href="#identity">Identity</a><a href="#palette">Palette</a><a href="#type">Type</a><a href="#nav">Navigation</a><a href="#mobile">Mobile</a><a href="#desktop">Desktop</a><a href="#motion">Motion</a><a href="#approve">Approve</a>
+  </nav>
+  <button class="btn" id="theme" type="button">Light theme</button>
+</header>
+
+<h1>Accio Studio, design proposal</h1>
+<p class="lead">Direction: <b>"Lamplight on ink."</b> A near-black ink canvas with a single warm gold light, used only for the thing that matters right now: the primary action, the active state, the progress line. Soft serif for the brand and big moments, a clean grotesque for the interface. The image is always the brightest thing on screen.</p>
+<p class="note">Everything below is a static prototype: no real data, no build. Placeholders in gradient stand in for generated images. Toggle the theme at the top right to see the light version of every screen.</p>
+
+<!-- ============ IDENTITY ============ -->
+<h2 id="identity">Wordmark and icon</h2>
+<p class="note">Lowercase <b>accio</b> set in Fraunces (soft, high-contrast serif). The final "o" is an open ring with a gap and a spark entering it: something being summoned into the frame. The same ring becomes the app icon, the loading spinner and the Generate-complete flash, so one shape carries the whole brand.</p>
+<div class="grid two">
+  <div class="card" style="display:grid;place-items:center;min-height:220px;gap:18px">
+    <span class="wm" style="font-size:84px">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span>
+    <span class="spec-l">Studio</span>
+  </div>
+  <div class="card">
+    <div class="row" style="gap:20px;align-items:center">
+      <div class="iconsq" style="width:120px;height:120px"><svg viewBox="-10 0 120 100" style="width:78px;height:78px;color:var(--text);overflow:visible"><use href="#ring"/></svg></div>
+      <div class="iconsq" style="width:64px;height:64px"><svg viewBox="-10 0 120 100" style="width:42px;height:42px;color:var(--text);overflow:visible"><use href="#ring"/></svg></div>
+      <div class="iconsq" style="width:40px;height:40px;border-radius:10px"><svg viewBox="-10 0 120 100" style="width:26px;height:26px;color:var(--text);overflow:visible"><use href="#ring"/></svg></div>
+    </div>
+    <p class="note" style="margin-top:16px">App icon on ink, maskable-safe (ring sits inside the 80% safe zone). The ring is drawn as one stroke, so it scales down to a 16 px favicon without detail loss. Monochrome variant (no gold) for the Android themed icon.</p>
+  </div>
+</div>
+
+<!-- ============ PALETTE ============ -->
+<h2 id="palette">Palette</h2>
+<p class="note">Ink for surfaces, parchment for text, one gold. Gold is never decoration: if it's lit, it's active, primary or progressing. Image content never gets tinted. Semantic green and red appear only for success and errors.</p>
+<h3>Dark (default)</h3>
+<div class="grid swatches" data-force="dark">
+  <div class="sw"><i style="background:#0b0a0f"></i><div><b>Ink 0</b>#0B0A0F · app background</div></div>
+  <div class="sw"><i style="background:#121118"></i><div><b>Ink 1</b>#121118 · surface (dock, panes)</div></div>
+  <div class="sw"><i style="background:#1a1922"></i><div><b>Ink 2</b>#1A1922 · raised (inputs, cards)</div></div>
+  <div class="sw"><i style="background:#24222e"></i><div><b>Ink 3</b>#24222E · overlay, selected</div></div>
+  <div class="sw"><i style="background:#f1eadb"></i><div><b>Parchment</b>#F1EADB · text</div></div>
+  <div class="sw"><i style="background:#b9b2a3"></i><div><b>Parchment 2</b>#B9B2A3 · secondary text</div></div>
+  <div class="sw"><i style="background:linear-gradient(180deg,#f6cd7c,#e8b04a)"></i><div><b>Lamp gold</b>#E8B04A → #F6CD7C · primary</div></div>
+  <div class="sw"><i style="background:#7fc79a"></i><div><b>Success</b>#7FC79A</div></div>
+  <div class="sw"><i style="background:#ef7b6c"></i><div><b>Error</b>#EF7B6C</div></div>
+</div>
+<h3>Light</h3>
+<div class="grid swatches">
+  <div class="sw"><i style="background:#f5f0e5"></i><div><b>Parchment</b>#F5F0E5 · background</div></div>
+  <div class="sw"><i style="background:#fbf8f1"></i><div><b>Paper</b>#FBF8F1 · surface</div></div>
+  <div class="sw"><i style="background:#efe9db"></i><div><b>Vellum</b>#EFE9DB · raised</div></div>
+  <div class="sw"><i style="background:#1b1810"></i><div><b>Ink text</b>#1B1810</div></div>
+  <div class="sw"><i style="background:#d9992a"></i><div><b>Gold fill</b>#D99A2A · buttons (ink label)</div></div>
+  <div class="sw"><i style="background:#85560a"></i><div><b>Gold text</b>#85560A · small gold text</div></div>
+</div>
+<h3>Contrast (WCAG)</h3>
+<table class="t">
+  <tr><th>Pair</th><th>Ratio</th><th>Use</th><th>AA</th></tr>
+  <tr><td>Parchment on Ink 0</td><td>~16:1</td><td>Body text, dark</td><td class="pill-ok">Pass</td></tr>
+  <tr><td>Parchment 2 on Ink 1</td><td>~8:1</td><td>Secondary text, dark</td><td class="pill-ok">Pass</td></tr>
+  <tr><td>Gold on Ink 1</td><td>~9:1</td><td>Active labels, progress, dark</td><td class="pill-ok">Pass</td></tr>
+  <tr><td>Ink label on Gold fill</td><td>~9:1</td><td>Generate button (both themes)</td><td class="pill-ok">Pass</td></tr>
+  <tr><td>Gold text #85560A on Paper</td><td>~5.6:1</td><td>Small gold text, light</td><td class="pill-ok">Pass</td></tr>
+  <tr><td>Ink text on Parchment</td><td>~15:1</td><td>Body text, light</td><td class="pill-ok">Pass</td></tr>
+</table>
+<p class="note" style="margin-top:8px">Ratios are estimates from the hex values; I will run them through a contrast checker in the build and fix anything under 4.5:1 (3:1 for large text and icons) before showing Phase 4.</p>
+
+<!-- ============ TYPE ============ -->
+<h2 id="type">Typography</h2>
+<div class="grid two">
+  <div class="card">
+    <div class="spec-l">Display and brand, Fraunces (soft, optical size)</div>
+    <div class="spec-d" style="margin:10px 0 4px">A lamp, lit.</div>
+    <div class="spec-h">Empty states, section titles, the wordmark</div>
+    <p class="note" style="margin-top:12px">Used sparingly: brand, empty/first-run states, sheet titles. Never for controls.</p>
+  </div>
+  <div class="card">
+    <div class="spec-l">Interface, Instrument Sans</div>
+    <div class="spec-b" style="margin:10px 0 8px">Prompts, buttons, labels and settings. Sentence case everywhere, 15 px base, 13 px for chips and captions, 12 px for meta. Weights 400, 500, 600 only.</div>
+    <div class="spec-l" style="margin-top:14px">Numbers and seeds, JetBrains Mono</div>
+    <div class="mono" style="margin-top:6px;color:var(--gold-text)">seed 4815162342 · step 5/8 · 1080×1920</div>
+  </div>
+</div>
+<p class="note" style="margin-top:12px">Fonts are self-hosted (variable WOFF2, Latin subset, about 60 KB total, <code>font-display: swap</code>), so there is no Google Fonts request and the PWA works offline. This preview loads them from Google Fonts for convenience and falls back to Georgia / system sans if offline. Scale: 12 / 13 / 15 / 17 / 22 / 28 / 40.</p>
+<p class="note"><b>Shape and elevation:</b> radii 10 / 14 / 22 / pill; three surface levels (surface, raised, overlay) separated by 1 px hairlines, not heavy shadows. Icons are 1.7 px-stroke lucide-style line icons, 20–24 px, with 44 px touch areas.</p>
+
+<!-- ============ NAV ============ -->
+<h2 id="nav">Navigation model</h2>
+<div class="grid two">
+  <div class="card">
+    <h3 style="margin-top:0">Mobile: three tabs</h3>
+    <ul class="clean">
+      <li><b>Create</b> opens on the prompt dock + results feed. Standard / Detailed is a toggle in the dock.</li>
+      <li><b>Edit</b> opens on a mode strip: <i>Multi-edit · Inpaint · Outpaint</i>. Each one is a different canvas layout.</li>
+      <li><b>Gallery</b> is all history, full-bleed grid, swipe between images in the viewer.</li>
+      <li>Settings and connection (QR, tunnel URL, ComfyUI status) hide behind a gear in the top bar. No fourth tab.</li>
+      <li>The dock is a bottom sheet: collapsed = prompt + Generate, drag up = Advanced.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Desktop: three-pane workspace</h3>
+    <ul class="clean">
+      <li><b>Left (316 px):</b> Create / Edit / Gallery switch, then the composer for the current mode. Generate is pinned at the bottom of the pane.</li>
+      <li><b>Center:</b> the canvas. Result viewer, Multi-Edit compare slider, mask brush, outpaint handles.</li>
+      <li><b>Right (272 px):</b> queue on top, history below. Click a thumbnail to load it in the canvas, drag it to a reference slot.</li>
+      <li>Shortcuts: <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> generate, <span class="kbd">[</span> <span class="kbd">]</span> brush size, <span class="kbd">Ctrl</span>+<span class="kbd">Z</span> undo, <span class="kbd">Space</span> pan, <span class="kbd">1</span>/<span class="kbd">2</span>/<span class="kbd">3</span> switch mode.</li>
+    </ul>
+  </div>
+</div>
+<p class="note" style="margin-top:12px"><b>One composer pattern:</b> prompt, a row of main-toggle chips, Generate. It is the same component docked at the bottom on mobile and in the left pane on desktop. It never covers the image. Everything else (seed, steps, LoRAs, sizes) is in Advanced.</p>
+
+<!-- ============ MOBILE ============ -->
+<h2 id="mobile">Mobile screens</h2>
+<p class="note">360 × 740 frames, thumb-first. Primary actions live in the bottom 40% of the screen. All tap targets are at least 44 px (the chips are 36 px tall inside a 44 px hit area, which I'll do with padding in the real build).</p>
+<div class="row">
+
+<!-- M1: Create idle -->
+<div>
+<div class="phone">
+  <div class="sb"><span>9:41</span><span>●●●</span></div>
+  <div class="bar"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn" aria-label="Settings"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="stage">
+    <div class="feed" style="flex:1;overflow:hidden;align-content:start">
+      <div class="art a1" style="aspect-ratio:9/16"></div>
+      <div class="art a2" style="aspect-ratio:9/16;margin-top:26px"></div>
+      <div class="art a3" style="aspect-ratio:9/16"></div>
+      <div class="art a4" style="aspect-ratio:9/16;margin-top:26px"></div>
+    </div>
+    <div class="dock">
+      <div class="grab"></div>
+      <div class="prompt"><span class="ph">Describe what to create…</span></div>
+      <div class="chips"><span class="chip on"><i class="k"></i>Detailed</span><span class="chip">9:16</span><span class="chip">×1</span><span class="chip on"><i class="k"></i>Variance</span><span class="chip on"><i class="k"></i>Sharpen</span><span class="chip"><i class="k"></i>T-Enhancer</span></div>
+      <button class="gen"><svg class="ico"><use href="#i-spark"/></svg>Generate</button>
+    </div>
+  </div>
+  <div class="tabs"><div class="tab on"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+</div>
+<div class="cap"><b>Create, ready.</b> Results feed above, composer docked below. Chips are the main toggles; tap one to flip it. Gold means on.</div>
+</div>
+
+<!-- M2: Create generating -->
+<div>
+<div class="phone">
+  <div class="sb"><span>9:42</span><span>●●●</span></div>
+  <div class="bar"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="stage">
+    <div style="flex:1;padding:0 10px 10px;min-height:0">
+      <div class="art a1 shimmer" style="height:100%;border-radius:16px">
+        <div class="art a5 blurprev"></div>
+        <div class="badge">Pass 1 of 2 · live preview</div>
+        <div class="prog">
+          <div class="meta"><span>Summoning…</span><span class="mono">step 5/8</span></div>
+          <div class="pbar"><b style="width:62%"></b></div>
+          <div class="hint" style="margin-top:8px;color:#b9b2a3">About 2 min left · 1 job ahead in queue</div>
+        </div>
+      </div>
+    </div>
+    <div class="dock">
+      <div class="grab"></div>
+      <div class="prompt">a lantern-lit market street at dusk, steam rising, painterly, warm rim light</div>
+      <div style="height:10px"></div>
+      <button class="gen cancel"><svg class="ico"><use href="#i-x"/></svg>Cancel</button>
+    </div>
+  </div>
+  <div class="tabs"><div class="tab on"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+</div>
+<div class="cap"><b>Create, generating.</b> The card where the result will land shows the blurred live preview, pass, step X/Y, ETA and queue position. Generate turns into Cancel. If the connection drops, the job keeps running and the screen re-attaches.</div>
+</div>
+
+<!-- M3: Advanced sheet -->
+<div>
+<div class="phone">
+  <div class="sb"><span>9:43</span><span>●●●</span></div>
+  <div class="bar"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="stage">
+    <div class="feed" style="flex:1;overflow:hidden"><div class="art a1" style="aspect-ratio:9/16"></div><div class="art a2" style="aspect-ratio:9/16"></div></div>
+    <div class="scrim"></div>
+    <div class="sheet-peek" style="height:70%;overflow:hidden">
+      <div class="grab"></div>
+      <div class="row2" style="margin-bottom:8px"><span class="spec-h" style="font-size:20px">Advanced</span><span class="chip" style="height:32px">Detailed</span></div>
+      <div class="lbl">Aspect</div>
+      <div class="asp" style="margin:6px 0 10px"><span><i style="width:10px;height:10px"></i></span><span><i style="width:12px;height:9px"></i></span><span><i style="width:9px;height:12px"></i></span><span class="on"><i style="width:8px;height:14px"></i></span><span><i style="width:14px;height:8px"></i></span></div>
+      <div class="row2"><span class="lbl">Turbo LoRA, pass 1</span><span class="mono">0.20</span></div>
+      <div class="slider"><b style="width:20%"></b><i style="left:calc(20% - 10px)"></i></div>
+      <div class="row2"><span class="lbl">Upscale before refine</span><span class="seg" style="transform:scale(.9);transform-origin:right"><span class="on">1×</span><span>1.25×</span><span>1.5×</span><span>2×</span></span></div>
+      <div class="tog"><span>Save first-pass image</span><i class="sw-on"></i></div>
+      <div class="tog"><span>Lock seed<span class="sub mono">4815162342 · 7020331 · 99120</span></span><i class="sw-off"></i></div>
+      <div class="adv" style="margin-top:4px"><span>LoRAs</span><span class="hint">none <svg class="ico" style="width:16px;height:16px;vertical-align:-3px"><use href="#i-chev"/></svg></span></div>
+    </div>
+  </div>
+</div>
+<div class="cap"><b>Advanced sheet.</b> Drag the dock up (or tap the sliders icon). Detailed-only controls appear only in Detailed. The feed stays visible behind a scrim.</div>
+</div>
+
+<!-- M4: Multi-edit -->
+<div>
+<div class="phone">
+  <div class="sb"><span>9:44</span><span>●●●</span></div>
+  <div class="bar"><div class="seg" style="transform:scale(.92);transform-origin:left"><span class="on">Multi-edit</span><span>Inpaint</span><span>Outpaint</span></div><button class="iconbtn"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="stage">
+    <div style="flex:1;padding:0 10px 8px;min-height:0;position:relative">
+      <div class="art a3" style="height:100%;border-radius:16px">
+        <div class="badge">Result</div>
+        <div class="fab"><button class="iconbtn"><svg class="ico"><use href="#i-down"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-share"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-lr"/></svg></button></div>
+        <div class="prog" style="padding-bottom:12px"><div class="row2" style="font-size:12px"><span style="color:#b9b2a3">Prompt used</span><span style="color:var(--gold-hi)">Copy to prompt</span></div><div style="font-size:12px;margin-top:4px;line-height:1.35;max-height:34px;overflow:hidden">Replace the head in image 1 with the head from image 2, preserving lighting…</div></div>
+      </div>
+    </div>
+    <div class="tray">
+      <div class="slot art a1 base"><span class="n">1</span></div>
+      <div class="slot art a2"><span class="n">2</span></div>
+      <div class="slot empty"><svg class="ico"><use href="#i-plus"/></svg></div>
+      <div class="slot empty" style="opacity:.5"></div>
+      <div class="slot empty" style="opacity:.3"></div>
+      <div class="hint" style="align-self:center;margin-left:4px">2 of 9</div>
+    </div>
+    <div class="dock" style="padding-top:10px">
+      <div class="prompt" style="min-height:48px">Swap the head from <b style="color:var(--gold-text)">&lt;image2&gt;</b> onto <b style="color:var(--gold-text)">&lt;image1&gt;</b></div>
+      <div class="chips"><span class="chip">Head swap</span><span class="chip">Body swap</span><span class="chip on"><i class="k"></i>Enhancer</span><span class="chip on"><i class="k"></i>Pixel drift</span><span class="chip"><i class="k"></i>Keep size</span></div>
+      <button class="gen"><svg class="ico"><use href="#i-wand"/></svg>Generate</button>
+    </div>
+  </div>
+  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+</div>
+<div class="cap"><b>Multi-edit.</b> Reference tray with numbered slots (1 = base, gold outline), drag to reorder, long-press to remove, plus opens camera / photos. Result is the canvas; presets are one tap and also fill the prompt. "Prompt used" shows what the enhancer rewrote.</div>
+</div>
+
+<!-- M5: Inpaint -->
+<div>
+<div class="phone">
+  <div class="sb"><span>9:45</span><span>●●●</span></div>
+  <div class="bar"><div class="seg" style="transform:scale(.92);transform-origin:left"><span>Multi-edit</span><span class="on">Inpaint</span><span>Outpaint</span></div><button class="iconbtn"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="stage">
+    <div style="flex:1;position:relative;min-height:0">
+      <div class="art a1" style="position:absolute;inset:0"></div>
+      <div class="maskov" style="left:96px;top:190px;width:130px;height:150px"></div>
+      <div style="position:absolute;left:150px;top:250px;width:34px;height:34px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #000 inset;z-index:3"></div>
+      <div class="badge" style="left:50%;transform:translateX(-50%)">Brush 48 · pinch to zoom</div>
+      <div class="toolbar"><button class="iconbtn on"><svg class="ico"><use href="#i-brush"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-erase"/></svg></button><i class="sep"></i><button class="iconbtn"><svg class="ico"><use href="#i-undo"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-redo"/></svg></button><i class="sep"></i><button class="iconbtn"><svg class="ico"><use href="#i-sliders"/></svg></button></div>
+    </div>
+    <div class="dock" style="padding-top:10px">
+      <div class="prompt" style="min-height:48px">Replace with a brass lantern, matching the warm light</div>
+      <div class="chips"><span class="chip">Remove object</span><span class="chip">Move object</span><span class="chip on"><i class="k"></i>Enhancer</span><span class="chip"><i class="k"></i>Invert mask</span></div>
+      <button class="gen"><svg class="ico"><use href="#i-wand"/></svg>Generate</button>
+    </div>
+  </div>
+  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+</div>
+<div class="cap"><b>Inpaint.</b> Full-bleed canvas, floating pill toolbar (brush, eraser, undo/redo, size/options). Two-finger pinch and pan, one-finger paint. The Remove / Move presets are placeholders until you answer the red-box question in the approval list below.</div>
+</div>
+
+<!-- M6: Outpaint -->
+<div>
+<div class="phone">
+  <div class="sb"><span>9:46</span><span>●●●</span></div>
+  <div class="bar"><div class="seg" style="transform:scale(.92);transform-origin:left"><span>Multi-edit</span><span>Inpaint</span><span class="on">Outpaint</span></div><button class="iconbtn"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="stage">
+    <div style="flex:1;position:relative;min-height:0;background:var(--raised)">
+      <div class="padzone" style="left:26px;right:26px;top:36px;bottom:58px"></div>
+      <div class="art a2" style="position:absolute;left:62px;right:62px;top:98px;bottom:116px;border-radius:2px"></div>
+      <div class="handle" style="left:4px;top:50%;margin-top:-22px"><i style="width:6px;height:36px"></i></div>
+      <div class="handle" style="right:4px;top:50%;margin-top:-22px"><i style="width:6px;height:36px"></i></div>
+      <div class="handle" style="left:50%;margin-left:-22px;top:14px"><i style="width:36px;height:6px"></i></div>
+      <div class="handle" style="left:50%;margin-left:-22px;bottom:36px"><i style="width:36px;height:6px"></i></div>
+      <div class="badge" style="left:50%;transform:translateX(-50%);top:auto;bottom:10px">L 36 · T 62 · R 36 · B 58 px → 1.5 MP</div>
+    </div>
+    <div class="dock" style="padding-top:10px">
+      <div class="prompt" style="min-height:48px;font-size:13px">Outpaint the image: replace the solid gray areas with a seamless continuation of the scene…</div>
+      <div class="chips"><span class="chip">Color fill</span><span class="chip">Edge</span><span class="chip">Mirror</span><span class="chip on"><i class="k"></i>Outpaint LoRA</span></div>
+      <button class="gen"><svg class="ico"><use href="#i-wand"/></svg>Generate</button>
+    </div>
+  </div>
+  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+</div>
+<div class="cap"><b>Outpaint.</b> The image sits on a hatched canvas. Drag the four gold handles to extend each side; numbers update live and are editable. Prompt is prefilled with the default; fill mode is a one-tap chip row.</div>
+</div>
+
+<!-- M7: Gallery -->
+<div>
+<div class="phone">
+  <div class="sb"><span>9:47</span><span>●●●</span></div>
+  <div class="bar"><span class="spec-h" style="font-size:22px">Gallery</span><div class="seg" style="transform:scale(.88);transform-origin:right"><span class="on">All</span><span>Create</span><span>Edit</span></div></div>
+  <div class="stage">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 3px;align-content:start;flex:1;overflow:hidden">
+      <div class="art a1" style="aspect-ratio:1"></div><div class="art a2" style="aspect-ratio:1"></div><div class="art a3" style="aspect-ratio:1"></div>
+      <div class="art a4" style="aspect-ratio:1"></div><div class="art a5" style="aspect-ratio:1"></div><div class="art a1" style="aspect-ratio:1"></div>
+      <div class="art a3" style="aspect-ratio:1"></div><div class="art a2" style="aspect-ratio:1"></div><div class="art a4" style="aspect-ratio:1"></div>
+      <div class="art a5" style="aspect-ratio:1"></div><div class="art a1" style="aspect-ratio:1"></div><div class="art a3" style="aspect-ratio:1"></div>
+      <div class="art a2" style="aspect-ratio:1"></div><div class="art a4" style="aspect-ratio:1"></div><div class="art a5" style="aspect-ratio:1"></div>
+      <div class="art a1" style="aspect-ratio:1"></div><div class="art a3" style="aspect-ratio:1"></div><div class="art a2" style="aspect-ratio:1"></div>
+    </div>
+    <div style="padding:10px 14px;display:flex;gap:8px;border-top:1px solid var(--line);background:var(--surface)" class="hint"><span class="chip on" style="height:32px">Newest</span><span class="chip" style="height:32px">Has seed lock</span><span style="margin-left:auto;align-self:center">248 images</span></div>
+  </div>
+  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+</div>
+<div class="cap"><b>Gallery.</b> Edge-to-edge virtualized grid of WebP thumbnails. Tap opens the viewer: swipe between images, with Send to Edit, Reuse settings, Share, Download, and every seed used.</div>
+</div>
+
+</div><!-- /row -->
+
+<h3>Designed states (not afterthoughts)</h3>
+<div class="row">
+  <div class="card" style="width:360px">
+    <div class="spec-h" style="font-size:20px">First run</div>
+    <p class="note" style="margin:6px 0 0">Empty Create feed: a faint ring outline, "Nothing summoned yet", and the prompt dock already focused with three one-tap example prompts.</p>
+  </div>
+  <div class="card" style="width:360px">
+    <div class="spec-h" style="font-size:20px">Setup check</div>
+    <p class="note" style="margin:6px 0 0">If a model or node is missing: a list with status per item (<span class="pill-ok">found</span> / <span class="pill-bad">missing</span>), size, and a "Download missing models" button. Generate stays disabled with the reason.</p>
+  </div>
+  <div class="card" style="width:360px">
+    <div class="spec-h" style="font-size:20px">Errors</div>
+    <p class="note" style="margin:6px 0 0">ComfyUI offline, validation, execution error: an inline card in the result slot with a plain sentence, a Retry, and "Details" that never shows paths or stack traces. Cancelled jobs show "Cancelled" and keep their settings.</p>
+  </div>
+</div>
+
+<!-- ============ DESKTOP ============ -->
+<h2 id="desktop">Desktop screens</h2>
+<p class="note">1180 × 700 frames, three panes. Left is controls, center is the canvas, right is queue and history.</p>
+
+<h3>Create (Detailed, mid-run)</h3>
+<div class="deskwrap"><div class="desk">
+  <div class="pane l">
+    <div class="ph-h"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn" style="width:36px;height:36px"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+    <div class="pane-body">
+      <div class="railnav"><div class="nav on"><svg class="ico"><use href="#i-spark"/></svg>Create<span class="kbd" style="margin-left:auto">1</span></div><div class="nav"><svg class="ico"><use href="#i-wand"/></svg>Edit<span class="kbd" style="margin-left:auto">2</span></div><div class="nav"><svg class="ico"><use href="#i-grid"/></svg>Gallery<span class="kbd" style="margin-left:auto">3</span></div></div>
+      <div class="seg" style="align-self:flex-start"><span>Standard</span><span class="on">Detailed</span></div>
+      <div class="prompt" style="min-height:92px">a lantern-lit market street at dusk, steam rising, painterly, warm rim light</div>
+      <div class="asp"><span><i style="width:10px;height:10px"></i></span><span><i style="width:12px;height:9px"></i></span><span><i style="width:9px;height:12px"></i></span><span><i style="width:8px;height:14px"></i></span><span class="on"><i style="width:14px;height:8px"></i></span></div>
+      <div class="tog"><span>Seed variance</span><i class="sw-on"></i></div>
+      <div class="tog"><span>Sharpen</span><i class="sw-on"></i></div>
+      <div class="tog"><span>T-Enhancer</span><i class="sw-off"></i></div>
+      <div class="row2"><span class="lbl">Images</span><span class="seg" style="transform:scale(.9);transform-origin:right"><span class="on">1</span><span>2</span><span>4</span></span></div>
+      <div class="adv"><span>Advanced</span><svg class="ico"><use href="#i-chev"/></svg></div>
+      <div style="margin-top:auto"><button class="gen cancel" style="height:48px"><svg class="ico"><use href="#i-x"/></svg>Cancel <span class="kbd">Esc</span></button></div>
+    </div>
+  </div>
+  <div class="center">
+    <div class="ctop"><span class="hint">Detailed · 1920×1080 · pass 1 of 2</span><div class="row2" style="gap:6px"><button class="iconbtn fill" style="width:36px;height:36px"><svg class="ico"><use href="#i-down"/></svg></button><button class="iconbtn fill" style="width:36px;height:36px"><svg class="ico"><use href="#i-wand"/></svg></button></div></div>
+    <div class="cmain">
+      <div class="canvas art a1 shimmer">
+        <div class="art a5 blurprev"></div>
+        <div class="badge">Live preview</div>
+        <div class="prog" style="padding:20px 20px 18px"><div class="meta"><span>Summoning…</span><span class="mono">step 5/8 · pass 1 of 2 · ~2 min</span></div><div class="pbar"><b style="width:62%"></b></div></div>
+      </div>
+    </div>
+    <div class="cstrip"><div class="art a2"></div><div class="art a3"></div><div class="art a4"></div><div class="art a1"></div><div class="art a5"></div><div class="hint" style="align-self:center;margin-left:6px">This session</div></div>
+  </div>
+  <div class="pane r">
+    <div class="ph-h"><span style="font-weight:600">Queue</span><span class="hint">2 jobs</span></div>
+    <div class="pane-body" style="gap:8px;flex:none;padding-bottom:10px">
+      <div class="qitem"><div class="art a1"></div><div style="flex:1"><div>Running</div><div class="pbar" style="margin-top:6px;background:var(--ink-4)"><b style="width:62%"></b></div></div></div>
+      <div class="qitem"><div class="art a3"></div><div style="flex:1"><div>Waiting</div><div class="hint">Multi-edit · position 1</div></div><svg class="ico" style="width:16px;height:16px"><use href="#i-x"/></svg></div>
+    </div>
+    <div class="ph-h" style="border-top:1px solid var(--line)"><span style="font-weight:600">History</span><span class="hint">248</span></div>
+    <div class="pane-body"><div class="hist"><div class="art a2"></div><div class="art a3"></div><div class="art a4"></div><div class="art a1"></div><div class="art a5"></div><div class="art a2"></div><div class="art a3"></div><div class="art a4"></div></div></div>
+  </div>
+</div></div>
+<p class="cap" style="max-width:none"><b>Create.</b> Left pane holds the whole composer; Generate (becoming Cancel here) is pinned at its bottom. The canvas takes all remaining space; the "this session" strip lets you flip through results without opening the gallery. History on the right: click to view, drag onto Edit to use as reference.</p>
+
+<h3>Edit, Inpaint (brush active)</h3>
+<div class="deskwrap"><div class="desk">
+  <div class="pane l">
+    <div class="ph-h"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn" style="width:36px;height:36px"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+    <div class="pane-body">
+      <div class="railnav"><div class="nav"><svg class="ico"><use href="#i-spark"/></svg>Create</div><div class="nav on"><svg class="ico"><use href="#i-wand"/></svg>Edit</div><div class="nav"><svg class="ico"><use href="#i-grid"/></svg>Gallery</div></div>
+      <div class="seg" style="align-self:flex-start"><span>Multi-edit</span><span class="on">Inpaint</span><span>Outpaint</span></div>
+      <div class="prompt" style="min-height:92px">Replace with a brass lantern, matching the warm light</div>
+      <div class="row2"><span class="chip">Remove object</span><span class="chip">Move object</span></div>
+      <div class="tog"><span>Prompt enhancer</span><i class="sw-on"></i></div>
+      <div class="tog"><span>Invert mask</span><i class="sw-off"></i></div>
+      <div><div class="row2"><span class="lbl">Brush size</span><span class="mono">48 <span class="kbd">[</span><span class="kbd">]</span></span></div><div class="slider"><b style="width:40%"></b><i style="left:calc(40% - 10px)"></i></div></div>
+      <div class="adv"><span>Advanced</span><svg class="ico"><use href="#i-chev"/></svg></div>
+      <div style="margin-top:auto"><button class="gen" style="height:48px"><svg class="ico"><use href="#i-wand"/></svg>Generate <small>Ctrl+Enter</small></button></div>
+    </div>
+  </div>
+  <div class="center">
+    <div class="ctop"><div class="toolbar" style="position:static;transform:none;background:var(--raised)"><button class="iconbtn on" style="color:var(--on-gold)"><svg class="ico"><use href="#i-brush"/></svg></button><button class="iconbtn" style="color:var(--text)"><svg class="ico"><use href="#i-erase"/></svg></button><i class="sep"></i><button class="iconbtn" style="color:var(--text)"><svg class="ico"><use href="#i-undo"/></svg></button><button class="iconbtn" style="color:var(--text)"><svg class="ico"><use href="#i-redo"/></svg></button></div><span class="hint mono">1536×1024 · 100%</span></div>
+    <div class="cmain">
+      <div class="canvas art a1"><div class="maskov" style="left:36%;top:34%;width:20%;height:34%"></div><div style="position:absolute;left:44%;top:48%;width:34px;height:34px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #000 inset"></div></div>
+    </div>
+    <div class="cstrip"><span class="hint" style="align-self:center">Scroll to zoom · <span class="kbd">Space</span> + drag to pan · mask exports as PNG alpha at original resolution</span></div>
+  </div>
+  <div class="pane r">
+    <div class="ph-h"><span style="font-weight:600">Queue</span><span class="hint">empty</span></div>
+    <div class="pane-body" style="flex:none;padding-bottom:12px"><div class="hint">Nothing running. Generate to start.</div></div>
+    <div class="ph-h" style="border-top:1px solid var(--line)"><span style="font-weight:600">History</span><span class="hint">Edit</span></div>
+    <div class="pane-body"><div class="hist"><div class="art a3"></div><div class="art a1"></div><div class="art a2"></div><div class="art a4"></div></div></div>
+  </div>
+</div></div>
+<p class="cap" style="max-width:none"><b>Inpaint.</b> The canvas is the biggest thing on screen; the brush toolbar is a compact bar above it so it never covers pixels. Multi-edit swaps the canvas for a reference tray + a before/after compare slider (below); Outpaint gets the same canvas with drag handles.</p>
+
+<h3>Edit, Multi-edit result with compare slider</h3>
+<div class="deskwrap"><div class="desk">
+  <div class="pane l">
+    <div class="ph-h"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn" style="width:36px;height:36px"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+    <div class="pane-body">
+      <div class="seg" style="align-self:flex-start"><span class="on">Multi-edit</span><span>Inpaint</span><span>Outpaint</span></div>
+      <div class="lbl">References · 1 is the base</div>
+      <div class="tray" style="padding:0;flex-wrap:wrap"><div class="slot art a1 base"><span class="n">1</span></div><div class="slot art a2"><span class="n">2</span></div><div class="slot empty"><svg class="ico"><use href="#i-plus"/></svg></div><div class="slot empty" style="opacity:.5"></div><div class="slot empty" style="opacity:.35"></div></div>
+      <div class="prompt" style="min-height:92px">Swap the head from <b style="color:var(--gold-text)">&lt;image2&gt;</b> onto <b style="color:var(--gold-text)">&lt;image1&gt;</b></div>
+      <div class="row2"><span class="chip">Head swap</span><span class="chip">Body swap</span></div>
+      <div class="tog"><span>Prompt enhancer</span><i class="sw-on"></i></div>
+      <div class="tog"><span>Pixel drift fix</span><i class="sw-on"></i></div>
+      <div class="tog"><span>Keep original resolution</span><i class="sw-off"></i></div>
+      <div style="margin-top:auto"><button class="gen" style="height:48px"><svg class="ico"><use href="#i-wand"/></svg>Generate <small>Ctrl+Enter</small></button></div>
+    </div>
+  </div>
+  <div class="center">
+    <div class="ctop"><span class="hint">Before / after</span><div class="row2" style="gap:6px"><button class="iconbtn fill" style="width:36px;height:36px"><svg class="ico"><use href="#i-down"/></svg></button><button class="iconbtn fill" style="width:36px;height:36px"><svg class="ico"><use href="#i-send"/></svg></button></div></div>
+    <div class="cmain">
+      <div class="canvas"><div class="cmp"><div class="art a1" style="position:absolute;inset:0"></div><div class="art a3 after"></div><div class="rule"></div><div class="knob"><svg class="ico" style="width:18px;height:18px"><use href="#i-lr"/></svg></div></div>
+        <div class="badge">Before</div><div class="badge" style="left:auto;right:10px">After</div></div>
+      <div style="width:230px;flex:none;display:flex;flex-direction:column;gap:10px">
+        <div class="card" style="padding:14px;border-radius:14px"><div class="row2"><span class="lbl">Prompt used</span><span class="hint" style="color:var(--gold-text)">Copy to prompt</span></div><p style="font-size:13px;margin-top:6px;color:var(--text-2)">Start with image 1 as the base, keeping its lighting and background. Replace its head with the head from image 2, preserving hair, eye color…</p></div>
+        <div class="card" style="padding:14px;border-radius:14px"><div class="lbl">Seeds</div><div class="mono" style="margin-top:6px;font-size:12px">4815162342</div><div class="row2" style="margin-top:10px"><span class="chip" style="height:32px">Reuse settings</span></div></div>
+      </div>
+    </div>
+    <div class="cstrip"><span class="hint" style="align-self:center">Drag the handle or press <span class="kbd">←</span> <span class="kbd">→</span></span></div>
+  </div>
+  <div class="pane r">
+    <div class="ph-h"><span style="font-weight:600">Queue</span><span class="hint">empty</span></div>
+    <div class="pane-body" style="flex:none;padding-bottom:12px"><div class="hint">Nothing running.</div></div>
+    <div class="ph-h" style="border-top:1px solid var(--line)"><span style="font-weight:600">History</span><span class="hint">Edit</span></div>
+    <div class="pane-body"><div class="hist"><div class="art a3"></div><div class="art a1"></div><div class="art a2"></div><div class="art a4"></div><div class="art a5"></div><div class="art a1"></div></div></div>
+  </div>
+</div></div>
+
+<!-- ============ MOTION ============ -->
+<h2 id="motion">Motion</h2>
+<div class="grid two">
+  <div class="card">
+    <h3 style="margin-top:0">The reveal</h3>
+    <div class="reveal" id="rv"><div class="art a1"></div></div>
+    <div class="row2" style="margin-top:12px"><span class="hint">1.1 s: a gold ring of light opens from the center, the blurred preview resolves into the final image.</span><button class="btn" id="replay" type="button">Replay</button></div>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Rules</h3>
+    <ul class="clean">
+      <li>CSS transitions and transforms only (150–250 ms, ease-out). No animation library in the first bundle.</li>
+      <li>Animate <code>transform</code>, <code>opacity</code> and <code>clip-path</code>; never layout properties.</li>
+      <li>The reveal plays once per finished image, only for the job on screen, never in lists or the gallery.</li>
+      <li><code>prefers-reduced-motion</code>: reveal becomes a 250 ms fade, shimmer stops, sheets snap.</li>
+      <li>Progress and preview updates are throttled to 10 per second.</li>
+      <li>Skeletons (soft ink blocks with the shimmer) instead of spinners wherever the layout is known.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ APPROVE ============ -->
+<h2 id="approve">For your approval</h2>
+<div class="card">
+  <p class="note" style="margin-top:0">Decisions this proposal makes, so you can veto any of them:</p>
+  <ul class="clean">
+    <li><b>Direction:</b> "Lamplight on ink": ink surfaces, parchment text, one gold accent; light theme is warm parchment with the same gold.</li>
+    <li><b>Type:</b> Fraunces (brand + moments), Instrument Sans (UI), JetBrains Mono (seeds, numbers), all self-hosted.</li>
+    <li><b>Wordmark / icon:</b> lowercase "accio" with the final "o" as an open ring receiving a spark.</li>
+    <li><b>Navigation:</b> mobile 3 tabs (Create / Edit / Gallery), settings behind a gear, Edit sub-modes as a segmented control. Desktop 3 panes with queue + history on the right.</li>
+    <li><b>Stack additions:</b> none beyond the spec's baseline (React, Vite, Tailwind, lucide-react, Zustand). Design tokens become CSS variables mapped into Tailwind.</li>
+    <li><b>Aspect presets</b> (spec 6.3, unverified with Krea2) stay as proposed there.</li>
+    <li><b>Button label</b> stays plainly "Generate"; the summoning feeling lives in the reveal and progress copy ("Summoning…").</li>
+  </ul>
+  <p class="note" style="margin-bottom:0;margin-top:12px">Still open from the spec and not a design question: the Remove / Move object preset input format (spec 6.4), which I will ask again before Phase 5.</p>
+</div>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement,b=document.getElementById('theme');
+  b.addEventListener('click',function(){
+    var l=root.getAttribute('data-theme')==='light';
+    root.setAttribute('data-theme',l?'dark':'light');
+    b.textContent=l?'Light theme':'Dark theme';
+  });
+  var rv=document.getElementById('rv');
+  function play(){rv.classList.remove('go');void rv.offsetWidth;rv.classList.add('go')}
+  document.getElementById('replay').addEventListener('click',play);
+  play();
+})();
+</script>
+</body>
+</html>
