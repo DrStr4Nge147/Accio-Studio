@@ -460,8 +460,20 @@ async def dev_page():
     return FileResponse(STATIC_DIR / "testpage.html")
 
 
+class FrontendFiles(StaticFiles):
+    """Hashed /assets/* never change, so cache them hard; everything else (index.html, sw.js) must revalidate
+    or a browser keeps an old shell that points at chunks a rebuild deleted."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            hashed = path.replace("\\", "/").startswith("assets/")  # Starlette hands over OS-style separators
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable" if hashed else "no-cache"
+        return response
+
+
 if (FRONTEND_DIST / "index.html").is_file():
-    app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")  # last, so /api/* wins
+    app.mount("/", FrontendFiles(directory=FRONTEND_DIST, html=True), name="frontend")  # last, so /api/* wins
 
 
 # --------------------------------------------------------------------------- entry point

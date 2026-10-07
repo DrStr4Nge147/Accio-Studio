@@ -22,6 +22,33 @@ window.addEventListener("appinstalled", () => {
   notify();
 });
 
+/**
+ * After a rebuild the open page can reference hashed chunks that no longer exist. Reload once to pick up the
+ * new index.html; the timestamp guard stops a reload loop if the chunk is genuinely missing.
+ */
+function reloadOnStaleChunk() {
+  const KEY = "accio-stale-reload";
+  try {
+    const last = Number(sessionStorage.getItem(KEY) ?? 0);
+    if (Date.now() - last < 10_000) return;
+    sessionStorage.setItem(KEY, String(Date.now()));
+  } catch {
+    // storage unavailable: still reload once per event
+  }
+  location.reload();
+}
+const STALE_CHUNK = /dynamically imported module|Importing a module script failed|error loading dynamically imported module/i;
+window.addEventListener("vite:preloadError", (e) => {
+  e.preventDefault();
+  reloadOnStaleChunk();
+});
+window.addEventListener("error", (e) => {
+  if (STALE_CHUNK.test(e.message ?? "")) reloadOnStaleChunk();
+});
+window.addEventListener("unhandledrejection", (e) => {
+  if (STALE_CHUNK.test(String(e.reason?.message ?? e.reason ?? ""))) reloadOnStaleChunk();
+});
+
 export const isStandalone = () =>
   window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
