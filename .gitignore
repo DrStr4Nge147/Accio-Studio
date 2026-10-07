@@ -26,3 +26,6 @@ __pycache__/
 # Models
 *.safetensors
 /comfyui/
+
+# Release builds (scripts\make_release)
+/release/

@@ -1,6 +1,6 @@
 # Accio Studio - progress
 
-Read `APP_SPEC.md` first; this file records state, decisions and how to run. Last updated: 2026-10-07 (Phase 7).
+Read `APP_SPEC.md` first; this file records state, decisions and how to run. Last updated: 2026-10-07 (Phase 8, stopped early at the user's request).
 
 ## Status
 
@@ -14,7 +14,7 @@ Read `APP_SPEC.md` first; this file records state, decisions and how to run. Las
 | 5. Edit modes | **Done** (see "Phase 5 results"; awaiting the user's test) |
 | 6. Gallery, history, PWA | **Done** (see "Phase 6 + 7 results"; awaiting the user's test) |
 | 7. Security + tunnels | **Done in code; Cloudflare / zrok not run live** (see below) |
-| 8. Parity + polish | **Next** |
+| 8. Parity + polish | **Partly done, stopped by the user before final review** (see Phase 8 results: Standard parity open, perf checks and live GPU error tests not run) |
 
 Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio`. Git: all work is on branch `dev`, **committed phase by phase directly on `dev` (user decision 2026-10-07: no feature branches, no new branches; this overrides APP_SPEC section 10's "feature branch")**. History: Phase 1+2, Phase 2b, Phase 3 design, Phase 4 Create, Phase 5 Edit, Phase 6+7 (one commit). Commit at the end of each phase without asking. `main` is the default branch and is not used yet.
 
@@ -43,6 +43,77 @@ Accio now ships its **own portable ComfyUI** (v0.38.0, port **8189**) installed 
 - Interactive prompts (models-folder question, optional-LoRA question, GPU menu): only the `--yes`/arguments path was run.
 - Release packaging (`scripts\make_release`, section 11.5): not part of 2b, not built. `Update.bat`, `Run_Accio-zrok-only.bat`, `Setup_Zrok.bat`: later phases.
 - The "Download missing models" UI action and the setup-check screen (section 11.3): server side `/api/health` reports missing models/nodes and a ComfyUI-version warning (non-blocking), the UI and the download action come with the frontend phases.
+
+## Phase 8 results (2026-10-07, stopped early by the user)
+
+**What was built:** `scripts/parity_gpu.py` (GPU pixel-parity harness, documented in its docstring), `scripts/make_release.py` + `make_release.bat` (spec 11.5), `README.md`, `tests/test_error_paths.py`, `tests/test_live_errors.py`, `tests/test_release.py`. numpy added to `requirements-dev.txt` (harness only). `pytest tests -q`: **205 passed, 2 skipped** (the 2 skipped are the GPU-job error tests, gated by `ACCIO_LIVE_JOBS=1`). The frontend was not touched this phase (its tests were not re-run).
+
+### GPU pixel parity (spec 7.2)
+
+Reference = the user's ComfyUI 0.38.0 (port 8188, launched by the harness with the user's own flags; only its input/output/temp were written). Accio = its API + the bundled ComfyUI 0.38.0 (port 8189).
+
+Method: each prompt is built once by Accio's engine (`POST /api/build` on a scratch server with scratch data), then queued **unchanged** on the reference and run as a real Accio job on the bundled backend. Same seeds, same input bytes (synthetic scene images made by the harness, no personal photos). Graph structure is covered by the Phase 2 structural parity (20/20), so this measures the two backends. Same torch 2.14.0+cu130, same comfy 0.38.0, same pinned node packs.
+
+| case | output | identical | max diff /255 | differing px |
+|---|---|---|---|---|
+| Create Standard default (var1 tenh0 sharp1) 1080x1920 | final | yes (after a re-run, see below) | 0 | 0 / 2,073,600 |
+| Standard, Seed Variance off | final | yes (after a re-run) | 0 | 0 / 2,073,600 |
+| Standard, T-Enhancer on | final | **no** | 238 | 2,065,580 / 2,073,600 |
+| Standard, Sharpen off | final | **no** | 237 | 2,065,996 / 2,073,600 |
+| Detailed default 1920x1080 | final + first pass | yes, yes | 0, 0 | 0 |
+| Detailed, T-Enhancer on | final + first pass | yes, yes | 0, 0 | 0 |
+| Detailed, Variance off + Sharpen off | final + first pass | yes, yes | 0, 0 | 0 |
+| Multi-edit default (2 images, enhancer on, resize to 1 MP) | final | yes | 0 | 0 / 1,060,864 |
+| Multi-edit keep original resolution, enhancer off | final | yes | 0 | 0 / 786,432 |
+| Inpaint (brush mask built by the browser code) | final | yes | 0 | 0 / 786,432 |
+| Outpaint 192 px left + right | final | yes | 0 | 0 / 1,490,944 |
+
+- The enhancer's rewritten text ("Prompt used") was identical between the backends in all 3 enhancer cases.
+- **Mask check:** the RGBA PNG built by the real browser code (`exportInpaintPng`, run in the in-app browser) vs the file ComfyUI's own `/upload/mask` route makes from the same original + the same alpha: **identical, max diff 0** (RGB under the mask untouched, alpha 0 where painted, 227 distinct alpha levels from brush antialiasing). Not covered: a mask drawn with ComfyUI's MaskEditor GUI itself (the brush shapes would differ by definition; the file format and RGB handling are what matter, and they match).
+- Timings (reference vs app, seconds; not a fair comparison because the user ran jobs on the same GPU at times): Standard 130-300 vs 75-108; Detailed 146-153 vs 132-135; Multi-edit 210 vs 207 and 66 vs 57; Inpaint 135 vs 120; Outpaint 144 vs 132.
+
+**Open: Standard is not proven.**
+- The first four reference Standard runs disagreed with each other and with the app (max diff up to 247, mean 30-45; visibly different pictures).
+- The app's default output equals a later reference repeat of the same job exactly (mean diff 0.00), and the app's Sharpen-off differs from the app's default by only 3.4 (sharpening only). So the app side looks self-consistent.
+- The four reference Standard cases were then re-run. Default and Seed-Variance-off became identical to the app; T-Enhancer and Sharpen-off still differ.
+- The reference also differs from itself between sessions on the same job (default: mean 38.8; Sharpen-off: mean 31.4).
+- So the reference is not reproducible with itself at 1080x1920 in some sessions, while Detailed (1920x1080), all Edit cases and a 512x512 Standard (Phase 2b) were.
+- Likely cause (unconfirmed): shape- or load-state-dependent GPU nondeterminism in the int8 path at 1080x1920, or the user's own concurrent jobs changing memory/offload on the shared 6 GB GPU.
+- **The determinism baseline that would settle it was started and then stopped by the user.** It runs the same Standard job 3 times per backend with a different-seed job between runs, so ComfyUI's node cache cannot answer (a cached repeat takes 3 s and proves nothing; one earlier "repeat" was exactly that). The harness has it: `parity_gpu.py noise --side reference|app`.
+- Not done: that baseline; Standard T-Enhancer / Sharpen-off at a small size (e.g. 512x512) to see whether they match there.
+- Not run at all: Head/Body swap, Remove/Move with their LoRAs, Pixel Drift + Manual size on real photos, 9 images, batch > 1, LoRA-stacked jobs, Upscale 1.25-2x, Standard at other aspect ratios.
+
+### Error paths (spec 7.5)
+
+- **Automated, stub backend** (`tests/test_error_paths.py`, 15 tests, pass): backend offline (503, friendly text, no address or exception name); missing model (health lists it; a backend 400 "value not in list" becomes "may be missing or invalid" with no path or node error); validation error from `/prompt` (422, body never leaks, no history entry); bad or unknown request fields (422); unhandled exception (500, generic text); execution_error event (friendly job error, no trace or path stored; out-of-memory and file-not-found have their own friendly text); failed status in history; job lost after a restart; cancel queued (only our own prompt deleted); cancel running (interrupt, then `cancelled`, no error); cancel unknown job (404). A fixture points the app at a dead address so these tests can never reach the real backend.
+- **Real backend:** `tests/test_live_errors.py::test_missing_model_is_rejected_with_a_friendly_message` passed against the bundled ComfyUI (a real 400 from `/prompt` becomes the friendly 422). The two GPU-job tests (execution error with a missing picture, cancel mid-run) exist but were **not run** (`ACCIO_LIVE_JOBS=1`).
+- Not checked in the UI: how the banner and error card look for these cases (implemented earlier; the offline banner was never exercised live).
+- **Mistake to know about:** the first version of the stub tests did not swap the job manager's backend client, so 3 test jobs were queued on the real bundled backend. I deleted exactly those 3 prompt ids from its queue before they ran. Fixed.
+
+### Performance (spec 6.1a)
+
+- Measured: initial JS **113.8 KB gzipped** (entry 106.1 + store chunk 7.8; budget 200). Lazy chunks: Gallery 2.8, MaskEditor 3.6, OutpaintEditor 2.5, SlotGrid 2.3, PNG worker 1.2 KB. CSS 9.3 KB, fonts 130 KB. `make_release.py` now fails the build if initial JS exceeds 200 KB gzipped.
+- **Not run:** Lighthouse mobile, a 600-item gallery scroll check, real phone / tunnel timings. Earlier phases' measurements stand (thumbnails 18-21 KB vs about 1 MB PNG; 24 DOM cells for 78 jobs).
+
+### Release packaging (spec 11.5)
+
+`scripts\make_release.bat [--build] [--version x]` (or `env\Scripts\python.exe scripts\make_release.py`) writes `release\AccioStudio-<version>.zip` (version from `frontend\package.json`, now 0.1.0).
+- Allow-list only: the launcher .bat files, `server\`, `installer\`, `frontend\dist\`, `requirements.txt`, `README.md`, LICENSE if present, and the two template re-export scripts.
+- It refuses to build with models, executables, `settings.json`, `.zrok_share`, `data\`, `env\`, `bin\`, `comfyui\`, tests or design files in the archive; LF-only .bat files; a missing or stale `frontend\dist`; or initial JS over budget.
+- Built once: 0.5 MB, 70 files. The unpacked tree served the app and `/api/auth/status` using the project's Python.
+- Bug found by its own test: `dir/**` globs match no files on Python 3.12 (now `dir/**/*`).
+- **Not done:** a full `Install.bat` run from the unzipped release (downloads GBs); a `LICENSE` file (the author must choose one; the script warns); `Update.bat` (optional in the spec, not built).
+
+### README
+
+`README.md` written (requirements, install, daily use, connection modes, password reset, settings.json keys, folders, troubleshooting, model licences are the user's responsibility, developer commands). Checked against the launcher menus and settings code, not by a fresh install.
+
+### Still to do for final review
+
+1. Settle Standard parity (the baseline above), or accept it as ComfyUI-side nondeterminism with the evidence here.
+2. Lighthouse mobile + gallery stress, the live GPU error tests, a UI check of the error states.
+3. Real-tunnel runs (Cloudflare, zrok) and phone tests (touch painting, PWA install); see Phase 7 "Not verified".
+4. LICENSE decision; optional `Update.bat`.
 
 ## Phase 6 + 7 results (Gallery, PWA, login, tunnels, 2026-10-07)
 
@@ -262,6 +333,6 @@ Radii 10 / 14 / 22 / pill. Three surface levels separated by 1 px hairlines. Lin
 
 **Deviations / caveats:** the prototype uses gradients as image stand-ins and is not responsive between the phone and desktop frames (the real app switches at 1024 px). Prototype lives in `design/` and is not shipped (excluded from release packaging).
 
-## Next (Phase 8: Parity + polish)
+## Next
 
-GPU pixel-parity runs (spec 7.2), error paths (backend offline, missing model, validation error, execution error, cancel), performance checks (spec 6.1a, Lighthouse on mobile), real-tunnel runs (Cloudflare + zrok, spec 7.3), phone tests (touch painting, install), `Update.bat`, `scripts\make_release`, README (daily use, reset password, model licences). Final review by the user.
+See "Still to do for final review" under Phase 8 results.
