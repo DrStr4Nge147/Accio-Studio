@@ -21,12 +21,12 @@
   --r-s:10px; --r-m:14px; --r-l:22px;
 }
 [data-theme=light]{
-  --bg:#f5f0e5; --surface:#fbf8f1; --raised:#efe9db; --overlay:#e6dfcd; --line:#ddd5c1; --line-strong:#c9bfa6;
-  --text:#1b1810; --text-2:#554e3f; --text-3:#756d5b;
+  --bg:#f3f4fa; --surface:#fbfbfe; --raised:#eaecf5; --overlay:#dfe2ef; --line:#d8dbe9; --line-strong:#bfc4d9;
+  --text:#14162e; --text-2:#454a68; --text-3:#5d6280;
   --gold:#d9992a; --gold-hi:#e8b04a; --gold-lo:#8a5a06; --on-gold:#17120a; --gold-text:#85560a;
   --gold-wash:rgba(217,153,42,.16);
   --ok:#2f7d4f; --danger:#b3392b;
-  --shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 10px 28px rgba(60,45,10,.14);
+  --shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 10px 28px rgba(20,22,60,.14);
 }
 *{box-sizing:border-box;margin:0}
 body{background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
@@ -70,7 +70,7 @@ table.t th{color:var(--text-3);font-weight:500;font-size:12px;text-transform:upp
 .sb{height:30px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 24px 2px;font:500 12px var(--sans);color:var(--text-2);flex:none}
 .bar{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex:none}
 .stage{flex:1;position:relative;min-height:0;display:flex;flex-direction:column}
-.tabs{height:66px;flex:none;border-top:1px solid var(--line);background:var(--surface);display:grid;grid-template-columns:repeat(3,1fr);padding-bottom:6px}
+.tabs{height:66px;flex:none;border-top:1px solid var(--line);background:var(--surface);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:6px}
 .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:var(--text-3);font-weight:500}
 .tab svg{width:22px;height:22px}
 .tab.on{color:var(--gold-text)}
@@ -190,8 +190,8 @@ table.t th{color:var(--text-3);font-weight:500;font-size:12px;text-transform:upp
 /* wordmark */
 .wm{font:400 40px/1 var(--serif);font-variation-settings:'SOFT' 100,'opsz' 144;letter-spacing:-.03em;display:inline-flex;align-items:center;color:var(--text)}
 .wm.sm{font-size:22px}
-.wm svg{height:.78em;width:.78em;margin:0 .02em}
-.iconsq{border-radius:22%;background:radial-gradient(90% 90% at 50% 0,#2b2540,#0b0a0f);display:grid;place-items:center;border:1px solid var(--line-strong)}
+.wm svg.wmk{height:.9em;width:auto;margin:0}
+.iconsq{border-radius:22%;background:linear-gradient(135deg,#18183e,#090a1c);display:grid;place-items:center;border:1px solid var(--line-strong)}
 
 /* reveal demo */
 .reveal{position:relative;height:300px;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
@@ -212,7 +212,7 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/></symbol>
     <symbol id="i-wand" viewBox="0 0 24 24"><path d="M4 20L16 8"/><path d="M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/><path d="M19 12l.6 1.4L21 14l-1.4.6L19 16l-.6-1.4L17 14l1.4-.6z"/></symbol>
     <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></symbol>
-    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
@@ -229,13 +229,16 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
     <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></symbol>
     <symbol id="i-lr" viewBox="0 0 24 24"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/></symbol>
-    <symbol id="ring" viewBox="0 0 100 100"><path d="M82 24A40 40 0 1 0 90 52" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round"/><path d="M92 14l3.6 9.4L105 27l-9.4 3.6L92 40l-3.6-9.4L79 27l9.4-3.6z" transform="translate(-14 0)" fill="var(--gold)"/></symbol>
+    <linearGradient id="mk-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6cd7c"/><stop offset="1" stop-color="#e8b04a"/></linearGradient>
+    <clipPath id="mk-clip"><polygon points="40,100 507,100 396,260 396,408 40,408"/><polygon points="40,465 396,465 396,613 507,773 40,773"/><polygon points="760,348 640,432 640,441 760,525"/></clipPath>
+    <g id="ring"><path clip-path="url(#mk-clip)" fill="currentColor" fill-rule="evenodd" d="M265 125H542A200 200 0 0 1 742 325V548A200 200 0 0 1 542 748H265A200 200 0 0 1 65 548V325A200 200 0 0 1 265 125ZM265 211H542A114 114 0 0 1 656 325V548A114 114 0 0 1 542 662H265A114 114 0 0 1 151 548V325A114 114 0 0 1 265 211Z"/><path fill="url(#mk-gold)" d="M640 48Q656 194 795 210Q656 226 640 365Q624 226 490 210Q624 194 640 48Z"/><path fill="url(#mk-gold)" stroke="url(#mk-gold)" stroke-width="22" stroke-linejoin="round" d="M515 480L783 640L675 702L590 792Z"/></g>
+    <g id="wordmark"><path fill="currentColor" d="M504.0 325.8C457.8 323.3 427.0 286.9 434.7 243.9C438.9 220.1 455.0 199.4 478.2 187.5C498.7 177.1 524.1 174.5 547.4 180.6C557.9 183.3 571.2 191.0 571.2 194.2C571.2 196.2 563.2 219.1 560.5 224.9C559.4 227.2 558.4 227.3 558.1 225.2C553.6 193.7 537.5 178.1 513.7 182.1C485.5 187.0 464.9 224.4 471.5 259.0C473.0 266.7 474.3 271.1 476.7 277.0C491.8 314.5 537.1 327.0 569.6 302.7C574.2 299.3 575.5 298.8 575.5 300.4C575.5 301.3 572.9 303.8 568.5 307.1C561.0 312.7 557.3 314.8 546.8 319.2C534.5 324.3 519.2 326.7 504.0 325.8ZM168.5 325.2C130.5 319.4 120.0 283.0 150.6 262.8C158.5 257.5 170.6 252.8 190.9 246.8C223.2 237.2 236.1 227.3 236.1 211.8C236.1 194.7 221.2 184.3 200.4 186.9C182.3 189.1 166.9 199.3 155.3 216.8C153.0 220.3 151.9 220.7 150.4 218.7C147.4 214.6 156.8 202.5 169.5 194.1C206.4 169.7 259.4 175.1 273.0 204.6C276.6 212.3 276.5 211.4 276.5 257.7C276.5 299.7 276.5 300.5 278.0 306.0C280.1 314.0 284.4 317.2 291.7 316.3C297.7 315.5 291.1 320.8 282.8 323.4C260.6 330.5 240.8 320.1 238.0 299.9C237.9 298.9 237.6 297.5 237.5 296.8C237.3 296.2 237.1 294.4 237.0 292.9C236.7 288.1 236.2 288.0 233.5 292.2C218.3 316.3 193.3 329.0 168.5 325.2ZM364.1 325.6C363.7 325.6 361.9 325.4 360.1 325.2C358.3 325.1 355.8 324.7 354.5 324.5C353.2 324.2 351.6 324.0 351.0 323.9C336.6 321.6 319.7 311.6 310.0 299.8C276.5 258.6 301.4 194.2 356.1 180.4C366.6 177.8 379.7 176.5 386.8 177.5C388.0 177.6 390.2 177.9 391.7 178.0C405.2 179.2 420.9 185.7 431.0 194.2C436.4 198.7 436.4 198.0 430.0 207.2C428.6 209.2 426.7 212.1 425.7 213.5C424.7 214.9 422.8 217.7 421.4 219.6C420.0 221.6 418.0 224.3 417.0 225.7C413.5 230.6 413.2 230.3 413.0 221.8C412.4 196.0 399.0 180.3 378.0 181.1C340.7 182.4 318.7 234.7 337.5 277.6C352.6 311.9 388.7 324.4 421.6 306.9C424.0 305.6 425.2 304.8 430.0 301.3C433.3 299.0 434.1 300.1 431.3 303.0C424.4 310.3 408.0 319.4 396.1 322.3C385.6 325.0 370.9 326.5 364.1 325.6ZM583.4 323.7C579.0 323.5 578.2 323.1 580.4 322.5C585.6 321.1 590.4 317.9 592.8 314.3C594.6 311.6 595.4 309.1 596.5 302.9C597.3 298.7 597.2 210.7 596.4 206.0C594.8 196.5 591.7 192.2 584.4 190.0C581.0 188.9 582.2 187.8 587.5 187.0C588.4 186.9 591.1 186.4 593.5 186.0C595.9 185.6 600.1 184.8 602.8 184.4C605.4 183.9 609.7 183.1 612.2 182.6C627.7 179.6 628.2 179.5 629.2 180.4C629.9 181.0 629.9 181.0 629.9 242.2L629.9 303.4L630.7 306.5C633.0 315.4 637.1 319.6 645.6 322.1C648.1 322.8 648.2 322.9 647.8 323.3C647.4 323.7 643.8 323.7 608.0 323.8C596.1 323.8 585.1 323.8 583.4 323.7ZM203.0 310.2C218.0 307.3 231.8 293.8 236.1 277.8C236.9 274.5 237.5 229.8 236.7 228.3C236.1 227.1 235.6 227.3 231.7 231.2C225.5 237.1 221.2 239.9 204.4 249.0C177.6 263.5 167.9 276.0 171.2 292.0C173.8 305.0 188.0 313.1 203.0 310.2ZM610.0 167.0C599.3 166.1 591.7 155.6 593.9 144.8C598.0 124.7 626.3 124.2 631.4 144.1C634.3 155.3 623.9 168.0 612.6 167.2C612.4 167.2 611.2 167.1 610.0 167.0Z"/><g transform="translate(656 179) scale(0.2311) translate(-65 -125)"><use href="#ring"/></g></g>
   </defs>
 </svg>
 
 <div class="wrap">
 <header class="top">
-  <span class="wm sm" aria-label="Accio Studio">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span>
+  <span class="wm sm" aria-label="Accio Studio"><svg class="wmk" viewBox="122 126 706 216" role="img" aria-label="Accio"><use href="#wordmark"/></svg></span>
   <nav class="jump" aria-label="Sections">
     <a href="#identity">Identity</a><a href="#palette">Palette</a><a href="#type">Type</a><a href="#nav">Navigation</a><a href="#mobile">Mobile</a><a href="#desktop">Desktop</a><a href="#motion">Motion</a><a href="#approve">Approve</a>
   </nav>
@@ -248,19 +251,19 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
 
 <!-- ============ IDENTITY ============ -->
 <h2 id="identity">Wordmark and icon</h2>
-<p class="note">Lowercase <b>accio</b> set in Fraunces (soft, high-contrast serif). The final "o" is an open ring with a gap and a spark entering it: something being summoned into the frame. The same ring becomes the app icon, the loading spinner and the Generate-complete flash, so one shape carries the whole brand.</p>
+<p class="note">Lowercase <b>accio</b> in a high-contrast serif, traced from the approved logo artwork. The final "o" is a rounded-rectangle ring, cut by a slit on the left and opened on the right, with a gold spark above and a cursor below: something being summoned into the frame. The same ring becomes the app icon, the loading spinner and the Generate-complete flash, so one shape carries the whole brand.</p>
 <div class="grid two">
   <div class="card" style="display:grid;place-items:center;min-height:220px;gap:18px">
-    <span class="wm" style="font-size:84px">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span>
+    <span class="wm" style="font-size:84px"><svg class="wmk" viewBox="122 126 706 216" role="img" aria-label="Accio"><use href="#wordmark"/></svg></span>
     <span class="spec-l">Studio</span>
   </div>
   <div class="card">
     <div class="row" style="gap:20px;align-items:center">
-      <div class="iconsq" style="width:120px;height:120px"><svg viewBox="-10 0 120 100" style="width:78px;height:78px;color:var(--text);overflow:visible"><use href="#ring"/></svg></div>
-      <div class="iconsq" style="width:64px;height:64px"><svg viewBox="-10 0 120 100" style="width:42px;height:42px;color:var(--text);overflow:visible"><use href="#ring"/></svg></div>
-      <div class="iconsq" style="width:40px;height:40px;border-radius:10px"><svg viewBox="-10 0 120 100" style="width:26px;height:26px;color:var(--text);overflow:visible"><use href="#ring"/></svg></div>
+      <div class="iconsq" style="width:120px;height:120px"><svg viewBox="65 48 730 760" style="width:70px;height:70px;color:#f1eadb;overflow:visible"><use href="#ring"/></svg></div>
+      <div class="iconsq" style="width:64px;height:64px"><svg viewBox="65 48 730 760" style="width:37px;height:37px;color:#f1eadb;overflow:visible"><use href="#ring"/></svg></div>
+      <div class="iconsq" style="width:40px;height:40px;border-radius:10px"><svg viewBox="65 48 730 760" style="width:23px;height:23px;color:#f1eadb;overflow:visible"><use href="#ring"/></svg></div>
     </div>
-    <p class="note" style="margin-top:16px">App icon on ink, maskable-safe (ring sits inside the 80% safe zone). The ring is drawn as one stroke, so it scales down to a 16 px favicon without detail loss. Monochrome variant (no gold) for the Android themed icon.</p>
+    <p class="note" style="margin-top:16px">App icon on ink, maskable-safe (ring sits inside the 80% safe zone). The ring is symmetric top to bottom and stays legible down to a 16 px favicon. Monochrome variant (no gold) for the Android themed icon.</p>
   </div>
 </div>
 
@@ -281,10 +284,10 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
 </div>
 <h3>Light</h3>
 <div class="grid swatches">
-  <div class="sw"><i style="background:#f5f0e5"></i><div><b>Parchment</b>#F5F0E5 · background</div></div>
-  <div class="sw"><i style="background:#fbf8f1"></i><div><b>Paper</b>#FBF8F1 · surface</div></div>
-  <div class="sw"><i style="background:#efe9db"></i><div><b>Vellum</b>#EFE9DB · raised</div></div>
-  <div class="sw"><i style="background:#1b1810"></i><div><b>Ink text</b>#1B1810</div></div>
+  <div class="sw"><i style="background:#f3f4fa"></i><div><b>Mist</b>#F3F4FA · background</div></div>
+  <div class="sw"><i style="background:#fbfbfe"></i><div><b>Paper</b>#FBFBFE · surface</div></div>
+  <div class="sw"><i style="background:#eaecf5"></i><div><b>Frost</b>#EAECF5 · raised</div></div>
+  <div class="sw"><i style="background:#14162e"></i><div><b>Midnight</b>#14162E · text</div></div>
   <div class="sw"><i style="background:#d9992a"></i><div><b>Gold fill</b>#D99A2A · buttons (ink label)</div></div>
   <div class="sw"><i style="background:#85560a"></i><div><b>Gold text</b>#85560A · small gold text</div></div>
 </div>
@@ -295,8 +298,8 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
   <tr><td>Parchment 2 on Ink 1</td><td>~8:1</td><td>Secondary text, dark</td><td class="pill-ok">Pass</td></tr>
   <tr><td>Gold on Ink 1</td><td>~9:1</td><td>Active labels, progress, dark</td><td class="pill-ok">Pass</td></tr>
   <tr><td>Ink label on Gold fill</td><td>~9:1</td><td>Generate button (both themes)</td><td class="pill-ok">Pass</td></tr>
-  <tr><td>Gold text #85560A on Paper</td><td>~5.6:1</td><td>Small gold text, light</td><td class="pill-ok">Pass</td></tr>
-  <tr><td>Ink text on Parchment</td><td>~15:1</td><td>Body text, light</td><td class="pill-ok">Pass</td></tr>
+  <tr><td>Gold text #85560A on Paper</td><td>~6:1</td><td>Small gold text, light</td><td class="pill-ok">Pass</td></tr>
+  <tr><td>Midnight on Mist</td><td>~16:1</td><td>Body text, light</td><td class="pill-ok">Pass</td></tr>
 </table>
 <p class="note" style="margin-top:8px">Ratios are estimates from the hex values; I will run them through a contrast checker in the build and fix anything under 4.5:1 (3:1 for large text and icons) before showing Phase 4.</p>
 
@@ -323,13 +326,13 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
 <h2 id="nav">Navigation model</h2>
 <div class="grid two">
   <div class="card">
-    <h3 style="margin-top:0">Mobile: three tabs</h3>
+    <h3 style="margin-top:0">Mobile: four tabs</h3>
     <ul class="clean">
       <li><b>Create</b> opens on the prompt dock + results feed. Standard / Detailed is a toggle in the dock.</li>
       <li><b>Edit</b> opens on a mode strip: <i>Multi-edit · Inpaint · Outpaint</i>. Each one is a different canvas layout.</li>
       <li><b>Gallery</b> is all history, full-bleed grid, swipe between images in the viewer.</li>
-      <li>Settings and connection (QR, tunnel URL, ComfyUI status) hide behind a gear in the top bar. No fourth tab.</li>
-      <li>The dock is a bottom sheet: collapsed = prompt + Generate, drag up = Advanced.</li>
+      <li><b>Settings</b> is the fourth tab: connection (QR, tunnel URL, server and backend status), theme, install, password. No gear in the top bar.</li>
+      <li>The dock is a bottom sheet: collapsed = a prompt that grows with its text, up to three chips and Generate; Options (or drag up) opens everything else.</li>
     </ul>
   </div>
   <div class="card">
@@ -353,31 +356,29 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
 <div>
 <div class="phone">
   <div class="sb"><span>9:41</span><span>●●●</span></div>
-  <div class="bar"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn" aria-label="Settings"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="bar"><span class="wm sm"><svg class="wmk" viewBox="122 126 706 216" role="img" aria-label="Accio"><use href="#wordmark"/></svg></span></div>
   <div class="stage">
     <div class="feed" style="flex:1;overflow:hidden;align-content:start">
       <div class="art a1" style="aspect-ratio:9/16"></div>
-      <div class="art a2" style="aspect-ratio:9/16;margin-top:26px"></div>
-      <div class="art a3" style="aspect-ratio:9/16"></div>
-      <div class="art a4" style="aspect-ratio:9/16;margin-top:26px"></div>
+      <div class="art a2" style="aspect-ratio:9/16"></div>
     </div>
     <div class="dock">
       <div class="grab"></div>
-      <div class="prompt"><span class="ph">Describe what to create…</span></div>
-      <div class="chips"><span class="chip on"><i class="k"></i>Detailed</span><span class="chip">9:16</span><span class="chip">×1</span><span class="chip on"><i class="k"></i>Variance</span><span class="chip on"><i class="k"></i>Sharpen</span><span class="chip"><i class="k"></i>T-Enhancer</span></div>
+      <div class="prompt" style="position:relative;min-height:48px;padding-right:32px"><span class="ph">Describe what to create…</span><svg class="ico" style="width:16px;height:16px;position:absolute;right:10px;top:10px;color:var(--text-3)"><use href="#i-up"/></svg></div>
+      <div class="chips"><span class="chip on"><i class="k"></i>Detailed</span><span class="chip">9:16</span><span class="chip">×1</span><span class="chip"><svg class="ico" style="width:16px;height:16px"><use href="#i-sliders"/></svg>Options</span></div>
       <button class="gen"><svg class="ico"><use href="#i-spark"/></svg>Generate</button>
     </div>
   </div>
-  <div class="tabs"><div class="tab on"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+  <div class="tabs"><div class="tab on"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-gear"/></svg>Settings<i class="dot"></i></div></div>
 </div>
-<div class="cap"><b>Create, ready.</b> Results feed above, composer docked below. Chips are the main toggles; tap one to flip it. Gold means on.</div>
+<div class="cap"><b>Create, ready.</b> Results feed above, composer docked below. The prompt box grows with the text (about 4 lines, then it scrolls) and the arrow opens a full-screen editor, so long prompts never push Generate off screen. Only the choices you change every time are chips: Detailed, aspect, count. Variance, Sharpen, T-Enhancer and the rest live behind Options.</div>
 </div>
 
 <!-- M2: Create generating -->
 <div>
 <div class="phone">
   <div class="sb"><span>9:42</span><span>●●●</span></div>
-  <div class="bar"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="bar"><span class="wm sm"><svg class="wmk" viewBox="122 126 706 216" role="img" aria-label="Accio"><use href="#wordmark"/></svg></span></div>
   <div class="stage">
     <div style="flex:1;padding:0 10px 10px;min-height:0">
       <div class="art a1 shimmer" style="height:100%;border-radius:16px">
@@ -397,7 +398,7 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
       <button class="gen cancel"><svg class="ico"><use href="#i-x"/></svg>Cancel</button>
     </div>
   </div>
-  <div class="tabs"><div class="tab on"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+  <div class="tabs"><div class="tab on"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-gear"/></svg>Settings<i class="dot"></i></div></div>
 </div>
 <div class="cap"><b>Create, generating.</b> The card where the result will land shows the blurred live preview, pass, step X/Y, ETA and queue position. Generate turns into Cancel. If the connection drops, the job keeps running and the screen re-attaches.</div>
 </div>
@@ -406,14 +407,18 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
 <div>
 <div class="phone">
   <div class="sb"><span>9:43</span><span>●●●</span></div>
-  <div class="bar"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="bar"><span class="wm sm"><svg class="wmk" viewBox="122 126 706 216" role="img" aria-label="Accio"><use href="#wordmark"/></svg></span></div>
   <div class="stage">
     <div class="feed" style="flex:1;overflow:hidden"><div class="art a1" style="aspect-ratio:9/16"></div><div class="art a2" style="aspect-ratio:9/16"></div></div>
     <div class="scrim"></div>
-    <div class="sheet-peek" style="height:70%;overflow:hidden">
+    <div class="sheet-peek" style="height:82%;overflow:hidden">
       <div class="grab"></div>
       <div class="row2" style="margin-bottom:8px"><span class="spec-h" style="font-size:20px">Advanced</span><span class="chip" style="height:32px">Detailed</span></div>
-      <div class="lbl">Aspect</div>
+      <div class="lbl">Finishing</div>
+      <div class="tog"><span>Variance</span><i class="sw-on"></i></div>
+      <div class="tog"><span>Sharpen</span><i class="sw-on"></i></div>
+      <div class="tog"><span>T-Enhancer</span><i class="sw-off"></i></div>
+      <div class="lbl" style="margin-top:6px">Aspect</div>
       <div class="asp" style="margin:6px 0 10px"><span><i style="width:10px;height:10px"></i></span><span><i style="width:12px;height:9px"></i></span><span><i style="width:9px;height:12px"></i></span><span class="on"><i style="width:8px;height:14px"></i></span><span><i style="width:14px;height:8px"></i></span></div>
       <div class="row2"><span class="lbl">Turbo LoRA, pass 1</span><span class="mono">0.20</span></div>
       <div class="slider"><b style="width:20%"></b><i style="left:calc(20% - 10px)"></i></div>
@@ -424,70 +429,68 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
     </div>
   </div>
 </div>
-<div class="cap"><b>Advanced sheet.</b> Drag the dock up (or tap the sliders icon). Detailed-only controls appear only in Detailed. The feed stays visible behind a scrim.</div>
+<div class="cap"><b>Advanced sheet (Options).</b> Drag the dock up or tap Options. Detailed-only controls appear only in Detailed. The feed stays visible behind a scrim.</div>
 </div>
 
 <!-- M4: Multi-edit -->
 <div>
 <div class="phone">
   <div class="sb"><span>9:44</span><span>●●●</span></div>
-  <div class="bar"><div class="seg" style="transform:scale(.92);transform-origin:left"><span class="on">Multi-edit</span><span>Inpaint</span><span>Outpaint</span></div><button class="iconbtn"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="bar"><div class="seg" style="flex:1"><span class="on">Multi-edit</span><span>Inpaint</span><span>Outpaint</span></div></div>
   <div class="stage">
     <div style="flex:1;padding:0 10px 8px;min-height:0;position:relative">
       <div class="art a3" style="height:100%;border-radius:16px">
         <div class="badge">Result</div>
-        <div class="fab"><button class="iconbtn"><svg class="ico"><use href="#i-down"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-share"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-lr"/></svg></button></div>
-        <div class="prog" style="padding-bottom:12px"><div class="row2" style="font-size:12px"><span style="color:#b9b2a3">Prompt used</span><span style="color:var(--gold-hi)">Copy to prompt</span></div><div style="font-size:12px;margin-top:4px;line-height:1.35;max-height:34px;overflow:hidden">Replace the head in image 1 with the head from image 2, preserving lighting…</div></div>
+        <div class="fab"><button class="iconbtn"><svg class="ico"><use href="#i-down"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-lr"/></svg></button></div>
+        <div class="prog" style="padding-bottom:12px"><div class="row2" style="font-size:12px"><span style="color:#b9b2a3">Prompt used</span><span style="color:var(--gold-hi)">View ›</span></div></div>
       </div>
     </div>
     <div class="tray">
       <div class="slot art a1 base"><span class="n">1</span></div>
       <div class="slot art a2"><span class="n">2</span></div>
       <div class="slot empty"><svg class="ico"><use href="#i-plus"/></svg></div>
-      <div class="slot empty" style="opacity:.5"></div>
-      <div class="slot empty" style="opacity:.3"></div>
       <div class="hint" style="align-self:center;margin-left:4px">2 of 9</div>
     </div>
     <div class="dock" style="padding-top:10px">
       <div class="prompt" style="min-height:48px">Swap the head from <b style="color:var(--gold-text)">&lt;image2&gt;</b> onto <b style="color:var(--gold-text)">&lt;image1&gt;</b></div>
-      <div class="chips"><span class="chip">Head swap</span><span class="chip">Body swap</span><span class="chip on"><i class="k"></i>Enhancer</span><span class="chip on"><i class="k"></i>Pixel drift</span><span class="chip"><i class="k"></i>Keep size</span></div>
+      <div class="chips"><span class="chip">Head swap</span><span class="chip">Body swap</span><span class="chip"><svg class="ico" style="width:16px;height:16px"><use href="#i-sliders"/></svg>Options</span></div>
       <button class="gen"><svg class="ico"><use href="#i-wand"/></svg>Generate</button>
     </div>
   </div>
-  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-gear"/></svg>Settings<i class="dot"></i></div></div>
 </div>
-<div class="cap"><b>Multi-edit.</b> Reference tray with numbered slots (1 = base, gold outline), drag to reorder, long-press to remove, plus opens camera / photos. Result is the canvas; presets are one tap and also fill the prompt. "Prompt used" shows what the enhancer rewrote.</div>
+<div class="cap"><b>Multi-edit.</b> Reference tray with numbered slots (1 = base, gold outline), drag to reorder, long-press to remove, plus opens camera / photos. Result is the canvas; presets are one tap and also fill the prompt. Enhancer, Pixel drift and Keep size sit behind Options. "Prompt used" opens what the enhancer rewrote.</div>
 </div>
 
 <!-- M5: Inpaint -->
 <div>
 <div class="phone">
   <div class="sb"><span>9:45</span><span>●●●</span></div>
-  <div class="bar"><div class="seg" style="transform:scale(.92);transform-origin:left"><span>Multi-edit</span><span class="on">Inpaint</span><span>Outpaint</span></div><button class="iconbtn"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="bar"><div class="seg" style="flex:1"><span>Multi-edit</span><span class="on">Inpaint</span><span>Outpaint</span></div></div>
   <div class="stage">
     <div style="flex:1;position:relative;min-height:0">
       <div class="art a1" style="position:absolute;inset:0"></div>
       <div class="maskov" style="left:96px;top:190px;width:130px;height:150px"></div>
       <div style="position:absolute;left:150px;top:250px;width:34px;height:34px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #000 inset;z-index:3"></div>
-      <div class="badge" style="left:50%;transform:translateX(-50%)">Brush 48 · pinch to zoom</div>
-      <div class="toolbar"><button class="iconbtn on"><svg class="ico"><use href="#i-brush"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-erase"/></svg></button><i class="sep"></i><button class="iconbtn"><svg class="ico"><use href="#i-undo"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-redo"/></svg></button><i class="sep"></i><button class="iconbtn"><svg class="ico"><use href="#i-sliders"/></svg></button></div>
+      <div class="badge" style="left:50%;transform:translateX(-50%)">Brush 48</div>
+      <div class="toolbar"><button class="iconbtn on"><svg class="ico"><use href="#i-brush"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-erase"/></svg></button><i class="sep"></i><button class="iconbtn"><svg class="ico"><use href="#i-undo"/></svg></button><button class="iconbtn"><svg class="ico"><use href="#i-redo"/></svg></button></div>
     </div>
     <div class="dock" style="padding-top:10px">
       <div class="prompt" style="min-height:48px">Replace with a brass lantern, matching the warm light</div>
-      <div class="chips"><span class="chip">Remove object</span><span class="chip">Move object</span><span class="chip on"><i class="k"></i>Enhancer</span><span class="chip"><i class="k"></i>Invert mask</span></div>
+      <div class="chips"><span class="chip">Remove object</span><span class="chip">Move object</span><span class="chip"><svg class="ico" style="width:16px;height:16px"><use href="#i-sliders"/></svg>Options</span></div>
       <button class="gen"><svg class="ico"><use href="#i-wand"/></svg>Generate</button>
     </div>
   </div>
-  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-gear"/></svg>Settings<i class="dot"></i></div></div>
 </div>
-<div class="cap"><b>Inpaint.</b> Full-bleed canvas, floating pill toolbar (brush, eraser, undo/redo, size/options). Two-finger pinch and pan, one-finger paint. The Remove / Move presets are placeholders until you answer the red-box question in the approval list below.</div>
+<div class="cap"><b>Inpaint.</b> Full-bleed canvas, floating pill toolbar (brush, eraser, undo, redo). Brush size, Invert mask and Enhancer sit behind Options. Two-finger pinch and pan, one-finger paint. The Remove / Move presets are placeholders until you answer the red-box question in the approval list below.</div>
 </div>
 
 <!-- M6: Outpaint -->
 <div>
 <div class="phone">
   <div class="sb"><span>9:46</span><span>●●●</span></div>
-  <div class="bar"><div class="seg" style="transform:scale(.92);transform-origin:left"><span>Multi-edit</span><span>Inpaint</span><span class="on">Outpaint</span></div><button class="iconbtn"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+  <div class="bar"><div class="seg" style="flex:1"><span>Multi-edit</span><span>Inpaint</span><span class="on">Outpaint</span></div></div>
   <div class="stage">
     <div style="flex:1;position:relative;min-height:0;background:var(--raised)">
       <div class="padzone" style="left:26px;right:26px;top:36px;bottom:58px"></div>
@@ -496,17 +499,17 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
       <div class="handle" style="right:4px;top:50%;margin-top:-22px"><i style="width:6px;height:36px"></i></div>
       <div class="handle" style="left:50%;margin-left:-22px;top:14px"><i style="width:36px;height:6px"></i></div>
       <div class="handle" style="left:50%;margin-left:-22px;bottom:36px"><i style="width:36px;height:6px"></i></div>
-      <div class="badge" style="left:50%;transform:translateX(-50%);top:auto;bottom:10px">L 36 · T 62 · R 36 · B 58 px → 1.5 MP</div>
+      <div class="badge" style="left:50%;transform:translateX(-50%);top:auto;bottom:10px">1.5 MP · tap for exact sizes</div>
     </div>
     <div class="dock" style="padding-top:10px">
-      <div class="prompt" style="min-height:48px;font-size:13px">Outpaint the image: replace the solid gray areas with a seamless continuation of the scene…</div>
-      <div class="chips"><span class="chip">Color fill</span><span class="chip">Edge</span><span class="chip">Mirror</span><span class="chip on"><i class="k"></i>Outpaint LoRA</span></div>
+      <div class="prompt" style="position:relative;min-height:48px;font-size:13px;padding-right:32px"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">Outpaint the image: replace the solid gray areas with a seamless continuation of the scene, matching the lighting, perspective and texture of the original…</span><svg class="ico" style="width:16px;height:16px;position:absolute;right:10px;top:10px;color:var(--text-3)"><use href="#i-up"/></svg></div>
+      <div class="chips"><span class="chip on"><i class="k"></i>Color fill</span><span class="chip">Edge</span><span class="chip">Mirror</span><span class="chip"><svg class="ico" style="width:16px;height:16px"><use href="#i-sliders"/></svg>Options</span></div>
       <button class="gen"><svg class="ico"><use href="#i-wand"/></svg>Generate</button>
     </div>
   </div>
-  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-gear"/></svg>Settings<i class="dot"></i></div></div>
 </div>
-<div class="cap"><b>Outpaint.</b> The image sits on a hatched canvas. Drag the four gold handles to extend each side; numbers update live and are editable. Prompt is prefilled with the default; fill mode is a one-tap chip row.</div>
+<div class="cap"><b>Outpaint.</b> The image sits on a hatched canvas. Drag the four gold handles to extend each side; tap the size badge for exact numbers. The default prompt is prefilled, clamped to two lines and grows when focused; fill mode is a one-tap chip row, Outpaint LoRA is behind Options.</div>
 </div>
 
 <!-- M7: Gallery -->
@@ -525,13 +528,38 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
     </div>
     <div style="padding:10px 14px;display:flex;gap:8px;border-top:1px solid var(--line);background:var(--surface)" class="hint"><span class="chip on" style="height:32px">Newest</span><span class="chip" style="height:32px">Has seed lock</span><span style="margin-left:auto;align-self:center">248 images</span></div>
   </div>
-  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div></div>
+  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-gear"/></svg>Settings<i class="dot"></i></div></div>
 </div>
 <div class="cap"><b>Gallery.</b> Edge-to-edge virtualized grid of WebP thumbnails. Tap opens the viewer: swipe between images, with Send to Edit, Reuse settings, Share, Download, and every seed used.</div>
 </div>
 
-</div><!-- /row -->
+<!-- M8: Settings -->
+<div>
+<div class="phone">
+  <div class="sb"><span>9:48</span><span>●●●</span></div>
+  <div class="bar"><span class="spec-h" style="font-size:22px">Settings</span></div>
+  <div class="stage">
+    <div style="padding:4px 14px;flex:1;overflow:hidden">
+      <div class="lbl">Connection</div>
+      <div class="adv" style="margin:6px 0 8px"><span>Accio server</span><span class="pill-ok">running</span></div>
+      <div class="adv" style="margin:0 0 8px;gap:12px;align-items:center">
+        <div style="width:78px;height:78px;border-radius:8px;flex:none;background:repeating-conic-gradient(var(--text) 0 25%,transparent 0 50%) 0 0/13px 13px;opacity:.9"></div>
+        <div style="min-width:0"><div class="hint">Scan to open on a phone</div><div class="mono" style="font-size:11px;margin:4px 0 8px;overflow:hidden;text-overflow:ellipsis">https://accio-demo.trycloudflare.com</div><span class="chip" style="height:32px">Copy link</span></div>
+      </div>
+      <div class="adv" style="margin-bottom:14px"><span>Image backend</span><span class="pill-ok">online</span></div>
+      <div class="lbl">Appearance</div>
+      <div class="row2" style="margin:6px 0 14px"><span>Theme</span><span class="seg" style="transform:scale(.9);transform-origin:right"><span class="on">Dark</span><span>Light</span><span>Auto</span></span></div>
+      <div class="lbl">App</div>
+      <div class="adv" style="margin:6px 0 8px"><span>Install Accio</span><span class="hint"><svg class="ico" style="width:16px;height:16px;vertical-align:-3px"><use href="#i-chev"/></svg></span></div>
+      <div class="adv"><span>Change password</span><span class="hint"><svg class="ico" style="width:16px;height:16px;vertical-align:-3px"><use href="#i-chev"/></svg></span></div>
+    </div>
+  </div>
+  <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-spark"/></svg>Create<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-wand"/></svg>Edit<i class="dot"></i></div><div class="tab"><svg class="ico"><use href="#i-grid"/></svg>Gallery<i class="dot"></i></div><div class="tab on"><svg class="ico"><use href="#i-gear"/></svg>Settings<i class="dot"></i></div></div>
+</div>
+<div class="cap"><b>Settings.</b> The fourth tab, always one tap away: server and backend status, the QR and link for opening Accio on a phone, theme, install and password. Nothing here is on the generate path, so it never competes with the composer.</div>
+</div>
 
+</div><!-- /row -->
 <h3>Designed states (not afterthoughts)</h3>
 <div class="row">
   <div class="card" style="width:360px">
@@ -555,7 +583,7 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
 <h3>Create (Detailed, mid-run)</h3>
 <div class="deskwrap"><div class="desk">
   <div class="pane l">
-    <div class="ph-h"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn" style="width:36px;height:36px"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+    <div class="ph-h"><span class="wm sm"><svg class="wmk" viewBox="122 126 706 216" role="img" aria-label="Accio"><use href="#wordmark"/></svg></span><button class="iconbtn" style="width:36px;height:36px"><svg class="ico"><use href="#i-gear"/></svg></button></div>
     <div class="pane-body">
       <div class="railnav"><div class="nav on"><svg class="ico"><use href="#i-spark"/></svg>Create<span class="kbd" style="margin-left:auto">1</span></div><div class="nav"><svg class="ico"><use href="#i-wand"/></svg>Edit<span class="kbd" style="margin-left:auto">2</span></div><div class="nav"><svg class="ico"><use href="#i-grid"/></svg>Gallery<span class="kbd" style="margin-left:auto">3</span></div></div>
       <div class="seg" style="align-self:flex-start"><span>Standard</span><span class="on">Detailed</span></div>
@@ -595,7 +623,7 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
 <h3>Edit, Inpaint (brush active)</h3>
 <div class="deskwrap"><div class="desk">
   <div class="pane l">
-    <div class="ph-h"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn" style="width:36px;height:36px"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+    <div class="ph-h"><span class="wm sm"><svg class="wmk" viewBox="122 126 706 216" role="img" aria-label="Accio"><use href="#wordmark"/></svg></span><button class="iconbtn" style="width:36px;height:36px"><svg class="ico"><use href="#i-gear"/></svg></button></div>
     <div class="pane-body">
       <div class="railnav"><div class="nav"><svg class="ico"><use href="#i-spark"/></svg>Create</div><div class="nav on"><svg class="ico"><use href="#i-wand"/></svg>Edit</div><div class="nav"><svg class="ico"><use href="#i-grid"/></svg>Gallery</div></div>
       <div class="seg" style="align-self:flex-start"><span>Multi-edit</span><span class="on">Inpaint</span><span>Outpaint</span></div>
@@ -627,7 +655,7 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
 <h3>Edit, Multi-edit result with compare slider</h3>
 <div class="deskwrap"><div class="desk">
   <div class="pane l">
-    <div class="ph-h"><span class="wm sm">acci<svg viewBox="0 0 100 100" style="color:var(--text);overflow:visible"><use href="#ring"/></svg></span><button class="iconbtn" style="width:36px;height:36px"><svg class="ico"><use href="#i-gear"/></svg></button></div>
+    <div class="ph-h"><span class="wm sm"><svg class="wmk" viewBox="122 126 706 216" role="img" aria-label="Accio"><use href="#wordmark"/></svg></span><button class="iconbtn" style="width:36px;height:36px"><svg class="ico"><use href="#i-gear"/></svg></button></div>
     <div class="pane-body">
       <div class="seg" style="align-self:flex-start"><span class="on">Multi-edit</span><span>Inpaint</span><span>Outpaint</span></div>
       <div class="lbl">References · 1 is the base</div>
@@ -686,10 +714,10 @@ ul.clean{padding-left:18px;color:var(--text-2)} ul.clean li{margin:4px 0}
 <div class="card">
   <p class="note" style="margin-top:0">Decisions this proposal makes, so you can veto any of them:</p>
   <ul class="clean">
-    <li><b>Direction:</b> "Lamplight on ink": ink surfaces, parchment text, one gold accent; light theme is warm parchment with the same gold.</li>
+    <li><b>Direction:</b> "Lamplight on ink": ink surfaces, parchment text, one gold accent; light theme is cool starlit mist (blue-grey neutrals, midnight text) with the same gold.</li>
     <li><b>Type:</b> Fraunces (brand + moments), Instrument Sans (UI), JetBrains Mono (seeds, numbers), all self-hosted.</li>
-    <li><b>Wordmark / icon:</b> lowercase "accio" with the final "o" as an open ring receiving a spark.</li>
-    <li><b>Navigation:</b> mobile 3 tabs (Create / Edit / Gallery), settings behind a gear, Edit sub-modes as a segmented control. Desktop 3 panes with queue + history on the right.</li>
+    <li><b>Wordmark / icon:</b> lowercase "accio" with the final "o" as a rounded open ring, a gold spark above and a cursor below.</li>
+    <li><b>Navigation:</b> mobile 4 tabs (Create / Edit / Gallery / Settings), a calmer dock with a growing prompt, at most three chips plus Options, Edit sub-modes as a segmented control. Desktop 3 panes with queue + history on the right.</li>
     <li><b>Stack additions:</b> none beyond the spec's baseline (React, Vite, Tailwind, lucide-react, Zustand). Design tokens become CSS variables mapped into Tailwind.</li>
     <li><b>Aspect presets</b> (spec 6.3, unverified with Krea2) stay as proposed there.</li>
     <li><b>Button label</b> stays plainly "Generate"; the summoning feeling lives in the reveal and progress copy ("Summoning…").</li>
