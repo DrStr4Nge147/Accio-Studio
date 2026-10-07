@@ -13,7 +13,7 @@ Read `APP_SPEC.md` first; this file records state, decisions and how to run. Las
 | 4. Create mode | **Next** |
 | 5-8 | Not started |
 
-Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio` (`git init` done on branch `main`, **nothing committed yet**: ask the user before the first commit, and branch first).
+Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio`. Git: all work is on branch `dev`, **committed phase by phase directly on `dev` (user decision 2026-10-07: no feature branches, no new branches; this overrides APP_SPEC section 10's "feature branch")**. History: Phase 1+2, Phase 2b, Phase 3 design. Commit at the end of each phase without asking. `main` is the default branch and is not used yet.
 
 ## Spec change recorded after Phase 2 (APP_SPEC rule 3, 5.1, 9.2 step 1, new section 11)
 
@@ -78,7 +78,7 @@ Structural parity (spec 7.1) for all 20 templates: **PASS** (fresh re-export fro
 
 - (Answered 2026-10-07) Design direction approved as in "Approved design"; further edits welcome later.
 - Remove/Move object presets (spec 6.4): confirm the intended input (red box burned into RGB + mask?). **Ask before Phase 5.**
-- OK to make the first commit (and on which branch name)?
+- (Answered 2026-10-07) Commits go directly on `dev`, one per phase, no new branches.
 
 ## How to run and test
 
