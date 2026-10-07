@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, LayoutGrid, Settings as GearIcon, Sparkles, Terminal, WandSparkles } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, LayoutGrid, Maximize2, Settings as GearIcon, Sparkles, Terminal, WandSparkles } from "lucide-react";
 import { CoffeeBadge } from "../components/CoffeeBadge";
 import { Wordmark } from "../components/Wordmark";
 import { HealthBanner } from "../components/HealthBanner";
@@ -12,6 +12,7 @@ import { EditCanvas } from "../features/edit/EditCanvas";
 import { EditComposer } from "../features/edit/EditComposer";
 import { EditModeSwitch } from "../features/edit/EditControls";
 import { EDIT_MODES, useEdit } from "../features/edit/store";
+import { useWorkspace } from "../features/edit/workspace";
 import { LazyGallery } from "../features/gallery/LazyGallery";
 import { RecentStrip } from "../features/history/SidePanes";
 import { Thumb } from "../features/history/Thumb";
@@ -21,6 +22,7 @@ import { useCreate } from "../features/create/store";
 import { isActive, useJobs } from "../store/jobs";
 import { useUi, type Tab } from "../store/ui";
 import { useShallow } from "zustand/react/shallow";
+import { useEffect } from "react";
 
 const TABS: { id: Tab; label: string; icon: typeof Sparkles }[] = [
   { id: "create", label: "Create", icon: Sparkles },
@@ -93,6 +95,45 @@ function CreateMobile() {
   );
 }
 
+/** The last Inpaint image that opened the full-screen painter, so coming back to the tab does not reopen it. */
+let paintedUrl: string | null = null;
+
+/** Inpaint step 1: the whole screen is the canvas, so painting works with a thumb. Next goes on to the prompt. */
+function PaintScreen() {
+  const hasMask = useWorkspace((s) => s.inpaint.ops.length > 0);
+  const set = useUi((s) => s.set);
+  return (
+    <div className="safe-t safe-b fixed inset-0 z-40 flex flex-col bg-bg">
+      <div className="flex h-12 flex-none items-center gap-1 px-2">
+        <button
+          type="button"
+          aria-label="Back to the editor"
+          data-tip="Back to the editor"
+          onClick={() => set({ maskFullscreen: false })}
+          className="hover-wash grid h-11 w-11 place-items-center rounded-full text-text-2"
+        >
+          <ChevronLeft size={22} strokeWidth={1.7} />
+        </button>
+        <h2 className="text-[15px] font-medium">Paint what to change</h2>
+      </div>
+      <div className="min-h-0 flex-1 px-2.5 pb-2">
+        <EditCanvas />
+      </div>
+      <div className="flex-none px-3.5 pb-3 pt-1">
+        <button
+          type="button"
+          disabled={!hasMask}
+          onClick={() => set({ maskFullscreen: false, promptOpen: { ...useUi.getState().promptOpen, inpaint: true } })}
+          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-hi to-gold text-[16px] font-semibold text-on-gold disabled:opacity-50"
+        >
+          Next <ArrowRight size={20} strokeWidth={1.7} />
+        </button>
+        {!hasMask && <p className="mt-1.5 text-center text-[12px] text-text-3">Paint over the area first.</p>}
+      </div>
+    </div>
+  );
+}
+
 function EditMobile() {
   const advancedOpen = useUi((s) => s.advancedOpen);
   const set = useUi((s) => s.set);
@@ -102,6 +143,14 @@ function EditMobile() {
   const viewerOpen = useUi((s) => s.viewerOpen);
   const selectedIsMode = useJobs((s) => s.jobs[s.selectedId ?? ""]?.mode === mode);
   const previewing = viewerOpen && selectedIsMode;
+  const srcUrl = useWorkspace((s) => s.inpaint.src?.url);
+  const maskFullscreen = useUi((s) => s.maskFullscreen);
+  // A newly chosen Inpaint image opens the full-screen painter.
+  useEffect(() => {
+    if (mode === "inpaint" && srcUrl && srcUrl !== paintedUrl) set({ maskFullscreen: true });
+    if (srcUrl) paintedUrl = srcUrl;
+  }, [mode, srcUrl, set]);
+  if (mode === "inpaint" && srcUrl && maskFullscreen && !previewing) return <PaintScreen />;
   return (
     <>
       <div className="flex-none px-3.5 pb-2 [@media(max-height:700px)]:pb-1.5">
@@ -109,6 +158,19 @@ function EditMobile() {
       </div>
       <div className="relative min-h-0 flex-1 px-2.5 pb-2.5">
         <EditCanvas />
+        {/* Too small to paint on a phone: the canvas is covered, and the button opens the full-screen painter. */}
+        {mode === "inpaint" && srcUrl && !previewing && (
+          <button
+            type="button"
+            aria-label="Paint in full screen"
+            onClick={() => set({ maskFullscreen: true })}
+            className="absolute inset-x-2.5 bottom-2.5 top-0 z-10 grid place-items-center rounded-m bg-black/35"
+          >
+            <span className="flex h-12 items-center gap-2 rounded-full bg-gradient-to-b from-gold-hi to-gold px-5 text-[15px] font-semibold text-on-gold shadow-float">
+              <Maximize2 size={18} strokeWidth={1.7} /> Paint in full screen
+            </span>
+          </button>
+        )}
       </div>
       <RecentStrip group="edit" compact />
       {!previewing && <EditComposer layout="dock" />}

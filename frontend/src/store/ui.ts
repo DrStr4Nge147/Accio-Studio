@@ -16,6 +16,10 @@ interface UiState {
   consoleOpen: boolean;
   /** Mobile: the job opened full screen from the feed. */
   viewerOpen: boolean;
+  /** Mobile Inpaint: the mask is being painted on a full-screen canvas (Next goes on to the prompt). */
+  maskFullscreen: boolean;
+  /** Edit modes whose prompt box is unfolded (Outpaint and Inpaint start folded). */
+  promptOpen: Record<string, boolean>;
   set: (patch: Partial<Omit<UiState, "set">>) => void;
 }
 
@@ -29,6 +33,8 @@ export const useUi = create<UiState>()(
       advancedInline: false,
       consoleOpen: false,
       viewerOpen: false,
+      maskFullscreen: false,
+      promptOpen: {},
       set: (patch) => set(patch),
     }),
     {

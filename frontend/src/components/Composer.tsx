@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { Loader2, Sparkles, X } from "lucide-react";
+import { ChevronDown, Loader2, Sparkles, X } from "lucide-react";
 import { useMedia } from "../lib/useMedia";
 import { applyTag, detectTagTrigger, type TagTrigger } from "../lib/tagSuggest";
 
@@ -31,6 +31,7 @@ export function Composer({
   above,
   tags,
   fieldHeader,
+  collapse,
   generateIcon = <Sparkles size={20} strokeWidth={1.7} />,
 }: {
   layout: "dock" | "pane";
@@ -54,6 +55,8 @@ export function Composer({
   tags?: ImageTag[];
   /** shown just above the prompt box (e.g. the switch between your prompt and the enhanced one) */
   fieldHeader?: ReactNode;
+  /** makes the prompt (and its header) foldable; folded, a one-line row stands in for it */
+  collapse?: { collapsed: boolean; onToggle: () => void; label: string; hint: string };
   generateIcon?: ReactNode;
 }) {
   const area = useRef<HTMLTextAreaElement>(null);
@@ -98,7 +101,7 @@ export function Composer({
     const cap = dock ? (short ? 44 : 64) : 220; // long prompts scroll inside the box instead of squeezing the image
     el.style.height = `${Math.min(el.scrollHeight, cap)}px`;
     el.style.overflowY = el.scrollHeight > cap ? "auto" : "hidden";
-  }, [prompt, dock, short]);
+  }, [prompt, dock, short, collapse?.collapsed]);
 
   const handle = (
     <div
@@ -162,6 +165,31 @@ export function Composer({
     </div>
   );
 
+  const folded = !!collapse?.collapsed;
+  const foldRow = collapse && (
+    <button
+      type="button"
+      onClick={collapse.onToggle}
+      aria-expanded={!folded}
+      className="hover-wash flex min-h-11 w-full items-center gap-2 rounded-m border border-line bg-raised px-3 text-left"
+    >
+      <span className="flex-none text-[13px] font-medium text-text-2">{collapse.label}</span>
+      <span className="min-w-0 flex-1 truncate text-[12px] text-text-3">{folded ? prompt.trim() || collapse.hint : ""}</span>
+      <ChevronDown size={16} strokeWidth={1.7} className={`flex-none text-text-3 transition-transform ${folded ? "" : "rotate-180"}`} />
+    </button>
+  );
+  const promptBlock = (
+    <>
+      {foldRow}
+      {!folded && (
+        <>
+          {fieldHeader}
+          {field}
+        </>
+      )}
+    </>
+  );
+
   const problem = error && (
     <p role="alert" className="mb-2 rounded-s border border-danger/40 px-3 py-2 text-[13px] text-danger">
       {error}
@@ -203,8 +231,7 @@ export function Composer({
     return (
       <div className="safe-b relative z-10 flex-none rounded-t-[24px] border-t border-line bg-surface px-3.5 pb-3 pt-2 [@media(max-height:700px)]:pb-2 shadow-[0_-10px_30px_rgba(0,0,0,0.25)]">
         {handle}
-        {fieldHeader}
-        {field}
+        <div className={collapse ? "space-y-2" : undefined}>{promptBlock}</div>
         {controls}
         {problem}
         <div className="mt-2">{action}</div>
@@ -217,8 +244,7 @@ export function Composer({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-3 pt-3.5">
         {above}
-        {fieldHeader}
-        {field}
+        {promptBlock}
         {controls}
       </div>
       <div className="flex-none border-t border-line px-4 pb-4 pt-3">

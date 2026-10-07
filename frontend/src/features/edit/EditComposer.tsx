@@ -28,6 +28,8 @@ export function EditComposer({ layout, above }: { layout: "dock" | "pane"; above
   const defaultPrompt = useServer((s) => s.catalog?.defaults.edit.outpaint.prompt) ?? "";
   const mode = edit.mode;
   const blocker = editBlocker(edit, ws);
+  // Outpaint has a built-in prompt and Inpaint's is secondary to the mask, so both start folded (per mode, kept while switching).
+  const open = useUi((s) => s.promptOpen);
   const prompt = mode === "outpaint" ? edit.prompts.outpaint || defaultPrompt : edit.prompts[mode];
 
   return (
@@ -35,6 +37,16 @@ export function EditComposer({ layout, above }: { layout: "dock" | "pane"; above
       layout={layout}
       above={above}
       fieldHeader={mode === "outpaint" ? undefined : <EnhancedSwitch mode={mode} />}
+      collapse={
+        mode === "multiedit"
+          ? undefined
+          : {
+              collapsed: !open[mode],
+              onToggle: () => useUi.getState().set({ promptOpen: { ...open, [mode]: !open[mode] } }),
+              label: "Prompt",
+              hint: mode === "outpaint" ? "Built in, tap to change" : "Required, tap to write",
+            }
+      }
       tags={mode === "multiedit" ? ws.slots.map((s, i) => ({ n: i + 1, name: s.name, thumb: s.url })) : undefined}
       prompt={prompt}
       onPrompt={(v) => edit.setPrompt(mode, v)}
