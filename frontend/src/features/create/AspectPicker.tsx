@@ -75,7 +75,7 @@ export function AspectPicker() {
       </div>
       <p className="mt-1.5 text-[12px] text-text-3">
         {size.w}×{size.h} · {((size.w * size.h) / 1e6).toFixed(2)} MP
-        {active?.untested && " · this ratio hasn't been tried with Krea2 yet; results may vary"}
+        {active?.untested && " · portrait twin of a tested ratio; not tested directly with Krea2"}
       </p>
     </div>
   );
