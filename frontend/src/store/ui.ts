@@ -12,6 +12,8 @@ interface UiState {
   advancedOpen: boolean;
   /** Desktop inline Advanced section. */
   advancedInline: boolean;
+  /** Desktop console drawer open; on mobile the console sheet. */
+  consoleOpen: boolean;
   /** Mobile: the job opened full screen from the feed. */
   viewerOpen: boolean;
   set: (patch: Partial<Omit<UiState, "set">>) => void;
@@ -25,13 +27,14 @@ export const useUi = create<UiState>()(
       settingsOpen: false,
       advancedOpen: false,
       advancedInline: false,
+      consoleOpen: false,
       viewerOpen: false,
       set: (patch) => set(patch),
     }),
     {
       name: "accio.ui",
       version: 1,
-      partialize: (s) => ({ theme: s.theme, tab: s.tab, advancedInline: s.advancedInline }),
+      partialize: (s) => ({ theme: s.theme, tab: s.tab, advancedInline: s.advancedInline, consoleOpen: s.consoleOpen }),
     },
   ),
 );

@@ -3,6 +3,7 @@ import { HealthBanner } from "../components/HealthBanner";
 import { IconButton } from "../components/ui/controls";
 import { SelectedStage } from "../components/stage/Stage";
 import { Wordmark } from "../components/Wordmark";
+import { ConsoleDrawer } from "../features/console/ConsoleDrawer";
 import { CreateComposer } from "../features/create/CreateComposer";
 import { useCreate } from "../features/create/store";
 import { GallerySoon } from "../features/edit/ComingSoon";
@@ -107,6 +108,7 @@ export function DesktopLayout() {
         </div>
         <div className="min-h-0 flex-1 px-4 pb-4">{tab === "create" ? <SelectedStage /> : tab === "edit" ? <EditCanvas /> : <GallerySoon />}</div>
         {tab !== "gallery" && <RecentStrip group={tab === "edit" ? "edit" : "create"} />}
+        <ConsoleDrawer />
       </section>
 
       <aside className="flex min-h-0 flex-col border-l border-line bg-surface" aria-label="Queue and history">

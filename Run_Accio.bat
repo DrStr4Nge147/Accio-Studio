@@ -47,10 +47,11 @@ if not exist "%COMFY_DIR%\python_embeded\python.exe" (
     exit /b 1
 )
 if not exist "data\logs" mkdir "data\logs"
-echo       Starting the backend... ^(own minimized window; ComfyUI log: data\logs\comfyui.log^)
+echo       Starting the backend... ^(hidden; its console is in the app, log file: data\logs\comfyui.log^)
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
-start "Accio backend (ComfyUI)" /min /d "%COMFY_DIR%" cmd /c ".\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port %COMFY_PORT% --disable-auto-launch %COMFY_FLAGS% > "%~dp0data\logs\comfyui.log" 2>&1"
+set "COMFY_LOG=%~dp0data\logs\comfyui.log"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$q=[char]34; Start-Process -FilePath cmd.exe -WorkingDirectory $env:COMFY_DIR -WindowStyle Hidden -ArgumentList ('/c ' + $q + '.\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port ' + $env:COMFY_PORT + ' --disable-auto-launch ' + $env:COMFY_FLAGS + ' > ' + $q + $env:COMFY_LOG + $q + ' 2>&1' + $q)"
 set /a WAITED=0
 
 :wait_comfy

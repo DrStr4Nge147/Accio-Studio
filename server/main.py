@@ -29,6 +29,7 @@ from comfy import ComfyClient, ComfyError
 from config import DATA_DIR, FRONTEND_DIST, ROOT, comfy_url, load_manifest, load_settings, template_files
 from history import History
 from jobs import JobManager
+from logtail import read_log
 from schemas import JobRequest
 
 log = logging.getLogger("accio")
@@ -282,6 +283,14 @@ async def job_image(job_id: str, index: int, request: Request):
 async def queue(request: Request):
     q = await request.app.state.comfy.queue()
     return {"running": len(q.get("queue_running", [])), "pending": len(q.get("queue_pending", []))}
+
+
+@app.get("/api/logs/comfy")
+async def comfy_log(request: Request, after: int | None = None):
+    """The bundled ComfyUI console output, by byte offset. Not available when an external backend is used."""
+    if str(request.app.state.settings["external_comfy_url"]).strip():
+        return {"available": False, "offset": 0, "text": "", "reset": False, "external": True}
+    return read_log(DATA_DIR / "logs" / "comfyui.log", after)
 
 
 @app.post("/api/upload")

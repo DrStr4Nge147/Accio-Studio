@@ -1,8 +1,9 @@
-import { ChevronLeft, LayoutGrid, Settings as GearIcon, Sparkles, WandSparkles } from "lucide-react";
+import { ChevronLeft, LayoutGrid, Settings as GearIcon, Sparkles, Terminal, WandSparkles } from "lucide-react";
 import { Wordmark } from "../components/Wordmark";
 import { HealthBanner } from "../components/HealthBanner";
 import { IconButton } from "../components/ui/controls";
 import { Sheet } from "../components/ui/Sheet";
+import { ConsoleActions, ConsoleLog, useConsolePolling } from "../features/console/ConsoleDrawer";
 import { CreateAdvanced } from "../features/create/CreateAdvanced";
 import { CreateComposer } from "../features/create/CreateComposer";
 import { GallerySoon } from "../features/edit/ComingSoon";
@@ -115,16 +116,31 @@ function EditMobile() {
 export function MobileLayout() {
   const tab = useUi((s) => s.tab);
   const set = useUi((s) => s.set);
+  const consoleOpen = useUi((s) => s.consoleOpen);
+  useConsolePolling(consoleOpen, 1000);
   return (
     <div className="flex h-full flex-col bg-bg">
       <header className="safe-t flex flex-none items-center justify-between px-3.5">
         <div className="flex h-12 items-center">
           <Wordmark size={24} />
         </div>
-        <IconButton label="Settings" onClick={() => set({ settingsOpen: true })}>
-          <GearIcon size={20} strokeWidth={1.7} />
-        </IconButton>
+        <div className="flex">
+          <IconButton label="Console" onClick={() => set({ consoleOpen: true })}>
+            <Terminal size={20} strokeWidth={1.7} />
+          </IconButton>
+          <IconButton label="Settings" onClick={() => set({ settingsOpen: true })}>
+            <GearIcon size={20} strokeWidth={1.7} />
+          </IconButton>
+        </div>
       </header>
+      <Sheet open={consoleOpen} onClose={() => set({ consoleOpen: false })} title="Console" height="70%">
+        <div className="-mx-4 flex flex-col">
+          <div className="flex justify-end px-2">
+            <ConsoleActions />
+          </div>
+          <ConsoleLog className="h-[50vh] border-y border-line bg-bg" />
+        </div>
+      </Sheet>
       <HealthBanner />
       <main className="flex min-h-0 flex-1 flex-col">
         {tab === "create" ? <CreateMobile /> : tab === "edit" ? <EditMobile /> : <GallerySoon />}
