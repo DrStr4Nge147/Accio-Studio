@@ -50,7 +50,7 @@ if not exist "data\logs" mkdir "data\logs"
 echo       Starting ComfyUI... ^(own minimized window; log: data\logs\comfyui.log^)
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
-start "ComfyUI (Accio)" /min /d "%COMFY_DIR%" cmd /c ".\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port %COMFY_PORT% %COMFY_FLAGS% > "%~dp0data\logs\comfyui.log" 2>&1"
+start "ComfyUI (Accio)" /min /d "%COMFY_DIR%" cmd /c ".\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port %COMFY_PORT% --disable-auto-launch %COMFY_FLAGS% > "%~dp0data\logs\comfyui.log" 2>&1"
 set /a WAITED=0
 
 :wait_comfy
