@@ -89,18 +89,27 @@ echo.
 echo =================================================================
 echo Choose Connection Mode
 echo =================================================================
-echo 1. LOCAL ONLY ^(Wi-Fi / LAN^)
+echo 1. LOCAL ONLY ^(this PC, 127.0.0.1^)
 echo 2. CLOUDFLARE ^(random URL^)
 echo 3. ZROK ^(persistent URL^)
+echo 4. SAME NETWORK ^(other devices on your Wi-Fi / LAN^)
 echo =================================================================
 set "TUNNEL=local"
-set /p CHOICE="Selection [1-3, Default=1]: "
+set "HOST_ARG="
+set /p CHOICE="Selection [1-4, Default=1]: "
 if "%CHOICE%"=="2" set "TUNNEL=cloudflare"
 if "%CHOICE%"=="3" set "TUNNEL=zrok"
+if "%CHOICE%"=="4" (
+    set "HOST_ARG=--host 0.0.0.0"
+    echo.
+    echo       Other devices on this network can open the LAN address shown below.
+    echo       There is no login yet, so anyone on the network can use Accio.
+    echo       If Windows Firewall asks, allow access on private networks.
+)
 
 echo.
 echo [3/3] Launching Accio Studio ^(%TUNNEL%^)...
-env\Scripts\python.exe server\main.py --tunnel %TUNNEL% --open-browser
+env\Scripts\python.exe server\main.py --tunnel %TUNNEL% %HOST_ARG% --open-browser
 
 if %ERRORLEVEL% neq 0 (
     echo.
