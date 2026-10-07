@@ -10,6 +10,10 @@ It ships with its own portable copy of ComfyUI as the engine. You never open Com
 - **Edit**: Multi-edit (up to 9 images, head and body swap presets), Inpaint (paint a mask; remove or move an object) and Outpaint (drag the edges out).
 - **Gallery** of everything you made, with thumbnails, "Reuse settings" and "Send to Edit".
 
+| Desktop | Mobile |
+|---|---|
+| <img src="docs/screenshots/desktop.png" alt="Accio Studio on a desktop browser" width="640"> | <img src="docs/screenshots/mobile.png" alt="Accio Studio on a phone" width="220"> |
+
 ## What you need
 
 | | |
