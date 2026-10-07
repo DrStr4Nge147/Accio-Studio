@@ -1,6 +1,6 @@
-import { isEnhancing, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { Job } from "../api/types";
-import { formatDuration, nextDecodePhase } from "./jobView";
+import { formatDuration, isEnhancing, nextDecodePhase } from "./jobView";
 
 describe("formatDuration", () => {
   it("formats seconds, minutes and hours", () => {
