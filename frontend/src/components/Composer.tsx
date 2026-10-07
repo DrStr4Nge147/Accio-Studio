@@ -165,30 +165,31 @@ export function Composer({
 
   const action = (
     <>
-      {running ? (
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={cancelling}
-          aria-busy={cancelling}
-          className="hover-wash flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-line-strong bg-raised text-[16px] font-semibold text-text"
-        >
-          {cancelling ? <Loader2 size={20} strokeWidth={1.7} className="animate-spin motion-reduce:animate-none" /> : <X size={20} strokeWidth={1.7} />}
-          {cancelling ? "Cancelling…" : "Cancel"}
-          {!dock && !cancelling && <kbd className="rounded-md border border-line-strong px-1.5 font-mono text-[11px] text-text-2">Esc</kbd>}
-        </button>
-      ) : (
+      <div className="flex gap-2">
         <button
           type="button"
           onClick={onGenerate}
           disabled={disabled}
           title={disabledReason ?? undefined}
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-hi to-gold text-[16px] font-semibold text-on-gold shadow-[0_6px_20px_color-mix(in_srgb,var(--gold)_30%,transparent)] transition-[opacity,filter] hover:brightness-105 disabled:opacity-50"
+          className="flex h-[52px] min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-hi to-gold text-[16px] font-semibold text-on-gold shadow-[0_6px_20px_color-mix(in_srgb,var(--gold)_30%,transparent)] transition-[opacity,filter] hover:brightness-105 disabled:opacity-50"
         >
-          {generateIcon} Generate
+          {generateIcon} {running ? "Add to queue" : "Generate"}
           {!dock && <kbd className="rounded-md border border-black/20 px-1.5 font-mono text-[11px] opacity-70">Ctrl+Enter</kbd>}
         </button>
-      )}
+        {running && (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={cancelling}
+            aria-busy={cancelling}
+            aria-label={cancelling ? "Cancelling" : "Cancel the current job"}
+            data-tip={cancelling ? "Cancelling…" : "Cancel the current job (Esc)"}
+            className="hover-wash flex h-[52px] w-[52px] flex-none items-center justify-center rounded-2xl border border-line-strong bg-raised text-text"
+          >
+            {cancelling ? <Loader2 size={20} strokeWidth={1.7} className="animate-spin motion-reduce:animate-none" /> : <X size={20} strokeWidth={1.7} />}
+          </button>
+        )}
+      </div>
       {disabledReason && <p className="mt-1.5 text-center text-[12px] text-text-3">{disabledReason}</p>}
     </>
   );

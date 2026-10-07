@@ -41,7 +41,7 @@ function useShortcuts(desktop: boolean) {
       const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
         const tab = useUi.getState().tab;
-        if (!running()) void (tab === "create" ? generate() : tab === "edit" ? generateEdit() : undefined);
+        void (tab === "create" ? generate() : tab === "edit" ? generateEdit() : undefined);
         e.preventDefault();
       } else if (e.key === "Escape" && running() && !document.querySelector('[role="dialog"]')) {
         void cancelCurrent();

@@ -5,7 +5,7 @@ import { inputUrl, uploadImage } from "../../api/upload";
 import type { Job } from "../../api/types";
 import { boxStroke, exportInpaintPng } from "../../lib/inpaintExport";
 import { useServer } from "../../store/health";
-import { useJobs } from "../../store/jobs";
+import { isActive, useJobs } from "../../store/jobs";
 import { useUi } from "../../store/ui";
 import { boxesOf, isEmptyMask, maskBytes, maskPreviewUrl } from "./maskOps";
 import { paddedBefore } from "../../lib/paddedBefore";
@@ -67,8 +67,9 @@ export async function generateEdit() {
     useEditSubmit.setState({ stage: "Starting…" });
     const job = await submitJob(params);
     const jobs = useJobs.getState();
+    const busyBefore = Object.values(jobs.jobs).some(isActive);
     jobs.upsert([job]);
-    jobs.select(job.id);
+    if (!busyBefore) jobs.select(job.id); // a queued job does not take the canvas from the one running
     if (before) useWorkspace.getState().setBefore(job.id, before);
     afterJob?.(job.id);
     useUi.getState().set({ viewerOpen: true });
