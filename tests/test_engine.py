@@ -145,3 +145,17 @@ def test_outpaint_default_prompt_and_padding_rules():
 def test_invalid_requests_rejected(bad):
     with pytest.raises(ValidationError):
         mk(**bad)
+
+
+def test_create_defaults_match_workflow_values():
+    from engine import create_defaults, load_template
+
+    d = create_defaults()
+    assert (d["standard"]["width"], d["standard"]["height"]) == (1080, 1920)
+    assert (d["detailed"]["width"], d["detailed"]["height"]) == (1920, 1080)
+    assert d["standard"]["sampler"]["steps"] == 8 and d["detailed"]["pass2"]["steps"] == 4
+    assert d["detailed"]["turbo_pass1"] == {"on": True, "strength": 0.2}
+    assert d["variance"]["variance_preset"].endswith("Balanced")
+    # The combo's Seed Variance node must expose the same defaults, or the shared UI would lie for Detailed.
+    combo_var = load_template("krea_combo__var1_tenh0_sharp0")["282"]["inputs"]
+    assert all(combo_var[k] == v for k, v in d["variance"].items())

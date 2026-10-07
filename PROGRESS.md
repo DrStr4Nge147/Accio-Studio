@@ -1,6 +1,6 @@
 # Accio Studio - progress
 
-Read `APP_SPEC.md` first; this file records state, decisions and how to run. Last updated: 2026-10-07.
+Read `APP_SPEC.md` first; this file records state, decisions and how to run. Last updated: 2026-10-07 (Phase 4).
 
 ## Status
 
@@ -10,10 +10,11 @@ Read `APP_SPEC.md` first; this file records state, decisions and how to run. Las
 | 2. Template engine | **Done** (structural parity 20/20) |
 | 2b. Portable bundle | **Done** (see below) |
 | 3. Design proposal | **Done, approved by user 2026-10-07** (see "Approved design" below; user: "a good start, we can always edit it") |
-| 4. Create mode | **Next** |
-| 5-8 | Not started |
+| 4. Create mode | **Done** (see "Phase 4 results"; awaiting the user's demo/test) |
+| 5. Edit modes | **Next** (ask the spec 6.4 Remove/Move question first) |
+| 6-8 | Not started |
 
-Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio`. Git: all work is on branch `dev`, **committed phase by phase directly on `dev` (user decision 2026-10-07: no feature branches, no new branches; this overrides APP_SPEC section 10's "feature branch")**. History: Phase 1+2, Phase 2b, Phase 3 design. Commit at the end of each phase without asking. `main` is the default branch and is not used yet.
+Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio`. Git: all work is on branch `dev`, **committed phase by phase directly on `dev` (user decision 2026-10-07: no feature branches, no new branches; this overrides APP_SPEC section 10's "feature branch")**. History: Phase 1+2, Phase 2b, Phase 3 design, Phase 4 Create. Commit at the end of each phase without asking. `main` is the default branch and is not used yet.
 
 ## Spec change recorded after Phase 2 (APP_SPEC rule 3, 5.1, 9.2 step 1, new section 11)
 
@@ -41,7 +42,46 @@ Accio now ships its **own portable ComfyUI** (v0.38.0, port **8189**) installed 
 - Release packaging (`scripts\make_release`, section 11.5): not part of 2b, not built. `Update.bat`, `Run_Accio-zrok-only.bat`, `Setup_Zrok.bat`: later phases.
 - The "Download missing models" UI action and the setup-check screen (section 11.3): server side `/api/health` reports missing models/nodes and a ComfyUI-version warning (non-blocking), the UI and the download action come with the frontend phases.
 
-## What exists
+## Phase 4 results (Create mode, 2026-10-07)
+
+Built the real frontend from the approved design and Create (Standard + Detailed) end to end.
+
+**Verified on this PC (bundled ComfyUI 0.38.0 on 8189, real GPU, in the in-app browser):**
+- Desktop (three panes) and mobile (375x812) layouts render; theme switch (dark/light/system) works; state persists across reload.
+- Standard 512x512 job from the UI: queued, running with step X/8, live blurred preview, queue pane entry, finished, summon reveal played, image shown, appears in History / Recent.
+- Detailed 576x384 job from the UI (mobile): "step N/8, pass 1 of 2" then "step N/4, pass 2 of 2", final image plus a "1st pass" image in the output strip, Details panel with all three seeds.
+- `POST /api/build` accepted a Detailed request shaped exactly like the UI sends (overrides, turbo toggle, LoRA with `target`, upscale 1.25 gives node 158 = 1560x2080, `save_first_pass: false` removes node 160, seeds 11/22/33 recorded).
+- `pytest tests -q`: **108 passed** (new: `create_defaults` test). `npm test` (vitest): **11 passed** (request building, validation, reuse round trip, LoRA grouping). `npm run build`: tsc clean; **initial JS 88 KB gzipped** (budget 200 KB), CSS 7 KB, fonts 133 KB (lazy, `font-display: swap`).
+- `node scripts/check-contrast.mjs`: all token pairs pass in both themes (see deviations for the light-theme fixes).
+
+**What exists (frontend, `frontend/src`):**
+- `index.css`: tokens as CSS variables (dark + light) mapped into Tailwind, self-hosted fonts (`assets/fonts`, Latin subset, OFL licences alongside; Fraunces is the SOFT-axis build, 62 KB), summon / shimmer / sheet animations (transform, opacity, clip-path only; `prefers-reduced-motion` handled). Base resets are in `@layer base` (an unlayered `button { color: inherit }` had overridden Tailwind text colours).
+- `api/` (fetch wrapper that surfaces the server's friendly error text, endpoints, WebSocket with auto-reconnect and a re-sync of jobs after every reconnect, binary preview frames to blob URL). `store/` (zustand: jobs, ui, health + catalog). `lib/` (aspects, LoRA grouping, ETA / pass helpers, share, media query).
+- `components/`: shared `Composer` (dock on mobile, pane on desktop), `Settings` (theme + setup check: ComfyUI online/version, missing models/nodes, warnings), `HealthBanner`, `Sheet`, `ui/controls` (Chip, Toggle, Segmented, Slider, IconButton), `stage/` (RunningCard with in-place progress / preview / ETA / cancel, ResultView with download / share / reuse / details, error and cancelled card, empty state).
+- `features/create/`: store (persisted to localStorage; stores only overrides of the workflow defaults), `params.ts` (UI state to request, validation, "reuse settings"), `actions.ts` (generate / cancel), AspectPicker, CreateControls (mobile chips, desktop toggles), CreateAdvanced (seed lock + 3 seeds, per-pass sampler, Turbo LoRA 1/2, upscale, save first pass, sharpen / T-Enhancer strength, Seed Variance preset + all node settings, stackable LoRAs). `features/history/` (queue, history, recent strip). `layout/` Desktop (>= 1024 px) and Mobile (tab bar, feed, full-screen viewer, Advanced sheet). Edit and Gallery tabs are plain "coming" screens.
+- Server: `engine.create_defaults()` and `defaults` in `GET /api/catalog` (workflow defaults read from the templates, so the UI never hard-codes them; a test asserts the combo's variance node matches).
+- Desktop shortcuts: Ctrl+Enter generate, Esc cancel, 1/2/3 switch tab.
+
+**Decisions / deviations (Phase 4):**
+- Light-theme token tweaks from the contrast check (approved palette otherwise untouched): `text-3` `#756D5B` to `#675F4D` (hint text on raised surfaces was 4.24:1); new `--gold-ui` (`#9C6708` in light, the same gold in dark) for non-text UI (switch, slider / progress fill, focus ring) because the light gold fill was 2.2:1; switch track colours darkened to reach 3:1. Gold fill, gold text and the on-gold label are unchanged. `design/proposal.html` was not updated to match.
+- One job at a time from the composer: while any job is active the button is Cancel (no queueing a second job from the UI). The queue pane still lists any active jobs (e.g. from another device).
+- Mobile: aspect chip, Advanced and everything beyond the chips live in the Advanced sheet (grab handle tap / swipe up, or the sliders button). While a job is on screen, mobile shows it full height (back arrow returns to the feed); idle shows a 2-column feed.
+- "Reuse settings" and "Details" (seeds, copy) were pulled forward from later phases because they are cheap and make seed lock usable. "Send to Edit" waits for Phase 5.
+- Retry on a failed job reuses its settings but draws new seeds.
+- Seed Variance fine-tune only applies when the preset is Custom (node tooltip); the UI says so under "All settings".
+- Aspect presets other than 16:9 / 9:16 show a "hasn't been tried with Krea2" hint (spec: unverified).
+- Added dev-only tooling: `vitest` for frontend logic, `scripts/check-contrast.mjs` (repeatable token check). New runtime dependency: `lucide-react` (spec baseline).
+
+**Known issues / not done in Phase 4:**
+- **No thumbnails yet:** history, feed and the recent strip load full-size PNGs lazily. Fine on this PC, heavy over a tunnel. Server-side WebP thumbnails and the virtualized gallery are Phase 6.
+- **Service worker / PWA install not verified:** registration fails inside the in-app browser pane ("unknown error fetching script"; `sw.js` itself is served 200); not tried in Chrome. No app icons yet (needed for install). Phase 6.
+- Not tested: batch > 1, T-Enhancer or LoRA runs on the GPU, Upscale 1.25-2x run, Reuse / Retry clicked in the browser (covered by unit tests and a `/api/build` dry run only), desktop widths other than 1280x800, a real phone, keyboard shortcuts clicked through, error paths (the ComfyUI-offline banner is implemented but not exercised), Cancel while running (it calls the Phase 2 endpoint tested earlier), the LoRA picker with real LoRAs applied.
+- Wrong-family LoRA hint (spec 6.6) not implemented (not detectable from the API).
+- Progress / preview updates are throttled server-side to 10/s; the UI does not throttle further.
+- Contrast was computed on tokens only; text on image overlays (progress text on the dark gradient) was not measured.
+- Starting ComfyUI from a Git Bash shell crashed on an emoji log line (cp1252 redirect); `Run_Accio.bat` is unaffected (worked in 2b). Set `PYTHONUTF8=1` if you launch it from bash.
+
+## What exists (Phases 1-2b: backend and installer)
 
 - `installer/` (`install.py`, `core.py`): stdlib-only installer logic called by `Install.bat` (portable `7zr.exe` with GitHub fallback because 7-zip.org timed out here, GPU detect, ComfyUI download/extract, pinned node archives via GitHub zip + built-in `tar`, `pip -c data\pip-constraints.txt` so node requirements cannot replace the torch stack, resumable curl downloads, safetensors verification, `extra_model_paths.yaml`, frontend build with portable Node fallback). State in `data\install.json`. Flags: `--models-from`, `--optional-loras yes|no|ask`, `--yes`, `--skip-models`, `--portable-node`.
 - `server/templates/manifest.json`: ComfyUI version, 8 node pins, 12 models (URL, size, required flag), 7zr sources. `server/main.py` derives its required-model list from it.
@@ -87,6 +127,9 @@ Structural parity (spec 7.1) for all 20 templates: **PASS** (fresh re-export fro
 .\Run_Accio.bat                    # pick 1; starts bundled ComfyUI (8189) + Accio (http://127.0.0.1:7862); dev test page at /dev
 env\Scripts\python.exe -m pytest tests -q
 cd frontend; npm run dev           # Vite dev server, proxies /api to :7862
+cd frontend; npm test              # vitest (frontend logic)
+cd frontend; npm run build         # tsc + production build into frontend/dist (the server serves it)
+node scripts/check-contrast.mjs    # design-token contrast check
 ```
 
 Dry-run any request without queueing: `POST /api/build` with `{"params": {...}}`.
@@ -136,6 +179,6 @@ Radii 10 / 14 / 22 / pill. Three surface levels separated by 1 px hairlines. Lin
 
 **Deviations / caveats:** the prototype uses gradients as image stand-ins and is not responsive between the phone and desktop frames (the real app switches at 1024 px). Prototype lives in `design/` and is not shipped (excluded from release packaging).
 
-## Next (Phase 4: Create mode, short demo at the end)
+## Next (Phase 5: Edit modes)
 
-Build the frontend foundation from the approved design (tokens as CSS variables + Tailwind, self-hosted fonts, app shell with the mobile tab bar and desktop three-pane layout, theme switch, shared composer component), then Create mode: Standard + Detailed, toggles, Advanced, LoRAs, live progress/preview/cancel in the result slot, results feed. Backend API already exists (Phase 2). Edit modes stay stubs until Phase 5; ask the spec 6.4 Remove/Move question before Phase 5.
+Multi-Edit (MiniMax upload, 9-slot tray), Inpaint (mask canvas, RGBA mask per spec 5.3), Outpaint (pad editor), enhancer "Prompt used" panel, presets, Send to Edit. **Ask the user the spec 6.4 Remove/Move question first.** Reuse the Phase 4 pieces: `Composer`, `Sheet`, `ui/controls`, `stage/` (add the before/after compare slider to `ResultView`), the jobs store and WebSocket. The Edit tab currently renders `features/edit/ComingSoon.tsx`; the Edit sub-modes become a segmented control in the mobile top bar (design). The server already supports all three Edit modes (`/api/upload?kind=media|image|mask`, `/api/jobs`).

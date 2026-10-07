@@ -205,6 +205,39 @@ def _apply_variance(prompt: dict, node: str, overrides: dict | None, cat: Catalo
         current[key] = val
 
 
+def create_defaults() -> dict[str, Any]:
+    """Workflow default values of the Create patch points, read from the templates (single source of truth for the UI)."""
+    std = load_template("krea_t2i__var1_tenh1_sharp1")
+    combo = load_template("krea_combo__var1_tenh1_sharp1")
+    sampler_keys = ("steps", "cfg", "sampler_name", "scheduler", "denoise")
+
+    def sampler(pr: dict, node: str) -> dict[str, Any]:
+        return {k: pr[node]["inputs"][k] for k in sampler_keys}
+
+    return {
+        "standard": {
+            "width": std["833:829"]["inputs"]["width"],
+            "height": std["833:829"]["inputs"]["height"],
+            "sampler": sampler(std, "833:828"),
+        },
+        "detailed": {
+            "width": combo["244"]["inputs"]["value"],
+            "height": combo["245"]["inputs"]["value"],
+            "pass1": sampler(combo, "273"),
+            "pass2": sampler(combo, "265"),
+            "turbo_pass1": {k: combo["180"]["inputs"]["lora_1"][k] for k in ("on", "strength")},
+            "turbo_pass2": {k: combo["174"]["inputs"]["lora_1"][k] for k in ("on", "strength")},
+        },
+        "sharpen_strength": std["141"]["inputs"]["method.strength"],
+        "t_enhancer_strength": std["146"]["inputs"]["strength"],
+        "variance": {
+            k: v
+            for k, v in std["281"]["inputs"].items()
+            if k not in VARIANCE_RESERVED and not is_link(v)
+        },
+    }
+
+
 # --------------------------------------------------------------------------- builders
 
 def _build_create(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], prefix: str) -> Built:

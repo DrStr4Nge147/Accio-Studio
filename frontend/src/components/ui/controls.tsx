@@ -1,0 +1,189 @@
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+
+const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ");
+
+/** Pill toggle for the main options (36 px visual, 44 px hit area via padding). */
+export function Chip({
+  on,
+  onClick,
+  children,
+  toggle = true,
+  label,
+}: {
+  on?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+  /** false = plain action chip (cycle / open), no on-state dot */
+  toggle?: boolean;
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={toggle ? !!on : undefined}
+      aria-label={label}
+      className="-my-1 flex-none py-1.5 first:ml-0"
+    >
+      <span
+        className={cx(
+          "flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[13px] transition-colors",
+          on ? "border-gold/55 bg-gold-wash text-gold-text" : "border-line-strong text-text-2",
+        )}
+      >
+        {toggle && <i className={cx("h-[7px] w-[7px] rounded-full", on ? "bg-gold-ui" : "bg-text-3")} />}
+        {children}
+      </span>
+    </button>
+  );
+}
+
+export function Toggle({
+  on,
+  onChange,
+  label,
+  sub,
+  disabled,
+}: {
+  on: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  sub?: ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      disabled={disabled}
+      onClick={() => onChange(!on)}
+      className="flex min-h-11 w-full items-center justify-between gap-3 text-left text-[14px] disabled:opacity-50"
+    >
+      <span>
+        {label}
+        {sub && <span className="block text-[12px] text-text-3">{sub}</span>}
+      </span>
+      <span className={cx("relative h-[26px] w-11 flex-none rounded-[13px] transition-colors", on ? "bg-gold-ui" : "bg-track")}>
+        <span
+          className={cx(
+            "absolute left-[3px] top-[3px] h-5 w-5 rounded-full transition-transform",
+            on ? "translate-x-[18px] bg-on-gold-ui" : "bg-white",
+          )}
+        />
+      </span>
+    </button>
+  );
+}
+
+export function Segmented<T extends string | number>({
+  value,
+  options,
+  onChange,
+  label,
+  small,
+}: {
+  value: T;
+  options: { value: T; label: ReactNode }[];
+  onChange: (v: T) => void;
+  label: string;
+  small?: boolean;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="inline-flex gap-0.5 rounded-xl border border-line bg-raised p-[3px]">
+      {options.map((o) => (
+        <button
+          key={String(o.value)}
+          type="button"
+          role="radio"
+          aria-checked={o.value === value}
+          onClick={() => onChange(o.value)}
+          className={cx(
+            "grid place-items-center rounded-[9px] px-3.5 text-[13px] font-medium transition-colors",
+            small ? "h-8 min-w-9" : "h-9 min-w-11",
+            o.value === value ? "bg-overlay text-text" : "text-text-2",
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function Slider({
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  label,
+  format = (v) => v.toFixed(2),
+  disabled,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  label: string;
+  format?: (v: number) => string;
+  disabled?: boolean;
+}) {
+  const pct = max > min ? ((value - min) / (max - min)) * 100 : 0;
+  return (
+    <div className={disabled ? "opacity-50" : undefined}>
+      <div className="flex items-center justify-between text-[13px]">
+        <span className="font-medium text-text-2">{label}</span>
+        <span className="font-mono text-[13px] text-text">{format(value)}</span>
+      </div>
+      <input
+        type="range"
+        className="slider"
+        aria-label={label}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        disabled={disabled}
+        style={{ ["--pct" as string]: `${pct}%` }}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
+    </div>
+  );
+}
+
+export function IconButton({
+  children,
+  label,
+  className,
+  ...rest
+}: { label: string; children: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      {...rest}
+      className={cx("grid h-11 w-11 flex-none place-items-center rounded-full text-text-2 transition-colors hover:text-text disabled:opacity-40", className)}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function Label({ children }: { children: ReactNode }) {
+  return <div className="text-[12px] font-medium tracking-wide text-text-3">{children}</div>;
+}
+
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <Label>{label}</Label>
+      <div className="mt-1">{children}</div>
+    </label>
+  );
+}
+
+export const inputCls =
+  "h-11 w-full rounded-s border border-line bg-raised px-3 text-[14px] text-text outline-none focus:border-gold";

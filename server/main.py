@@ -194,6 +194,7 @@ async def catalog(request: Request):
         "samplers": sorted(cat.samplers or []),
         "schedulers": sorted(cat.schedulers or []),
         "variance": cat.variance_spec,
+        "defaults": engine.create_defaults(),
     }
 
 

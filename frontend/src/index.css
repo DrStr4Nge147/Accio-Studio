@@ -1,4 +1,243 @@
 @import "tailwindcss";
 
-html, body, #root { height: 100%; }
-body { margin: 0; background: #0e0d0b; color: #ece7dc; font-family: system-ui, sans-serif; }
+/* Self-hosted variable fonts, Latin subset (SIL OFL, licences next to the files). */
+@font-face {
+  font-family: "Fraunces";
+  src: url("./assets/fonts/fraunces-soft.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("./assets/fonts/instrument-sans.woff2") format("woff2-variations");
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./assets/fonts/jetbrains-mono.woff2") format("woff2-variations");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+/* Design tokens: "Lamplight on ink" (design/proposal.html, approved 2026-10-07). Gold marks active/primary/progress only. */
+:root {
+  --bg: #0b0a0f;
+  --surface: #121118;
+  --raised: #1a1922;
+  --overlay: #24222e;
+  --line: #2c2a37;
+  --line-strong: #3d3a4b;
+  --text: #f1eadb;
+  --text-2: #b9b2a3;
+  --text-3: #8a8478;
+  --gold: #e8b04a;
+  --gold-hi: #f6cd7c;
+  --gold-text: #e8b04a;
+  --gold-ui: #e8b04a; /* gold for non-text UI (switch, fills, focus ring): needs 3:1 */
+  --on-gold-ui: #17120a;
+  --gold-wash: rgba(232, 176, 74, 0.12);
+  --on-gold: #17120a;
+  --ok: #7fc79a;
+  --danger: #ef7b6c;
+  --track: #6a6680;
+  --scrim: rgba(5, 4, 8, 0.55);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #f5f0e5;
+  --surface: #fbf8f1;
+  --raised: #efe9db;
+  --overlay: #e6dfcd;
+  --line: #ddd5c1;
+  --line-strong: #c9bfa6;
+  --text: #1b1810;
+  --text-2: #554e3f;
+  --text-3: #675f4d;
+  --gold: #d9992a;
+  --gold-hi: #e8b04a;
+  --gold-text: #85560a;
+  --gold-ui: #9c6708;
+  --on-gold-ui: #ffffff;
+  --gold-wash: rgba(217, 153, 42, 0.16);
+  --on-gold: #17120a;
+  --ok: #2f7d4f;
+  --danger: #b3392b;
+  --track: #8f8463;
+  --scrim: rgba(40, 32, 12, 0.35);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 10px 28px rgba(60, 45, 10, 0.14);
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-overlay: var(--overlay);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-gold: var(--gold);
+  --color-gold-hi: var(--gold-hi);
+  --color-gold-text: var(--gold-text);
+  --color-gold-wash: var(--gold-wash);
+  --color-gold-ui: var(--gold-ui);
+  --color-on-gold-ui: var(--on-gold-ui);
+  --color-on-gold: var(--on-gold);
+  --color-ok: var(--ok);
+  --color-danger: var(--danger);
+  --color-track: var(--track);
+  --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Fraunces", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --radius-s: 10px;
+  --radius-m: 14px;
+  --radius-l: 22px;
+  --shadow-float: var(--shadow);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 15px/1.5 var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+  button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  :focus-visible {
+    outline: 2px solid var(--gold-ui);
+    outline-offset: 2px;
+  }
+  ::placeholder {
+    color: var(--text-3);
+  }
+}
+.serif {
+  font-family: var(--font-serif);
+  font-variation-settings: "SOFT" 100;
+}
+.safe-b {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-t {
+  padding-top: env(safe-area-inset-top);
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Range inputs: gold fill via --pct, large thumb for touch. */
+input[type="range"].slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  --pct: 0%;
+}
+input[type="range"].slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--gold-ui) var(--pct), var(--track) var(--pct));
+}
+input[type="range"].slider::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--track);
+}
+input[type="range"].slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gold-ui);
+}
+input[type="range"].slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--text);
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+input[type="range"].slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text);
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+/* Progress shimmer + the summon reveal (transform / opacity / clip-path only). */
+@keyframes shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -100% 0; }
+}
+.shimmer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(246, 205, 124, 0.16) 50%, transparent 70%);
+  background-size: 250% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+@keyframes summon {
+  0% { clip-path: circle(0% at 50% 50%); filter: blur(14px) brightness(1.6); transform: scale(1.06); }
+  60% { filter: blur(2px) brightness(1.15); }
+  100% { clip-path: circle(75% at 50% 50%); filter: none; transform: none; }
+}
+@keyframes glow {
+  0% { opacity: 0.9; transform: scale(0.2); }
+  100% { opacity: 0; transform: scale(1.8); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+.reveal-img { animation: summon 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.reveal-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(246, 205, 124, 0.7), transparent 55%);
+  animation: glow 1.1s ease-out both;
+}
+.sheet-in { animation: sheet-up 0.22s ease-out both; }
+.fade-in { animation: fade-in 0.2s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer::before { animation: none; }
+  .reveal-img { animation: fade-in 0.25s both; }
+  .reveal-glow::after { display: none; }
+  .sheet-in { animation: fade-in 0.15s both; }
+  * { scroll-behavior: auto !important; }
+}

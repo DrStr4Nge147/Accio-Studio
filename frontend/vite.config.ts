@@ -15,8 +15,8 @@ export default defineConfig({
         description: "Image generation and editing on your local ComfyUI.",
         display: "standalone",
         start_url: "/",
-        background_color: "#0e0d0b",
-        theme_color: "#0e0d0b",
+        background_color: "#0b0a0f",
+        theme_color: "#0b0a0f",
       },
       workbox: {
         // App shell only: never cache the API, WebSocket traffic or result images.
