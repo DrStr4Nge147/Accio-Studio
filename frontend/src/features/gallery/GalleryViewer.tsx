@@ -16,43 +16,18 @@ import { removeJob } from "../history/jobMenu";
 import { reuseAny } from "../reuse";
 
 const glass = "bg-[rgba(10,9,14,0.62)] text-[#f1eadb] border border-white/10 backdrop-blur-md";
-const HIDE_AFTER_MS = 3000;
 const SEND_TARGETS: { mode: EditMode; label: string }[] = [
   { mode: "multiedit", label: "Multi-edit" },
   { mode: "inpaint", label: "Inpaint" },
   { mode: "outpaint", label: "Outpaint" },
 ];
 
-/** Chrome (bars, buttons) fades out after a few idle seconds; a tap or mouse move brings it back; `locked` keeps it up. */
-function useAutoHide(locked: boolean) {
-  const [visible, setVisible] = useState(true);
-  const visibleRef = useRef(true);
-  const timer = useRef(0);
-  const set = useCallback((v: boolean) => {
-    visibleRef.current = v;
-    setVisible(v);
-  }, []);
-  const arm = useCallback(() => {
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => set(false), HIDE_AFTER_MS);
-  }, [set]);
-  const poke = useCallback(() => {
-    set(true);
-    arm();
-  }, [set, arm]);
-  const toggle = useCallback(() => {
-    if (visibleRef.current && !locked) {
-      window.clearTimeout(timer.current);
-      set(false);
-    } else poke();
-  }, [locked, poke, set]);
-  useEffect(() => {
-    if (locked) {
-      window.clearTimeout(timer.current);
-      set(true);
-    } else arm();
-    return () => window.clearTimeout(timer.current);
-  }, [locked, arm, set]);
+/** Chrome (bars, buttons) stays up. A tap on the picture hides it for an unobstructed view and the next tap brings it back; `locked` (a panel or compare is open) keeps it up. */
+function useChrome(locked: boolean) {
+  const [hidden, setHidden] = useState(false);
+  const visible = !hidden || locked;
+  const poke = useCallback(() => setHidden(false), []);
+  const toggle = useCallback(() => setHidden((h) => !h && !locked), [locked]);
   return { visible, poke, toggle };
 }
 
@@ -255,7 +230,7 @@ function NeighborSlide({ job, side, slideRef }: { job: Job | undefined; side: -1
  * Full-screen viewer for the gallery, a carousel: the previous and next pictures sit beside the current one and follow your
  * finger, so you see them arrive; release past a third of the width (or flick) to move on, otherwise it springs back.
  * Arrow keys and the side buttons slide the same way. Pinch / double-tap / wheel zoom (a zoomed picture pans instead of
- * swiping). A tap shows or hides the controls, which also fade out after a few idle seconds. Back or Esc closes it.
+ * swiping). The controls stay on screen; a tap on the picture hides them and the next tap brings them back. Back or Esc closes it.
  */
 export function GalleryViewer({
   items,
@@ -273,7 +248,7 @@ export function GalleryViewer({
   onClose: () => void;
 }) {
   const [locked, setLocked] = useState(false);
-  const { visible, poke, toggle } = useAutoHide(locked);
+  const { visible, poke, toggle } = useChrome(locked);
   const idx = items.findIndex((j) => j.id === id);
   const job = items[idx];
   const prevJob = items[idx - 1];
