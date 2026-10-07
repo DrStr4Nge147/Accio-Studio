@@ -167,6 +167,7 @@ class JobManager:
                 await self._complete(jid)
                 return
             live["node"] = data["node"]
+            live["class"] = self._node_class(jid, data["node"])  # lets the UI show a phase (e.g. VAE decode)
             live.pop("step", None)
             live.pop("max", None)
         elif kind == "progress":
@@ -182,6 +183,11 @@ class JobManager:
         else:
             return
         await self._broadcast_job(jid)
+
+    def _node_class(self, jid: str, node: str) -> str | None:
+        built = self._built.get(jid)
+        n = built.prompt.get(node) if built else None
+        return n["class_type"] if n else None
 
     async def _complete(self, jid: str) -> None:
         job = self.history.get(jid)

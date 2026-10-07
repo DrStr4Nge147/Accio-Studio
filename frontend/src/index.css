@@ -275,6 +275,30 @@ input[type="range"].slider::-moz-range-thumb {
   animation: bubble-sway calc(var(--d) / 2.5) ease-in-out var(--delay) infinite;
 }
 
+/* VAE decode: rings of light ripple out from the centre (no step counter exists for this phase). Each ring fades
+   in and out, so the loop has no visible restart. */
+@keyframes ripple {
+  0% { transform: translate(-50%, -50%) scale(0.12); opacity: 0; }
+  18% { opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+.ripple {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1.5px solid rgba(246, 205, 124, 0.6);
+  box-shadow: 0 0 24px rgba(246, 205, 124, 0.18), inset 0 0 24px rgba(246, 205, 124, 0.1);
+  animation: ripple 3.6s cubic-bezier(0.2, 0.6, 0.3, 1) var(--i) infinite;
+  will-change: transform, opacity;
+}
+
 @keyframes summon {
   0% { clip-path: circle(0% at 50% 50%); filter: blur(14px) brightness(1.6); transform: scale(1.06); }
   60% { filter: blur(2px) brightness(1.15); }
@@ -307,6 +331,8 @@ input[type="range"].slider::-moz-range-thumb {
 @media (prefers-reduced-motion: reduce) {
   .shimmer::before { display: none; }
   .bubbles { display: none; }
+  .ripple { display: none; }
+  .breathe { animation: none !important; }
   .reveal-img { animation: fade-in 0.25s both; }
   .reveal-glow::after { display: none; }
   .sheet-in { animation: fade-in 0.15s both; }

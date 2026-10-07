@@ -13,6 +13,8 @@ export interface JobLive {
   step?: number;
   max?: number;
   queue_ahead?: number;
+  /** ComfyUI class of the node now executing (e.g. "KSampler", "VAEDecode"). */
+  class?: string | null;
 }
 
 export interface Job {

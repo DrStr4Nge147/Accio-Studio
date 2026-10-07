@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import type { Job } from "../../api/types";
 import { cancelJob } from "../../api/endpoints";
-import { formatEta, jobSize, passOf, useEta } from "../../lib/jobView";
+import { formatEta, isDecoding, jobSize, passOf, useEta } from "../../lib/jobView";
 import { useJobs } from "../../store/jobs";
 import { Ring } from "../Wordmark";
 import { Box } from "./Box";
@@ -34,6 +34,16 @@ function Bubbles() {
   );
 }
 
+function Ripples() {
+  return (
+    <div className="ripples pointer-events-none absolute inset-0 z-[1] overflow-hidden" aria-hidden>
+      {[0, -1.2, -2.4].map((i) => (
+        <span key={i} className="ripple" style={{ ["--i" as string]: `${i}s` }} />
+      ))}
+    </div>
+  );
+}
+
 /** Where the result will land: live preview, step X/Y, pass, ETA and queue position, with Cancel in place. */
 export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
   const preview = useJobs((s) => s.preview);
@@ -42,23 +52,26 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
   const { step, max, queue_ahead: ahead } = job.live;
   const queued = job.status === "queued" || (job.live.node === undefined && !max);
   const pass = passOf(job);
+  const decoding = isDecoding(job);
   const pct = max ? Math.min(100, ((step ?? 0) / max) * 100) : 0;
   const waiting = ahead ? `${ahead} job${ahead === 1 ? "" : "s"} ahead in the queue` : null;
 
   return (
-    <Box w={w} h={h} className="shimmer overflow-hidden rounded-m border border-line bg-raised">
+    <Box w={w} h={h} className={`${decoding ? "" : "shimmer"} overflow-hidden rounded-m border border-line bg-raised`}>
       {preview && job.status === "running" ? (
-        <img src={preview} alt="" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-90 blur-[14px] saturate-125" />
+        <img src={preview} alt="" className={`absolute inset-0 h-full w-full scale-110 object-cover opacity-90 saturate-125 transition-[filter] duration-700 ${decoding ? "blur-[5px]" : "blur-[14px]"}`} />
       ) : (
         <div className="absolute inset-0 grid place-items-center text-text-3">
           <Ring className="h-14 w-14 animate-pulse motion-reduce:animate-none" />
         </div>
       )}
-      <Bubbles />
+      {decoding ? <Ripples /> : <Bubbles />}
       <div className="absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-[rgba(8,7,12,0.9)] to-transparent p-3.5 pt-10 text-[#f1eadb]">
         <div className="mb-2 flex items-baseline justify-between gap-3 text-[13px] font-medium">
-          <span>{queued ? "Waiting for the GPU…" : "Summoning…"}</span>
-          {max ? (
+          <span>{decoding ? "Developing the image…" : queued ? "Waiting for the GPU…" : "Summoning…"}</span>
+          {decoding ? (
+            <span className="font-mono text-gold-hi">decoding</span>
+          ) : max ? (
             <span className="font-mono text-gold-hi">
               step {step ?? 0}/{max}
               {pass && ` · pass ${pass.pass} of ${pass.of}`}
@@ -70,14 +83,18 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
           aria-label="Generation progress"
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuenow={Math.round(pct)}
+          aria-valuenow={decoding ? undefined : Math.round(pct)}
           className="h-[3px] overflow-hidden rounded-full bg-white/20"
         >
-          <div className="h-full rounded-full bg-gold transition-[width] duration-200" style={{ width: `${pct}%` }} />
+          {decoding ? (
+            <div className="breathe h-full w-full animate-[breathe_1.6s_ease-in-out_infinite] rounded-full bg-gold" />
+          ) : (
+            <div className="h-full rounded-full bg-gold transition-[width] duration-200" style={{ width: `${pct}%` }} />
+          )}
         </div>
         <div className="mt-2 flex items-center justify-between gap-2 text-[12px] text-[#b9b2a3]">
           <span>
-            {[eta !== null && !compact ? `${formatEta(eta)} left in this pass` : null, waiting].filter(Boolean).join(" · ") ||
+            {[!decoding && eta !== null && !compact ? `${formatEta(eta)} left in this pass` : null, waiting].filter(Boolean).join(" · ") ||
               (queued ? "Starting…" : "Working…")}
           </span>
           <button

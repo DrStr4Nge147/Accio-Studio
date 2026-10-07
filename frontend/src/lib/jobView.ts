@@ -16,6 +16,9 @@ export function passOf(job: Job): { pass: 1 | 2; of: 2 } | null {
   return null;
 }
 
+/** True while the latent is being turned into pixels (no step counter exists for it). */
+export const isDecoding = (job: Job) => job.status === "running" && (job.live.class === "VAEDecode" || job.live.class === "VAEDecodeTiled");
+
 /** "42 s", "3 min 05 s", "1 h 02 min": how long a finished job took. */
 export function formatDuration(seconds: number): string {
   const s = Math.max(0, Math.round(seconds));
