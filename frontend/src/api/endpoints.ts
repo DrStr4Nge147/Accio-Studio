@@ -30,7 +30,7 @@ export const logout = () => post<{ ok: true }>("/api/auth/logout");
 export const changePassword = (current: string, next: string) => post<{ ok: true }>("/api/auth/password", { current, new: next });
 
 export interface Connection {
-  mode: "local" | "cloudflare" | "zrok";
+  mode: "local" | "cloudflare" | "zrok" | "tailscale";
   status: string;
   public_url: string | null;
   urls: { local: string; lan: string | null };

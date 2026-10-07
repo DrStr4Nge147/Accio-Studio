@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchConnection, type Connection } from "../../api/endpoints";
 import { Label } from "../../components/ui/controls";
 
-const MODE: Record<Connection["mode"], string> = { local: "This PC", cloudflare: "Cloudflare tunnel", zrok: "zrok tunnel" };
+const MODE: Record<Connection["mode"], string> = { local: "This PC", cloudflare: "Cloudflare tunnel", zrok: "zrok tunnel", tailscale: "Tailscale (private)" };
 
 /** Where this server can be reached, with a QR code to open it on a phone. Re-read while the sheet is open (tunnels start late). */
 export function ConnectionSection({ open }: { open: boolean }) {

@@ -2,12 +2,19 @@
 
 Both connect to the server on localhost, so the server itself can stay on 127.0.0.1. Each prints its public URL with an
 ASCII QR code and records it in `state` so the settings page can show it too. zrok reconnects forever.
+
+Tailscale (optional, never bundled: it needs a system-wide install) is different: `tailscale serve` publishes the port to
+your private tailnet only, so just devices signed into your Tailscale account can open the address.
 """
 from __future__ import annotations
 
+import atexit
 import io
+import json
 import re
+import shutil
 import subprocess
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -26,6 +33,7 @@ CLOUDFLARED_URL = "https://github.com/cloudflare/cloudflared/releases/latest/dow
 ZROK_NAME = re.compile(r"^[A-Za-z0-9]{4,32}$")
 CLOUDFLARE_URL = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 ZROK_URL = re.compile(r"https://[a-z0-9-]+\.share\.zrok\.io")
+TAILSCALE_DEFAULT = Path(r"C:\Program Files\Tailscale\tailscale.exe")
 NO_WINDOW = 0x08000000  # CREATE_NO_WINDOW: no console flashing up for the child process
 
 state: dict[str, Any] = {"mode": "local", "public_url": None, "status": "local"}
@@ -159,3 +167,76 @@ def run_zrok(port: int) -> None:
 
     work.announced = False  # type: ignore[attr-defined]
     threading.Thread(target=work, daemon=True, name="zrok").start()
+
+
+# ---------------------------------------------------------------------------------------------- Tailscale
+
+def find_tailscale() -> str | None:
+    return shutil.which("tailscale") or (str(TAILSCALE_DEFAULT) if TAILSCALE_DEFAULT.is_file() else None)
+
+
+def run_limited(cmd: list[str], timeout: float) -> tuple[int | None, str]:
+    """Run a command with output going to a temp file, kill it after `timeout` s. (returncode or None, its output).
+
+    A file instead of pipes: a child that keeps running would otherwise hold the pipes open and block us past the timeout.
+    """
+    with tempfile.TemporaryFile() as out:
+        proc = subprocess.Popen(cmd, stdout=out, stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
+        try:
+            code: int | None = proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            code = None
+        out.seek(0)
+        return code, out.read().decode("utf-8", "replace").strip()
+
+
+def tailscale_status(binary: str) -> dict[str, Any]:
+    out = subprocess.run([binary, "status", "--json"], capture_output=True, text=True, timeout=20, creationflags=NO_WINDOW)
+    return json.loads(out.stdout or "{}")
+
+
+def tailnet_url(status: dict[str, Any]) -> tuple[str | None, str | None]:
+    """(https URL, problem). The problem is a user-facing sentence when this PC cannot serve on the tailnet."""
+    if status.get("BackendState") != "Running":
+        return None, "Tailscale is not connected. Open the Tailscale app and sign in."
+    name = str(status.get("Self", {}).get("DNSName", "")).rstrip(".")
+    if not name:
+        return None, "Tailscale did not report this PC's name. Turn on MagicDNS in the Tailscale admin page."
+    return f"https://{name}", None
+
+
+def run_tailscale(port: int) -> None:
+    """Publish the app to the private tailnet (HTTPS on 443) and print the address. Needs HTTPS enabled for the tailnet."""
+    state.update(mode="tailscale", status="starting")
+    binary = find_tailscale()
+    if not binary:
+        state["status"] = "failed"
+        print("[ERROR] Tailscale is not installed. Get it from https://tailscale.com/download, sign in, then try again.", flush=True)
+        return
+    try:
+        url, problem = tailnet_url(tailscale_status(binary))
+        if not url:
+            raise RuntimeError(problem)
+        returncode, detail = run_limited([binary, "serve", "--bg", "--https=443", f"http://127.0.0.1:{port}"], 20)
+        ok = returncode == 0  # None = it never finished: `tailscale serve` waits forever when the tailnet has not enabled Serve
+        if not ok:
+            link = re.search(r"https://login\.tailscale\.com/\S+", detail)
+            if link:
+                raise RuntimeError(f"Serve is not enabled on your tailnet yet. Open {link.group(0)} once (as the tailnet admin), enable it, then start again.")
+            hint = " Enable HTTPS certificates for your tailnet in the Tailscale admin page (DNS > HTTPS Certificates)." if "https" in detail.lower() or "cert" in detail.lower() else ""
+            raise RuntimeError(f"tailscale serve failed: {detail[:300] or 'no answer'}.{hint}")
+    except (OSError, subprocess.SubprocessError, ValueError, RuntimeError) as e:
+        state["status"] = "failed"
+        print(f"[ERROR] Tailscale: {e}", flush=True)
+        return
+    state.update(public_url=url, status="up")
+    atexit.register(stop_tailscale, binary)  # best effort; Stop_Accio.bat also switches it off
+    announce("TAILSCALE ADDRESS (only your own devices on your tailnet)", url)
+
+
+def stop_tailscale(binary: str | None = None) -> None:
+    """Stop publishing port 443 (only that serve entry, not the rest of the user's Tailscale configuration)."""
+    binary = binary or find_tailscale()
+    if binary:
+        subprocess.run([binary, "serve", "--https=443", "off"], capture_output=True, timeout=30, creationflags=NO_WINDOW)

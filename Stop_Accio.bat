@@ -30,6 +30,7 @@ if "%COMFY_EXTERNAL%"=="1" (
     echo   - the bundled backend ^(ComfyUI, port %COMFY_PORT%^)
 )
 echo   - cloudflared / zrok tunnels started from this folder
+echo   - the Tailscale address Accio published ^(Tailscale itself keeps running^)
 echo.
 
 :: Only processes of this folder are stopped: programs located under it, and whatever listens on its two ports as long as it
@@ -47,7 +48,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$left = @(); foreach ($port in $ports) { if (Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue) { $left += $port } }" ^
   "if ($left.Count) { Write-Host ('Still listening on port(s): ' + ($left -join ', ')); exit 2 } else { Write-Host 'Done. Ports are free.' }"
 
-if !errorlevel! equ 2 (
+set "STOP_RC=!errorlevel!"
+
+set "TS_EXE=%ProgramFiles%\Tailscale\tailscale.exe"
+if exist "!TS_EXE!" (
+    :: Switch off the HTTPS 443 entry only if it points at Accio's port (Run_Accio.bat option 5); other Tailscale settings stay.
+    "!TS_EXE!" serve status 2>nul | find "127.0.0.1:%ACCIO_PORT%" >nul
+    if !errorlevel! equ 0 "!TS_EXE!" serve --https=443 off >nul 2>&1
+)
+
+if !STOP_RC! equ 2 (
     echo.
     echo Something else is using those ports. Close it, or run this again.
 )

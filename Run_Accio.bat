@@ -105,11 +105,13 @@ echo 1. LOCAL ONLY ^(this PC, 127.0.0.1^)
 echo 2. CLOUDFLARE ^(random URL, downloads cloudflared on first use^)
 echo 3. ZROK ^(persistent URL, run Setup_Zrok.bat once first^)
 echo 4. SAME NETWORK ^(other devices on your Wi-Fi / LAN^)
+echo 5. TAILSCALE ^(private: only your own devices; needs the Tailscale app^)
 echo =================================================================
 set "TUNNEL=local"
-set /p CHOICE="Selection [1-4, Default=1]: "
+set /p CHOICE="Selection [1-5, Default=1]: "
 if "%CHOICE%"=="2" set "TUNNEL=cloudflare"
 if "%CHOICE%"=="3" set "TUNNEL=zrok"
+if "%CHOICE%"=="5" set "TUNNEL=tailscale"
 if "%CHOICE%"=="4" (
     set "HOST_ARG=--host 0.0.0.0"
     echo.
