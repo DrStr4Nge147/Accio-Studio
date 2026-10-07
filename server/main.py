@@ -7,7 +7,9 @@ from __future__ import annotations
 import argparse
 import logging
 import socket
+import threading
 import time
+import webbrowser
 import uuid
 from contextlib import asynccontextmanager
 from typing import Any
@@ -322,8 +324,26 @@ def lan_ip() -> str:
         return "127.0.0.1"
 
 
+def open_browser_when_ready(port: int) -> None:
+    """Open the app in the default browser once the server accepts connections (started from Run_Accio.bat)."""
+
+    def wait_then_open() -> None:
+        for _ in range(120):
+            try:
+                with socket.create_connection(("127.0.0.1", port), timeout=1):
+                    break
+            except OSError:
+                time.sleep(0.5)
+        else:
+            return
+        webbrowser.open(f"http://127.0.0.1:{port}")
+
+    threading.Thread(target=wait_then_open, daemon=True).start()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--open-browser", action="store_true", help="open the app in the default browser once it is up")
     parser.add_argument("--tunnel", choices=["local", "cloudflare", "zrok"], default="local")
     parser.add_argument("--host")
     parser.add_argument("--port", type=int)
@@ -341,6 +361,8 @@ def main() -> None:
     else:
         print("  (loopback only until login exists; set lan_access in settings.json to open it to the LAN)")
     print(f"  ComfyUI backend  {comfy_url(s)}\n")
+    if args.open_browser:
+        open_browser_when_ready(port)
     uvicorn.run(app, host=host, port=port, log_level="warning")
 
 

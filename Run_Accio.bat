@@ -99,7 +99,7 @@ if "%CHOICE%"=="3" set "TUNNEL=zrok"
 
 echo.
 echo [3/3] Launching Accio Studio ^(%TUNNEL%^)...
-env\Scripts\python.exe server\main.py --tunnel %TUNNEL%
+env\Scripts\python.exe server\main.py --tunnel %TUNNEL% --open-browser
 
 if %ERRORLEVEL% neq 0 (
     echo.
