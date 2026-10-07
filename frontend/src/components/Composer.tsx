@@ -29,6 +29,7 @@ export function Composer({
   onExpand,
   above,
   tags,
+  fieldHeader,
   generateIcon = <Sparkles size={20} strokeWidth={1.7} />,
 }: {
   layout: "dock" | "pane";
@@ -50,6 +51,8 @@ export function Composer({
   above?: ReactNode;
   /** images the prompt can refer to: typing `<`, `im` or `image` suggests <image1>, <image2>... */
   tags?: ImageTag[];
+  /** shown just above the prompt box (e.g. the switch between your prompt and the enhanced one) */
+  fieldHeader?: ReactNode;
   generateIcon?: ReactNode;
 }) {
   const area = useRef<HTMLTextAreaElement>(null);
@@ -198,6 +201,7 @@ export function Composer({
     return (
       <div className="safe-b relative z-10 flex-none rounded-t-[24px] border-t border-line bg-surface px-3.5 pb-3 pt-2 shadow-[0_-10px_30px_rgba(0,0,0,0.25)]">
         {handle}
+        {fieldHeader}
         {field}
         {controls}
         {problem}
@@ -211,6 +215,7 @@ export function Composer({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-3 pt-3.5">
         {above}
+        {fieldHeader}
         {field}
         {controls}
       </div>

@@ -3,7 +3,8 @@ import { Columns2, Copy, Download, Info, Repeat, RotateCcw, Share2, TextQuote, W
 import { imageUrl } from "../../api/http";
 import type { Job } from "../../api/types";
 import { continueFromResult, sendToEdit } from "../../features/edit/actions";
-import { useEdit, type EditMode } from "../../features/edit/store";
+import { showEnhanced } from "../../features/edit/enhanced";
+import type { EditMode } from "../../features/edit/store";
 import { useBeforeUrl } from "../../features/edit/useBefore";
 import { reuseAny } from "../../features/reuse";
 import { formatDuration, jobSize } from "../../lib/jobView";
@@ -201,14 +202,14 @@ function PromptUsed({ job }: { job: Job }) {
         <button
           type="button"
           onClick={() => {
-            useEdit.getState().setPrompt(mode, text);
+            if (mode !== "outpaint") showEnhanced(mode, { id: job.id, text });
             setCopied(true);
             window.clearTimeout(timer.current);
             timer.current = window.setTimeout(() => setCopied(false), 1800);
           }}
           className="hover-wash flex h-11 items-center gap-1.5 rounded-full px-3 text-[13px] text-gold-hi"
         >
-          <WandSparkles size={14} strokeWidth={1.7} /> {copied ? "Set as your prompt" : "Use as prompt"}
+          <WandSparkles size={14} strokeWidth={1.7} /> {copied ? "Now in the prompt box" : "Use as prompt"}
         </button>
         <button type="button" onClick={() => void navigator.clipboard?.writeText(text).catch(() => undefined)} className="hover-wash flex h-11 items-center gap-1.5 rounded-full px-3 text-[13px] text-gold-hi">
           <Copy size={14} strokeWidth={1.7} /> Copy

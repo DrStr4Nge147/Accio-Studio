@@ -6,6 +6,7 @@ import { useUi } from "../../store/ui";
 import { cancelCurrent } from "../create/actions";
 import { generateEdit, useEditSubmit } from "./actions";
 import { EditChips, EditToggles } from "./EditControls";
+import { EnhancedSwitch } from "./EnhancedPrompt";
 import { editBlocker } from "./params";
 import { useEdit } from "./store";
 import { useWorkspace } from "./workspace";
@@ -33,6 +34,7 @@ export function EditComposer({ layout, above }: { layout: "dock" | "pane"; above
     <Composer
       layout={layout}
       above={above}
+      fieldHeader={mode === "outpaint" ? undefined : <EnhancedSwitch mode={mode} />}
       tags={mode === "multiedit" ? ws.slots.map((s, i) => ({ n: i + 1, name: s.name, thumb: s.url })) : undefined}
       prompt={prompt}
       onPrompt={(v) => edit.setPrompt(mode, v)}
