@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { inputUrl } from "../../api/upload";
 import type { Job } from "../../api/types";
+import { maskShapeFromUpload } from "../../lib/maskFromUpload";
 import { paddedBefore } from "../../lib/paddedBefore";
 import { useWorkspace } from "./workspace";
 
@@ -32,4 +33,25 @@ export function useBeforeUrl(job: Job): string | null {
   if (job.mode === "inpaint") return p.source ? inputUrl("image", p.source) : null;
   if (job.mode === "outpaint") return padded?.id === job.id ? padded.url : null;
   return null;
+}
+
+/**
+ * The painted shape of an Inpaint job, as a transparent PNG for the running view: this session's own, else rebuilt from the
+ * mask file that was uploaded (so a reload while the job runs keeps the sweep).
+ */
+export function useMaskPreviewUrl(job: Job): string | null {
+  const session = useWorkspace((s) => s.maskPreview[job.id]);
+  const [rebuilt, setRebuilt] = useState<{ id: string; url: string } | null>(null);
+  const file = job.mode === "inpaint" ? (job.params.image as string | undefined) : undefined;
+  useEffect(() => {
+    if (!file || session) return;
+    let alive = true;
+    maskShapeFromUpload(job.id, inputUrl("image", file))
+      .then((url) => alive && setRebuilt({ id: job.id, url }))
+      .catch(() => undefined); // no preview: the normal progress card is shown
+    return () => {
+      alive = false;
+    };
+  }, [job.id, file, session]);
+  return session ?? (rebuilt?.id === job.id ? rebuilt.url : null);
 }

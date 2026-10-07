@@ -5,6 +5,7 @@ Phase 1-2: no login yet, so the server listens on loopback unless `lan_access` i
 from __future__ import annotations
 
 import argparse
+import asyncio
 import logging
 import re
 import socket
@@ -38,6 +39,7 @@ REQUIRED_MODELS: dict[str, list[str]] = {}
 for _m in MANIFEST["models"]:
     if _m["required"]:
         REQUIRED_MODELS.setdefault(_m["folder"], []).append(_m["file"])
+UPLOADS_DIR = DATA_DIR / "uploads"  # our own copy of every upload, so previews never wait on the busy backend
 INPUT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 UPLOAD_KINDS = {"media": engine.MEDIA_SUBFOLDER, "image": engine.UPLOAD_SUBFOLDER, "mask": engine.UPLOAD_SUBFOLDER}
 
@@ -51,6 +53,18 @@ def sniff_image(head: bytes) -> tuple[str, str] | None:
     if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
         return "webp", "image/webp"
     return None
+
+
+def save_upload_copy(subfolder: str, name: str, data: bytes) -> None:
+    """Best effort: a failed copy only means the preview falls back to the backend's own file."""
+    try:
+        if not INPUT_NAME.fullmatch(name):
+            return
+        folder = UPLOADS_DIR / subfolder
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / name).write_bytes(data)
+    except OSError:
+        log.warning("could not keep a copy of an upload")
 
 
 def png_has_alpha(head: bytes) -> bool:
@@ -289,6 +303,7 @@ async def upload(request: Request, kind: str):
         raise HTTPException(422, "The mask upload must be an RGBA PNG.")
     name = f"{uuid.uuid4().hex}.{ext}"
     res = await request.app.state.comfy.upload_image(bytes(data), name, UPLOAD_KINDS[kind], mime)
+    await asyncio.to_thread(save_upload_copy, UPLOAD_KINDS[kind], res["name"], bytes(data))
     return {"file": res["name"], "kind": kind}
 
 
@@ -297,6 +312,9 @@ async def input_image(kind: str, file: str, request: Request):
     """Serve back an image this app uploaded (compare slider, reuse). Only our own upload folders, validated names."""
     if kind not in ("media", "image") or not INPUT_NAME.fullmatch(file):
         raise HTTPException(404, "Image not found.")
+    local = UPLOADS_DIR / UPLOAD_KINDS[kind] / file
+    if local.is_file():
+        return FileResponse(local, headers={"Cache-Control": "private, max-age=31536000, immutable"})
     comfy: ComfyClient = request.app.state.comfy
     upstream = await comfy.send(comfy.view_stream(file, UPLOAD_KINDS[kind], "input"), stream=True)
     if upstream.status_code != 200:

@@ -23,3 +23,24 @@ def test_other_names_are_rejected(name):
 def test_bad_requests_are_404(path):
     r = client.get(path)
     assert r.status_code == 404  # either our own refusal or no route at all; never a proxied file
+
+
+def test_our_own_copy_is_served_without_the_backend(tmp_path, monkeypatch):
+    import main
+
+    monkeypatch.setattr(main, "UPLOADS_DIR", tmp_path)
+    main.save_upload_copy("accio", "abc123.png", b"PNG-test")
+    assert (tmp_path / "accio" / "abc123.png").read_bytes() == b"PNG-test"
+    r = client.get("/api/input/image/abc123.png")  # no lifespan, so any call to the backend would fail
+    assert r.status_code == 200 and r.content == b"PNG-test"
+    assert "immutable" in r.headers["cache-control"]
+    assert client.get("/api/input/media/abc123.png").status_code != 200  # a different subfolder: not this file
+
+
+def test_a_copy_is_never_written_outside_the_uploads_folder(tmp_path, monkeypatch):
+    import main
+
+    monkeypatch.setattr(main, "UPLOADS_DIR", tmp_path / "u")
+    main.save_upload_copy("accio", "../escape.png", b"x")
+    main.save_upload_copy("accio", "a/b.png", b"x")
+    assert not (tmp_path / "escape.png").exists() and not (tmp_path / "u").exists()

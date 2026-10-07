@@ -1,8 +1,7 @@
 import { Loader2, X } from "lucide-react";
 import type { Job } from "../../api/types";
 import { requestCancel } from "../../features/create/actions";
-import { useBeforeUrl } from "../../features/edit/useBefore";
-import { useWorkspace } from "../../features/edit/workspace";
+import { useBeforeUrl, useMaskPreviewUrl } from "../../features/edit/useBefore";
 import { formatEta, isEnhancing, jobSize, passOf, useDecodePhase, useEta } from "../../lib/jobView";
 import { useJobs } from "../../store/jobs";
 import { Ring } from "../Wordmark";
@@ -95,7 +94,7 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
   const cancelling = useJobs((s) => !!s.cancelling[job.id]);
   const before = useBeforeUrl(job);
   const padded = job.mode === "outpaint" && !!before;
-  const maskUrl = useWorkspace((s) => s.maskPreview[job.id]);
+  const maskUrl = useMaskPreviewUrl(job);
   const masked = job.mode === "inpaint" && !!before && !!maskUrl;
   const staged = padded || masked; // the card shows the photo itself instead of the blurred live preview
   const pct = max ? Math.min(100, ((step ?? 0) / max) * 100) : 0;
