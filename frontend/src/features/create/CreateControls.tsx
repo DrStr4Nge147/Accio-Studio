@@ -1,4 +1,4 @@
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, Info, SlidersHorizontal } from "lucide-react";
 import { Chip, IconButton, Label, Segmented, Toggle } from "../../components/ui/controls";
 import { useUi } from "../../store/ui";
 import { AspectPicker } from "./AspectPicker";
@@ -12,12 +12,34 @@ const VARIANTS: { value: Variant; label: string }[] = [
   { value: "detailed", label: "Detailed" },
 ];
 
+/** Shown while Detailed is selected: the second pass re-samples the first image, which can amplify flaws. */
+export function DetailedNote({ compact }: { compact?: boolean }) {
+  if (compact) {
+    return (
+      <p className="mt-1 flex items-start gap-1.5 text-[12px] leading-snug text-text-3">
+        <Info size={14} strokeWidth={1.7} className="mt-px flex-none" aria-hidden />
+        Two passes: slower, and artifacts can build up. Check the first-pass image if the result looks off.
+      </p>
+    );
+  }
+  return (
+    <div role="note" className="flex gap-2 rounded-s border border-line bg-raised px-3 py-2.5 text-[12.5px] leading-snug text-text-2">
+      <Info size={16} strokeWidth={1.7} className="mt-0.5 flex-none text-gold-text" aria-hidden />
+      <span>
+        Detailed refines the first image with a second pass, so it takes longer and artifacts can build up. If the result looks off, compare it
+        with the first-pass image or lower the refine denoise in Advanced.
+      </span>
+    </div>
+  );
+}
+
 /** Mobile main controls: one scrolling row of chips; aspect and everything else open the Advanced sheet. */
 export function CreateChips() {
   const s = useCreate();
   const size = s.sizes[s.variant];
   const openAdvanced = () => useUi.getState().set({ advancedOpen: true });
   return (
+    <>
     <div className="no-scrollbar -mx-3.5 flex items-center gap-1.5 overflow-x-auto px-3.5 py-1">
       <IconButton label="Advanced settings" onClick={openAdvanced} className="-ml-2 border border-line-strong">
         <SlidersHorizontal size={18} strokeWidth={1.7} />
@@ -41,6 +63,8 @@ export function CreateChips() {
         T-Enhancer
       </Chip>
     </div>
+    {s.variant === "detailed" && <DetailedNote compact />}
+    </>
   );
 }
 
@@ -51,6 +75,7 @@ export function CreateToggles() {
   return (
     <div className="space-y-3">
       <Segmented<Variant> label="Mode" value={s.variant} options={VARIANTS} onChange={(variant) => s.patch({ variant })} />
+      {s.variant === "detailed" && <DetailedNote />}
       <AspectPicker />
       <div>
         <Toggle on={s.seedVariance} onChange={(seedVariance) => s.patch({ seedVariance })} label="Seed variance" />
