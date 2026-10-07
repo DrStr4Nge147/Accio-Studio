@@ -23,6 +23,11 @@ interface View {
   x: number;
   y: number;
 }
+/** What `onView` reports: the zoom and offset of the content, and the (untransformed) size of the viewing box. */
+export interface ViewInfo extends View {
+  w: number;
+  h: number;
+}
 
 /**
  * Zoom and pan for whatever it wraps (an image filling a box). k = 1 is "fit". Wheel / pinch zoom toward the pointer,
@@ -36,8 +41,11 @@ export function Zoomable({
   tool,
   pan,
   cursor,
+  onView,
 }: {
   children: ReactNode;
+  /** called whenever the zoom or pan changes (for overlays that must follow the content) */
+  onView?: (v: ViewInfo) => void;
   onExpand?: () => void;
   onClose?: () => void;
   tool?: ZoomTool;
@@ -53,12 +61,16 @@ export function Zoomable({
   // sx/sy/moved describe the press in progress; last* is the previous tap, for double-tap detection.
   const tap = useRef({ sx: 0, sy: 0, moved: false, lastT: 0, lastX: 0, lastY: 0 });
   const [k, setK] = useState(1);
+  const onViewRef = useRef(onView);
+  onViewRef.current = onView;
   const gesture = useRef<"tool" | "pan" | null>(null);
   const space = useRef(false);
 
   const apply = useCallback(() => {
     const { k: kk, x, y } = view.current;
     if (layer.current) layer.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${kk})`;
+    const r = box.current?.getBoundingClientRect();
+    onViewRef.current?.({ k: kk, x, y, w: r?.width ?? 0, h: r?.height ?? 0 });
     setK((prev) => (Math.abs(prev - kk) < 0.005 ? prev : kk));
   }, []);
 
