@@ -1,11 +1,11 @@
 import { useRef, type PointerEvent } from "react";
-import { ImagePlus, RotateCcw } from "lucide-react";
+import { ImagePlus, RotateCcw, X } from "lucide-react";
 import { Box } from "../../components/stage/Box";
 import { Zoomable } from "../../components/stage/Zoomable";
 import { EmptyPicker, receiveFiles } from "./ImagePicker";
 import { useEdit } from "./store";
 import { MAX_PAD, clampPad, padsForRatio } from "./pads";
-import { NO_PADS, setPads, useWorkspace, type Pads } from "./workspace";
+import { NO_PADS, setOutpaintSource, setPads, useWorkspace, type Pads } from "./workspace";
 
 const glass = "bg-[rgba(10,9,14,0.62)] text-[#f1eadb] border border-white/10 backdrop-blur-md"; // "+N" tags on the canvas
 type Side = keyof Pads;
@@ -119,6 +119,9 @@ function Editor({ src }: { src: NonNullable<ReturnType<typeof useWorkspace.getSt
             }}
           />
         </label>
+        <button type="button" aria-label="Close the image and start over" data-tip="Close the image and start over" onClick={() => setOutpaintSource(null)} className="hover-wash grid h-11 w-11 flex-none place-items-center rounded-full">
+          <X size={20} strokeWidth={1.7} />
+        </button>
       </div>
       {upload.status !== "ready" && (
         <p className="text-[13px] text-text-2" role="status">

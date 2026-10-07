@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Brush, Eraser, Hand, ImagePlus, Redo2, RectangleHorizontal, Trash2, Undo2 } from "lucide-react";
+import { Brush, Eraser, Hand, ImagePlus, Redo2, RectangleHorizontal, Trash2, Undo2, X } from "lucide-react";
 import { Box } from "../../components/stage/Box";
 import { Zoomable, type ZoomTool } from "../../components/stage/Zoomable";
 import { boxStroke } from "../../lib/inpaintExport";
@@ -7,7 +7,7 @@ import { EmptyPicker, receiveFiles } from "./ImagePicker";
 import { MASK_COLOR, boxesOf, renderLines, renderMask, strokeSegment, type Op } from "./maskOps";
 import { BOX_RULE } from "./presets";
 import { useEdit } from "./store";
-import { clearOps, pushOp, redoOp, undoOp, useWorkspace, type Source } from "./workspace";
+import { clearOps, pushOp, redoOp, setInpaintSource, undoOp, useWorkspace, type Source } from "./workspace";
 
 type ToolId = "brush" | "eraser" | "box" | "pan";
 const pill = "border border-line bg-raised text-text";
@@ -246,6 +246,9 @@ function Editor({ src }: { src: Source }) {
             <Trash2 size={19} strokeWidth={1.7} />
           </ToolButton>
           <ChangeImage />
+          <ToolButton label="Close the image and start over" onClick={() => setInpaintSource(null)}>
+            <X size={20} strokeWidth={1.7} />
+          </ToolButton>
         </div>
       </div>
 

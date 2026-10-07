@@ -150,6 +150,10 @@ export function removeSlot(id: string) {
   });
 }
 
+export function clearSlots() {
+  for (const s of useWorkspace.getState().slots) removeSlot(s.id);
+}
+
 export function moveSlot(from: number, to: number) {
   useWorkspace.getState().setSlots((slots) => {
     if (from === to || from < 0 || to < 0 || from >= slots.length || to >= slots.length) return slots;

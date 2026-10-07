@@ -1,7 +1,7 @@
 import { useState, type DragEvent } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, Images, Loader2, Plus, RotateCcw, X } from "lucide-react";
 import { EmptyPicker, PickButtons, receiveFiles, useFileDrop } from "./ImagePicker";
-import { MAX_SLOTS, moveSlot, removeSlot, retrySlot, useWorkspace, type Slot } from "./workspace";
+import { MAX_SLOTS, clearSlots, moveSlot, removeSlot, retrySlot, useWorkspace, type Slot } from "./workspace";
 
 const glassBtn = "grid h-11 w-11 place-items-center rounded-full";
 const dot = "grid h-7 w-7 place-items-center rounded-full bg-[rgba(10,9,14,0.72)] text-[#f1eadb]";
@@ -93,11 +93,16 @@ export function SlotGrid() {
               {slots.length} of {MAX_SLOTS}. Image 1 is edited; the rest are references (<span className="font-mono">&lt;image2&gt;</span>…). Drag to reorder.
             </p>
           </div>
-          {uploading && (
-            <span className="flex items-center gap-1.5 text-[12px] text-text-2">
-              <Loader2 size={14} strokeWidth={1.7} className="animate-spin motion-reduce:animate-none" /> Uploading
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {uploading && (
+              <span className="flex items-center gap-1.5 text-[12px] text-text-2">
+                <Loader2 size={14} strokeWidth={1.7} className="animate-spin motion-reduce:animate-none" /> Uploading
+              </span>
+            )}
+            <button type="button" onClick={clearSlots} data-tip="Remove all images and start over" className="hover-wash flex h-11 items-center gap-1.5 rounded-full border border-line-strong px-3.5 text-[13px] text-text-2 hover:text-text">
+              <X size={16} strokeWidth={1.7} /> Clear all
+            </button>
+          </div>
         </div>
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-3">
           {slots.map((s, i) => (
