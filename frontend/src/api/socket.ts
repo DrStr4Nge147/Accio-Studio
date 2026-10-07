@@ -4,6 +4,7 @@ import { isActive, useJobs } from "../store/jobs";
 
 /** One app WebSocket with auto-reconnect. Jobs live on the server: after every (re)connect we re-fetch state. */
 let started = false;
+let attached = false;
 
 function previewMime(buf: ArrayBuffer): string {
   // ComfyUI binary frame: uint32 event type, uint32 image format (1 = JPEG, 2 = PNG), then the image.
@@ -19,6 +20,12 @@ async function resync(snapshot: Job[]) {
   useJobs.getState().upsert(refreshed.filter((j): j is Job => !!j));
   const recent = await fetchJobs().catch(() => [] as Job[]);
   useJobs.getState().upsert(recent);
+  // On first load, re-attach to a job that is already running (the canvas stays blank otherwise).
+  if (!attached) {
+    attached = true;
+    const running = Object.values(useJobs.getState().jobs).find(isActive);
+    if (running && !useJobs.getState().selectedId) useJobs.getState().select(running.id);
+  }
 }
 
 export function startSocket() {

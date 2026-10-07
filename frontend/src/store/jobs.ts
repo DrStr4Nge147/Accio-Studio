@@ -45,8 +45,8 @@ export const useJobs = create<JobsState>((set) => ({
       const order = Object.values(jobs)
         .sort((a, b) => b.created_at - a.created_at)
         .map((j) => j.id);
-      // A job submitted here becomes selected via select(); otherwise keep the user's choice, else the newest job.
-      const selectedId = s.selectedId && jobs[s.selectedId] ? s.selectedId : (order[0] ?? null);
+      // Nothing is selected until a job is generated here or picked from the history: no selection = blank canvas.
+      const selectedId = s.selectedId && jobs[s.selectedId] ? s.selectedId : null;
       return { jobs, order, selectedId, reveal, preview };
     }),
   select: (selectedId) => set({ selectedId }),

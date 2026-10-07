@@ -1,6 +1,6 @@
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import type { Job } from "../../api/types";
-import { generate } from "../../features/create/actions";
+import { generate, reuseSettings } from "../../features/create/actions";
 import { reuseJob } from "../../features/create/params";
 import { useCreate } from "../../features/create/store";
 import { useServer } from "../../store/health";
@@ -43,7 +43,7 @@ function Problem({ job, title }: { job: Job; title: string }) {
           </button>
           <button
             type="button"
-            onClick={() => reuseJob(job, catalog?.defaults ?? null)}
+            onClick={() => reuseSettings(job)}
             className="h-11 rounded-full border border-line-strong px-4 text-[14px] text-text-2"
           >
             Reuse settings

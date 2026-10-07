@@ -4,7 +4,8 @@ import { cancelJob, submitJob } from "../../api/endpoints";
 import { useServer } from "../../store/health";
 import { isActive, useJobs } from "../../store/jobs";
 import { useUi } from "../../store/ui";
-import { buildParams, validate } from "./params";
+import type { Job } from "../../api/types";
+import { buildParams, reuseJob, validate } from "./params";
 import { useCreate } from "./store";
 
 interface SubmitState {
@@ -35,6 +36,13 @@ export async function generate() {
   } finally {
     useSubmit.setState({ busy: false });
   }
+}
+
+/** "Reuse settings": load the job's settings into the composer and clear the canvas for the next image. */
+export function reuseSettings(job: Job) {
+  reuseJob(job, useServer.getState().catalog?.defaults ?? null);
+  useJobs.getState().select(null);
+  useUi.getState().set({ viewerOpen: false });
 }
 
 /** Cancel the job on screen if it is active, otherwise the oldest of our active jobs. */

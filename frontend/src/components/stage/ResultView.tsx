@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Copy, Download, Info, RotateCcw, Share2 } from "lucide-react";
 import { imageUrl } from "../../api/http";
 import type { Job } from "../../api/types";
-import { reuseJob } from "../../features/create/params";
+import { reuseSettings } from "../../features/create/actions";
 import { formatDuration, jobSize } from "../../lib/jobView";
 import { canShareFiles, shareImage } from "../../lib/share";
-import { useServer } from "../../store/health";
 import { useJobs } from "../../store/jobs";
 import { IconButton } from "../ui/controls";
 import { Box } from "./Box";
@@ -18,7 +17,6 @@ export function ResultView({ job }: { job: Job }) {
   const [details, setDetails] = useState(false);
   const revealing = useJobs((s) => !!s.reveal[job.id]);
   const clearReveal = useJobs((s) => s.clearReveal);
-  const catalog = useServer((s) => s.catalog);
   const { w, h } = jobSize(job);
 
   // Final images first, then the first-pass image(s); each keeps its index into job.outputs for the URL.
@@ -57,7 +55,7 @@ export function ResultView({ job }: { job: Job }) {
                 <Share2 size={20} strokeWidth={1.7} className="text-[#f1eadb]" />
               </IconButton>
             )}
-            <IconButton label="Reuse settings" className={glass} onClick={() => reuseJob(job, catalog?.defaults ?? null)}>
+            <IconButton label="Reuse settings" className={glass} onClick={() => reuseSettings(job)}>
               <RotateCcw size={20} strokeWidth={1.7} className="text-[#f1eadb]" />
             </IconButton>
             <IconButton label="Details" className={glass} aria-expanded={details} onClick={() => setDetails((d) => !d)}>
