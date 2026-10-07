@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import type { Job } from "../../api/types";
 import { cancelJob } from "../../api/endpoints";
-import { formatEta, isDecoding, jobSize, passOf, useEta } from "../../lib/jobView";
+import { formatEta, jobSize, passOf, useDecodePhase, useEta } from "../../lib/jobView";
 import { useJobs } from "../../store/jobs";
 import { Ring } from "../Wordmark";
 import { Box } from "./Box";
@@ -52,7 +52,7 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
   const { step, max, queue_ahead: ahead } = job.live;
   const queued = job.status === "queued" || (job.live.node === undefined && !max);
   const pass = passOf(job);
-  const decoding = isDecoding(job);
+  const decoding = useDecodePhase(job);
   const pct = max ? Math.min(100, ((step ?? 0) / max) * 100) : 0;
   const waiting = ahead ? `${ahead} job${ahead === 1 ? "" : "s"} ahead in the queue` : null;
 

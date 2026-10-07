@@ -19,6 +19,24 @@ export function passOf(job: Job): { pass: 1 | 2; of: 2 } | null {
 /** True while the latent is being turned into pixels (no step counter exists for it). */
 export const isDecoding = (job: Job) => job.status === "running" && (job.live.class === "VAEDecode" || job.live.class === "VAEDecodeTiled");
 
+/**
+ * True from the moment a VAE decode starts until sampling steps resume. Decoding is followed by quick nodes
+ * (sharpen, save, or resize/encode between the two passes) that must not flip the card back to "summoning".
+ */
+export function nextDecodePhase(prev: boolean, job: Job): boolean {
+  if (job.status !== "running") return false;
+  if (isDecoding(job)) return true;
+  if (job.live.max !== undefined) return false; // a sampler is stepping again
+  return prev;
+}
+
+export function useDecodePhase(job: Job): boolean {
+  const state = useRef({ id: job.id, decoding: false });
+  if (state.current.id !== job.id) state.current = { id: job.id, decoding: false };
+  state.current.decoding = nextDecodePhase(state.current.decoding, job);
+  return state.current.decoding;
+}
+
 /** "42 s", "3 min 05 s", "1 h 02 min": how long a finished job took. */
 export function formatDuration(seconds: number): string {
   const s = Math.max(0, Math.round(seconds));
