@@ -242,6 +242,39 @@ input[type="range"].slider::-moz-range-thumb {
   will-change: transform;
   animation: shimmer 2.4s linear infinite;
 }
+/* Bubbles: each is a card-high column that drifts upward, so translate percentages follow the card's height.
+   They fade in and out at the ends, which hides the loop point. */
+@keyframes bubble-rise {
+  0% { transform: translateY(0); opacity: 0; }
+  12% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(-100%); opacity: 0; }
+}
+@keyframes bubble-sway {
+  0%, 100% { transform: translateX(calc(var(--sway) * -1)); }
+  50% { transform: translateX(var(--sway)); }
+}
+.bubble-col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--x);
+  width: var(--s);
+  animation: bubble-rise var(--d) linear var(--delay) infinite;
+  will-change: transform, opacity;
+}
+.bubble {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  border: 1px solid rgba(246, 205, 124, 0.45);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 240, 205, 0.35), rgba(246, 205, 124, 0.06) 60%, transparent 70%);
+  animation: bubble-sway calc(var(--d) / 2.5) ease-in-out var(--delay) infinite;
+}
+
 @keyframes summon {
   0% { clip-path: circle(0% at 50% 50%); filter: blur(14px) brightness(1.6); transform: scale(1.06); }
   60% { filter: blur(2px) brightness(1.15); }
@@ -273,6 +306,7 @@ input[type="range"].slider::-moz-range-thumb {
 
 @media (prefers-reduced-motion: reduce) {
   .shimmer::before { display: none; }
+  .bubbles { display: none; }
   .reveal-img { animation: fade-in 0.25s both; }
   .reveal-glow::after { display: none; }
   .sheet-in { animation: fade-in 0.15s both; }

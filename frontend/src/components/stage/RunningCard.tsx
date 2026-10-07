@@ -6,6 +6,34 @@ import { useJobs } from "../../store/jobs";
 import { Ring } from "../Wordmark";
 import { Box } from "./Box";
 
+// A few small bubbles, fixed so the card looks the same on every render. x = left edge in %, s = size, d = rise time.
+const BUBBLES = [
+  { x: 8, s: 6, d: 9, delay: -2, sway: 6 },
+  { x: 19, s: 10, d: 12, delay: -7, sway: 9 },
+  { x: 31, s: 5, d: 8, delay: -4, sway: 5 },
+  { x: 44, s: 8, d: 11, delay: -9, sway: 8 },
+  { x: 57, s: 5, d: 9.5, delay: -1, sway: 6 },
+  { x: 68, s: 9, d: 13, delay: -6, sway: 10 },
+  { x: 79, s: 6, d: 10, delay: -3, sway: 6 },
+  { x: 90, s: 7, d: 12, delay: -8, sway: 7 },
+];
+
+function Bubbles() {
+  return (
+    <div className="bubbles pointer-events-none absolute inset-0 z-[1] overflow-hidden" aria-hidden>
+      {BUBBLES.map((b) => (
+        <span
+          key={b.x}
+          className="bubble-col"
+          style={{ ["--x" as string]: `${b.x}%`, ["--s" as string]: `${b.s}px`, ["--d" as string]: `${b.d}s`, ["--delay" as string]: `${b.delay}s`, ["--sway" as string]: `${b.sway}px` }}
+        >
+          <i className="bubble" />
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /** Where the result will land: live preview, step X/Y, pass, ETA and queue position, with Cancel in place. */
 export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
   const preview = useJobs((s) => s.preview);
@@ -26,6 +54,7 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
           <Ring className="h-14 w-14 animate-pulse motion-reduce:animate-none" />
         </div>
       )}
+      <Bubbles />
       <div className="absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-[rgba(8,7,12,0.9)] to-transparent p-3.5 pt-10 text-[#f1eadb]">
         <div className="mb-2 flex items-baseline justify-between gap-3 text-[13px] font-medium">
           <span>{queued ? "Waiting for the GPU…" : "Summoning…"}</span>
