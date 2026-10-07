@@ -33,6 +33,7 @@ export function EditComposer({ layout, above }: { layout: "dock" | "pane"; above
     <Composer
       layout={layout}
       above={above}
+      tags={mode === "multiedit" ? ws.slots.map((s, i) => ({ n: i + 1, name: s.name, thumb: s.url })) : undefined}
       prompt={prompt}
       onPrompt={(v) => edit.setPrompt(mode, v)}
       placeholder={PLACEHOLDERS[mode]}

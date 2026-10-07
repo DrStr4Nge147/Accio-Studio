@@ -1,5 +1,13 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Loader2, Sparkles, X } from "lucide-react";
+import { applyTag, detectTagTrigger, type TagTrigger } from "../lib/tagSuggest";
+
+/** One image the prompt can refer to as <imageN> (Multi-edit). */
+export interface ImageTag {
+  n: number;
+  name: string;
+  thumb: string;
+}
 
 /**
  * The one composer shared by every mode: prompt, main controls, Generate/Cancel. `dock` is the mobile bottom sheet
@@ -20,6 +28,7 @@ export function Composer({
   onCancel,
   onExpand,
   above,
+  tags,
   generateIcon = <Sparkles size={20} strokeWidth={1.7} />,
 }: {
   layout: "dock" | "pane";
@@ -39,11 +48,42 @@ export function Composer({
   onExpand?: () => void;
   /** pane only: rendered at the top of the scrolling area (the mode nav) */
   above?: ReactNode;
+  /** images the prompt can refer to: typing `<`, `im` or `image` suggests <image1>, <image2>... */
+  tags?: ImageTag[];
   generateIcon?: ReactNode;
 }) {
   const area = useRef<HTMLTextAreaElement>(null);
   const grab = useRef<number | null>(null);
   const dock = layout === "dock";
+  const [trig, setTrig] = useState<TagTrigger | null>(null);
+  const [active, setActive] = useState(0);
+  const options = trig && tags ? tags.filter((t) => String(t.n).startsWith(trig.digits)) : [];
+  const open = options.length > 0;
+
+  const refresh = (el: HTMLTextAreaElement) => {
+    setTrig(tags?.length ? detectTagTrigger(el.value, el.selectionStart) : null);
+    setActive(0);
+  };
+  const accept = (n: number) => {
+    const el = area.current;
+    if (!el || !trig) return;
+    const r = applyTag(el.value, trig, n);
+    onPrompt(r.text);
+    setTrig(null);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(r.caret, r.caret);
+    });
+  };
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!open) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") setActive((a) => (a + (e.key === "ArrowDown" ? 1 : options.length - 1)) % options.length);
+    else if (e.key === "Enter" || e.key === "Tab") accept(options[Math.min(active, options.length - 1)]!.n);
+    else if (e.key === "Escape") setTrig(null);
+    else return;
+    e.preventDefault();
+    e.stopPropagation(); // Enter would add a line, Escape would cancel the running job
+  };
 
   // Auto-grow the prompt up to a cap.
   useEffect(() => {
@@ -73,16 +113,48 @@ export function Composer({
   );
 
   const field = (
-    <textarea
-      ref={area}
-      value={prompt}
-      onChange={(e) => onPrompt(e.target.value)}
-      placeholder={placeholder}
-      rows={dock ? 2 : 4}
-      aria-label="Prompt"
-      maxLength={8000}
-      className="w-full resize-none rounded-m border border-line bg-raised px-3 py-2.5 text-[15px] leading-snug text-text outline-none focus:border-gold"
-    />
+    <div className="relative">
+      <textarea
+        ref={area}
+        value={prompt}
+        onChange={(e) => {
+          onPrompt(e.target.value);
+          refresh(e.target);
+        }}
+        onKeyDown={onKeyDown}
+        onKeyUp={(e) => !["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key) && refresh(e.currentTarget)}
+        onClick={(e) => refresh(e.currentTarget)}
+        onBlur={() => setTrig(null)}
+        placeholder={placeholder}
+        rows={dock ? 2 : 4}
+        aria-label="Prompt"
+        aria-autocomplete={tags ? "list" : undefined}
+        maxLength={8000}
+        className="w-full resize-none rounded-m border border-line bg-raised px-3 py-2.5 text-[15px] leading-snug text-text outline-none focus:border-gold"
+      />
+      {open && (
+        <ul role="listbox" aria-label="Images to refer to" className={`absolute inset-x-0 z-30 max-h-56 overflow-y-auto rounded-m border border-line-strong bg-overlay p-1 shadow-xl ${dock ? "bottom-full mb-1.5" : "top-full mt-1"}`}>
+          {options.map((o, i) => (
+            <li key={o.n} role="option" aria-selected={i === active}>
+              <button
+                type="button"
+                // mouse down, not click: the textarea must not lose focus (its blur closes this list)
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  accept(o.n);
+                }}
+                onMouseEnter={() => setActive(i)}
+                className={`flex min-h-11 w-full items-center gap-2.5 rounded-lg px-2 text-left ${i === active ? "bg-raised text-text" : "text-text-2"}`}
+              >
+                <img src={o.thumb} alt="" className="h-8 w-8 flex-none rounded-md object-cover" />
+                <span className="font-mono text-[13px] text-gold-text">{`<image${o.n}>`}</span>
+                <span className="min-w-0 flex-1 truncate text-[12px] text-text-3">{o.n === 1 ? `Base · ${o.name}` : o.name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 
   const problem = error && (
