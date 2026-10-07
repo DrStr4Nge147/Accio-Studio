@@ -4,15 +4,17 @@ A responsive PWA (React) for **image generation (Krea2)** and **image editing (Q
 
 This document is self-contained. It was written after a full audit of the user's ComfyUI workflows, models, and custom nodes. Read all of it before writing code.
 
+**Path placeholders.** Reference locations on the author's machine are written as `<COMFYUI_REF>`, `<ZFUSION_REF>`, `<WORKFLOWS_DIR>` and `<INSTALLER_REF>`. They are only needed for re-exporting templates (§4.5), re-running GPU parity tests (§7.2) and reusing existing models (§11.4); the app itself never depends on them. The author's real values live in the git-ignored `LOCAL_PATHS.md` (absent in a fresh clone).
+
 ---
 
 ## 0. Non-negotiable rules
 
 1. **Output parity with ComfyUI.** Given the same inputs and seeds, the app must produce the same images the user gets when running the same workflow groups in ComfyUI. No "close enough".
 2. **Never rebuild the graphs by hand.** The app uses the API-format templates in `comfy-templates/` (exported by ComfyUI's own frontend, see §4). The backend only changes *input values* and removes the *output-only* nodes listed in §4.4. It never adds, rewires, or re-derives nodes.
-3. **Accio Studio ships its own bundled, portable ComfyUI** (§11), installed by Accio's `Install.bat` into the app folder and launched by Accio. **The user's existing ComfyUI at `E:\AI_Softwares\ImageGenerator\Merged\ComfyUI_windows_portable\` is a reference only: never edit it, install into it, or depend on it at runtime.** Exception: on the user's own PC the installer may *read* its `models` folder (via `extra_model_paths.yaml` in the bundled ComfyUI) to avoid re-downloading ~37 GB (§11.4). Talk to ComfyUI over HTTP/WebSocket only. Uploads go through ComfyUI's `/upload/image`.
+3. **Accio Studio ships its own bundled, portable ComfyUI** (§11), installed by Accio's `Install.bat` into the app folder and launched by Accio. **The user's existing ComfyUI at `<COMFYUI_REF>` is a reference only: never edit it, install into it, or depend on it at runtime.** Exception: on the user's own PC the installer may *read* its `models` folder (via `extra_model_paths.yaml` in the bundled ComfyUI) to avoid re-downloading ~37 GB (§11.4). Talk to ComfyUI over HTTP/WebSocket only. Uploads go through ComfyUI's `/upload/image`.
 4. **Build in a separate project folder** (the user will provide or create it). Copy `comfy-templates/` into it (e.g. `server/templates/`).
-5. **Follow the user's existing app as the pattern reference:** `E:\AI_Softwares\Z-Fusion_Web-UI-feature-mobile-ui` (a Flux Klein mobile web UI the user built: `app\mobileui\mobile_app.py` + `app\mobileui\frontend\`, launched by `Run_Mobile.bat` / `Run_Mobile-zrok-only.bat`). Use it only as a reference for **how the app is launched and shared** (one-click `.bat` launchers, connection menu, tunnels, QR codes; see §9) and as a known-good stack. **Do not copy its UI/UX, visual design, or code structure.** The user wants a full overhaul (§6.1b). **Do not copy its security shortcuts** (§5.5). Read it, but don't modify it.
+5. **Follow the user's existing app as the pattern reference:** `<ZFUSION_REF>` (a Flux Klein mobile web UI the user built: `app\mobileui\mobile_app.py` + `app\mobileui\frontend\`, launched by `Run_Mobile.bat` / `Run_Mobile-zrok-only.bat`). Use it only as a reference for **how the app is launched and shared** (one-click `.bat` launchers, connection menu, tunnels, QR codes; see §9) and as a known-good stack. **Do not copy its UI/UX, visual design, or code structure.** The user wants a full overhaul (§6.1b). **Do not copy its security shortcuts** (§5.5). Read it, but don't modify it.
 6. User's global rules apply: Windows 10, PowerShell 5.1, ask before creating/modifying `.env` files, no secrets in source, no AI attribution in commits/docs, branch before committing, and propose a plan before large changes.
 
 ---
@@ -26,7 +28,7 @@ This document is self-contained. It was written after a full audit of the user's
 | GPU | NVIDIA RTX 2060 6 GB. The workflows are already tuned for it, so do **not** add VRAM limits or block anything (non-blocking hints at most) |
 | Python | 3.13 embedded, torch 2.14 + cu130 |
 | Typical timing | Krea combo ≈ 3–4 min (8 steps ≈ 14 s/it + 4 steps). Plan the UX around long jobs |
-| Source workflows | `E:\AI_Softwares\ImageGenerator\workflows\KREA2_ULTRA_WORKFLOW-V3_fixed.json` and `...\QWEN-IMAGE-EDIT-21-TURBO_ULTRA_WORKFLOW_autoenhancer.json` (the non-`_fixed`/non-`autoenhancer` files are the user's originals, reference only) |
+| Source workflows | `<WORKFLOWS_DIR>\KREA2_ULTRA_WORKFLOW-V3_fixed.json` and `...\QWEN-IMAGE-EDIT-21-TURBO_ULTRA_WORKFLOW_autoenhancer.json` (the non-`_fixed`/non-`autoenhancer` files are the user's originals, reference only) |
 
 ---
 
@@ -406,7 +408,7 @@ The user runs Z-Fusion by double-clicking `Run_Mobile.bat` (connection menu) or 
 | `Install.bat` | Downloads portable `uv` into `bin\`, creates the project venv `env\`, installs `requirements.txt`, then runs `npm install` + `npm run build` in `frontend\` (Node.js v24 is installed on the PC). Never installs anything into ComfyUI. |
 | `Run_Accio.bat` | The main launcher with a connection menu, like `Run_Mobile.bat`: `1. LOCAL ONLY (Wi-Fi/LAN)`, `2. CLOUDFLARE (random URL)`, `3. ZROK (persistent URL)`, default 1. |
 | `Run_Accio-zrok-only.bat` | The same, but skips the menu and goes straight to zrok, like `Run_Mobile-zrok-only.bat`. |
-| `Setup_Zrok.bat` | Same flow as Z-Fusion's `Setup_Zrok.bat`, but reserves a **new** unique name for Accio pointing at `http://127.0.0.1:7862`, saved to `.zrok_share` in Accio's root. This PC is already `zrok enable`d (`%USERPROFILE%\.zrok\environment.json` exists), so skip the token step when already enabled. Z-Fusion's reserved name (`zfusionic2`) stays Z-Fusion's. |
+| `Setup_Zrok.bat` | Same flow as Z-Fusion's `Setup_Zrok.bat`, but reserves a **new** unique name for Accio pointing at `http://127.0.0.1:7862`, saved to `.zrok_share` in Accio's root. This PC is already `zrok enable`d (`%USERPROFILE%\.zrok\environment.json` exists), so skip the token step when already enabled. Z-Fusion's reserved name stays Z-Fusion's. |
 | `Update.bat` (optional) | Pull + reinstall requirements + rebuild the frontend, like `Update_MobileUI.bat`. |
 
 `cloudflared.exe` and `zrok.exe` live in Accio's root, as in Z-Fusion. Download `cloudflared` automatically on first Cloudflare use, and `zrok` (pinned v1.1.x) in `Setup_Zrok.bat`. Add both executables, `env\`, `bin\`, `frontend\node_modules\`, `frontend\dist\`, `.zrok_share`, settings and history to `.gitignore`.
@@ -462,7 +464,7 @@ A fresh session must be able to continue from `APP_SPEC.md` + `PROGRESS.md` alon
 
 **Goal: convenience.** A user on a fresh Windows PC with an Nvidia GPU unzips Accio Studio, double-clicks `Install.bat`, waits, then double-clicks `Run_Accio.bat` and it works. They don't install Python, Node, Git, 7-Zip or ComfyUI themselves, and nothing is installed system-wide (no winget, no PATH changes, no admin rights). Everything lives inside the Accio folder, so deleting the folder uninstalls it.
 
-The user's existing installer `E:\AI_Softwares\ImageGenerator\COMFYUI_KREA2_QWEN21_AUTO_INSTALL_AUTODETECT.bat` is the **reference** for the ComfyUI part (GPU detection, ComfyUI version, node list, model URLs). Reuse its logic, but make it portable and slimmed down as described below.
+The user's existing installer `<INSTALLER_REF>` (`COMFYUI_KREA2_QWEN21_AUTO_INSTALL_AUTODETECT.bat`) is the **reference** for the ComfyUI part (GPU detection, ComfyUI version, node list, model URLs). Reuse its logic, but make it portable and slimmed down as described below.
 
 ### 11.1 Folder layout
 ```

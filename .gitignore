@@ -29,3 +29,4 @@ __pycache__/
 
 # Release builds (scripts\make_release)
 /release/
+LOCAL_PATHS.md
