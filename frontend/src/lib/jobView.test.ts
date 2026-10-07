@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Job } from "../api/types";
-import { formatDuration, isEnhancing, nextDecodePhase } from "./jobView";
+import { enhancedText, formatDuration, isEnhancing, nextDecodePhase } from "./jobView";
 
 describe("formatDuration", () => {
   it("formats seconds, minutes and hours", () => {
@@ -34,5 +34,20 @@ describe("isEnhancing", () => {
     expect(isEnhancing(job("running", "TextGenerate"))).toBe(true);
     expect(isEnhancing(job("running", "KSampler"))).toBe(false);
     expect(isEnhancing(job("queued", "TextGenerate"))).toBe(false);
+  });
+});
+
+describe("enhancedText", () => {
+  const job = (over: Record<string, unknown>) => ({ prompt_used: "A longer rewritten instruction.", params: { prompt: "make it blue", prompt_enhancer: true, ...over } }) as never;
+  it("returns the rewrite only when the enhancer was on and actually changed the prompt", () => {
+    expect(enhancedText(job({}))).toBe("A longer rewritten instruction.");
+  });
+  it("is null when the enhancer was off (the recorded text is just the user's own)", () => {
+    expect(enhancedText({ prompt_used: "make it blue", params: { prompt: "make it blue", prompt_enhancer: false } } as never)).toBeNull();
+    expect(enhancedText(job({ prompt_enhancer: false }))).toBeNull();
+  });
+  it("is null when the rewrite failed and the original prompt was used, or nothing was recorded", () => {
+    expect(enhancedText({ prompt_used: " make it blue ", params: { prompt: "make it blue", prompt_enhancer: true } } as never)).toBeNull();
+    expect(enhancedText({ prompt_used: null, params: { prompt: "x", prompt_enhancer: true } } as never)).toBeNull();
   });
 });

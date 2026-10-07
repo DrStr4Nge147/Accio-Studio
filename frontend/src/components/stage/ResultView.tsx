@@ -7,7 +7,7 @@ import { showEnhanced } from "../../features/edit/enhanced";
 import type { EditMode } from "../../features/edit/store";
 import { useBeforeUrl } from "../../features/edit/useBefore";
 import { reuseAny } from "../../features/reuse";
-import { formatDuration, jobSize } from "../../lib/jobView";
+import { enhancedText, formatDuration, jobSize } from "../../lib/jobView";
 import { canShareFiles, shareImage } from "../../lib/share";
 import { useJobs } from "../../store/jobs";
 import { IconButton } from "../ui/controls";
@@ -148,7 +148,7 @@ export function ResultView({ job }: { job: Job }) {
               </button>
             </p>
           )}
-          {job.prompt_used && <PromptUsed job={job} />}
+          {enhancedText(job) && <PromptUsed job={job} />}
           {details && <Details job={job} w={w} h={h} />}
         </Box>
       </div>
@@ -179,7 +179,7 @@ function PromptUsed({ job }: { job: Job }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const timer = useRef<number>(0);
-  const text = job.prompt_used ?? "";
+  const text = enhancedText(job) ?? "";
   const mode = job.mode as EditMode;
   useEffect(() => () => window.clearTimeout(timer.current), []);
   if (!open) {

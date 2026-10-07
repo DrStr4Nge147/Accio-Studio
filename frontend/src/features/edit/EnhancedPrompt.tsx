@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Copy } from "lucide-react";
 import { Segmented } from "../../components/ui/controls";
+import { enhancedText } from "../../lib/jobView";
 import { useJobs } from "../../store/jobs";
 import { showEnhanced, showOwn, useEnhancedView, type EnhancedMode } from "./enhanced";
 import { useEdit } from "./store";
@@ -12,16 +13,17 @@ import { useEdit } from "./store";
 export function EnhancedSwitch({ mode }: { mode: EnhancedMode }) {
   const latest = useJobs((s) => {
     const sel = s.selectedId ? s.jobs[s.selectedId] : undefined;
-    if (sel && sel.mode === mode && sel.prompt_used) return sel;
-    return s.order.map((id) => s.jobs[id]!).find((j) => j.mode === mode && j.status === "done" && !!j.prompt_used);
+    if (sel && sel.mode === mode && enhancedText(sel)) return sel;
+    return s.order.map((id) => s.jobs[id]!).find((j) => j.mode === mode && j.status === "done" && !!enhancedText(j));
   });
   const active = useEnhancedView((s) => !!s.active[mode]);
   const enhancerOn = useEdit((s) => s.enhancer[mode]);
   const [copied, setCopied] = useState(false);
   const timer = useRef<number>(0);
   useEffect(() => () => window.clearTimeout(timer.current), []);
-  if (!latest?.prompt_used) return null;
-  const rewrite = { id: latest.id, text: latest.prompt_used };
+  const text = latest ? enhancedText(latest) : null;
+  if (!latest || !text) return null;
+  const rewrite = { id: latest.id, text };
 
   return (
     <div className="mb-2 space-y-1.5">

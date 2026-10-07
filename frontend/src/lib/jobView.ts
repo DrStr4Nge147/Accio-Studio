@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import type { Job } from "../api/types";
 
+/**
+ * The rewrite the Prompt enhancer made for this job, or null. Only a job that really ran the enhancer has one: with the
+ * enhancer off the recorded "prompt used" is just the user's own text, and if the rewrite failed the enhancer falls back to
+ * the original prompt, so there is nothing to show either.
+ */
+export function enhancedText(job: Job): string | null {
+  const used = job.prompt_used?.trim();
+  if (!used || job.params.prompt_enhancer !== true) return null;
+  return used === String(job.params.prompt ?? "").trim() ? null : used;
+}
+
 export type JobGroup = "create" | "edit";
 export const jobGroup = (job: Job): JobGroup => (job.mode === "create" ? "create" : "edit");
 
