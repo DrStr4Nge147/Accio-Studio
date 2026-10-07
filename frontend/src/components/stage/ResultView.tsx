@@ -216,7 +216,7 @@ export function ResultView({ job }: { job: Job }) {
 
 /** What the prompt enhancer actually sent to the model, with "use as prompt" (APP_SPEC 6.3). */
 /** `bar`: the phone placement, a wide popover above the toolbar; otherwise a panel inside the picture (desktop only). */
-function PromptUsed({ job, open, onOpen: setOpen, bar }: { job: Job; open: boolean; onOpen: (v: boolean) => void; bar?: boolean }) {
+export function PromptUsed({ job, open, onOpen: setOpen, bar, always }: { job: Job; open: boolean; onOpen: (v: boolean) => void; bar?: boolean; always?: boolean }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<number>(0);
   const text = enhancedText(job) ?? "";
@@ -231,7 +231,7 @@ function PromptUsed({ job, open, onOpen: setOpen, bar }: { job: Job; open: boole
     );
   }
   return (
-    <div className={`${bar ? "absolute inset-x-0 bottom-full z-[4] mb-2 max-h-[45vh] rounded-m border border-white/10 bg-[rgba(10,9,14,0.96)] lg:hidden" : "absolute inset-x-0 bottom-0 z-[4] hidden max-h-[60%] bg-[rgba(10,9,14,0.9)] lg:block"} overflow-y-auto p-3.5 text-[13px] leading-snug text-[#f1eadb] backdrop-blur-md`} role="region" aria-label="Prompt used">
+    <div className={`${bar ? `absolute inset-x-0 bottom-full z-[4] mb-2 max-h-[45vh] rounded-m border border-white/10 bg-[rgba(10,9,14,0.96)] ${always ? "" : "lg:hidden"}` : "absolute inset-x-0 bottom-0 z-[4] hidden max-h-[60%] bg-[rgba(10,9,14,0.9)] lg:block"} overflow-y-auto p-3.5 text-[13px] leading-snug text-[#f1eadb] backdrop-blur-md`} role="region" aria-label="Prompt used">
       <div className="flex items-center justify-between">
         <span className="font-medium">Prompt used</span>
         <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="hover-wash -mr-2 grid h-11 w-11 place-items-center rounded-full">
@@ -260,10 +260,10 @@ function PromptUsed({ job, open, onOpen: setOpen, bar }: { job: Job; open: boole
   );
 }
 
-function Details({ job, w, h, bar }: { job: Job; w: number; h: number; bar?: boolean }) {
+export function Details({ job, w, h, bar, always }: { job: Job; w: number; h: number; bar?: boolean; always?: boolean }) {
   const seeds = Object.entries(job.seeds);
   return (
-    <div className={`${bar ? "absolute inset-x-0 bottom-full z-[4] mb-2 max-h-[45vh] rounded-m border border-white/10 bg-[rgba(10,9,14,0.96)] lg:hidden" : "absolute inset-x-0 bottom-0 z-[4] hidden max-h-[70%] bg-[rgba(10,9,14,0.88)] lg:block"} overflow-y-auto p-3.5 text-[12px] leading-snug text-[#f1eadb] backdrop-blur-md`}>
+    <div className={`${bar ? `absolute inset-x-0 bottom-full z-[4] mb-2 max-h-[45vh] rounded-m border border-white/10 bg-[rgba(10,9,14,0.96)] ${always ? "" : "lg:hidden"}` : "absolute inset-x-0 bottom-0 z-[4] hidden max-h-[70%] bg-[rgba(10,9,14,0.88)] lg:block"} overflow-y-auto p-3.5 text-[12px] leading-snug text-[#f1eadb] backdrop-blur-md`}>
       <div className="font-medium">
         {job.label} · {w}×{h}
         {job.params.batch > 1 && ` · ${job.params.batch} images`}

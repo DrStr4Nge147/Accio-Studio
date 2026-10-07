@@ -11,8 +11,8 @@ import { jobGroup, shortLabel, type JobGroup } from "../../lib/jobView";
 import { useServer } from "../../store/health";
 import { useJobs } from "../../store/jobs";
 import { jobMenuItems } from "../history/jobMenu";
-import { openJob } from "../history/open";
 import { Thumb } from "../history/Thumb";
+import { GalleryViewer } from "./GalleryViewer";
 
 type Filter = "all" | JobGroup;
 const PAGE = 60;
@@ -42,6 +42,7 @@ export function Gallery() {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [viewId, setViewId] = useState<string | null>(null); // the image open in the full-screen viewer
   const canDelete = useServer((s) => s.health?.can_delete_files === true); // Accio owns the output folder
   const live = useJobs(useShallow((s) => s.order.map((id) => s.jobs[id]!).filter((j) => j.status === "done")));
   const known = useJobs((s) => s.jobs); // jobs deleted elsewhere (right-click menu) leave the store
@@ -101,6 +102,10 @@ export function Gallery() {
     if (!hasMore || loading || error || !loaded.length) return;
     if (nearEnd(layout, view.top, view.h)) void load(false, loaded[loaded.length - 1]!.created_at);
   }, [hasMore, loading, error, loaded, layout, view.top, view.h, load]);
+
+  const loadMore = useCallback(() => {
+    if (hasMore && !loading && !error && loaded.length) void load(false, loaded[loaded.length - 1]!.created_at);
+  }, [hasMore, loading, error, loaded, load]);
 
   const onScroll = () => {
     cancelAnimationFrame(raf.current);
@@ -226,7 +231,7 @@ export function Gallery() {
                   aria-label={`${selecting ? (on ? "Deselect" : "Select") : "Open"}: ${String(job.params.prompt || job.label).slice(0, 60)}`}
                   aria-pressed={selecting ? on : undefined}
                   data-tip={String(job.params.prompt || job.label).slice(0, 140)}
-                  onClick={() => (selecting ? toggle(job.id) : openJob(job))}
+                  onClick={() => (selecting ? toggle(job.id) : setViewId(job.id))}
                   onContextMenu={selecting ? undefined : (e) => openContextMenu(e, jobMenuItems(job))}
                   className={`relative block h-full w-full overflow-hidden rounded-s border ${on ? "border-gold" : "border-line hover:border-text-3"}`}
                 >
@@ -256,6 +261,7 @@ export function Gallery() {
           </p>
         )}
       </div>
+      {viewId && <GalleryViewer items={items} id={viewId} hasMore={hasMore} onChange={setViewId} onNeedMore={loadMore} onClose={() => setViewId(null)} />}
     </div>
   );
 }

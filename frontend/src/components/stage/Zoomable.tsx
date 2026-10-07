@@ -42,6 +42,7 @@ export function Zoomable({
   pan,
   cursor,
   onView,
+  hideControls,
 }: {
   children: ReactNode;
   /** called whenever the zoom or pan changes (for overlays that must follow the content) */
@@ -52,6 +53,8 @@ export function Zoomable({
   /** with a tool: one pointer pans instead of drawing (the hand tool) */
   pan?: boolean;
   cursor?: string;
+  /** no zoom pill (the host draws its own chrome); wheel, pinch, double tap and the +/-/0 keys still work */
+  hideControls?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const layer = useRef<HTMLDivElement>(null);
@@ -288,6 +291,7 @@ export function Zoomable({
         </div>
       </div>
 
+      {!hideControls && (
       <div className={`${glass} absolute bottom-2.5 left-2.5 z-[3] flex items-center rounded-full`} role="group" aria-label="Zoom">
         <button type="button" aria-label="Zoom out" data-tip="Zoom out ( - )" disabled={k <= 1.005} onClick={() => { const c = center(); zoomAt(view.current.k / STEP, c.cx, c.cy); }} className="hover-wash grid h-11 w-11 place-items-center rounded-full disabled:opacity-40 @max-[240px]:hidden">
           <Minus size={18} strokeWidth={1.7} />
@@ -304,6 +308,7 @@ export function Zoomable({
           </button>
         )}
       </div>
+      )}
 
       {onClose && (
         <button
