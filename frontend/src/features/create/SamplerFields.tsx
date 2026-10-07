@@ -1,6 +1,7 @@
 import type { SamplerDefaults } from "../../api/types";
 import { Field, Slider, inputCls } from "../../components/ui/controls";
 import { useServer } from "../../store/health";
+import { TIPS } from "./tips";
 
 type Opts = Partial<SamplerDefaults>;
 
@@ -39,7 +40,7 @@ export function SamplerFields({
         )}
       </legend>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Steps">
+        <Field label="Steps" tip={TIPS.steps}>
           <input
             type="number"
             inputMode="numeric"
@@ -50,7 +51,7 @@ export function SamplerFields({
             className={`${inputCls} font-mono`}
           />
         </Field>
-        <Field label="CFG">
+        <Field label="CFG" tip={TIPS.cfg}>
           <input
             type="number"
             inputMode="decimal"
@@ -62,14 +63,14 @@ export function SamplerFields({
             className={`${inputCls} font-mono`}
           />
         </Field>
-        <Field label="Sampler">
+        <Field label="Sampler" tip={TIPS.sampler}>
           <select value={cur.sampler_name} onChange={(e) => set("sampler_name", e.target.value)} className={inputCls}>
             {samplers.map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
         </Field>
-        <Field label="Scheduler">
+        <Field label="Scheduler" tip={TIPS.scheduler}>
           <select value={cur.scheduler} onChange={(e) => set("scheduler", e.target.value)} className={inputCls}>
             {schedulers.map((s) => (
               <option key={s}>{s}</option>
@@ -77,7 +78,7 @@ export function SamplerFields({
           </select>
         </Field>
       </div>
-      <Slider label="Denoise" min={0} max={1} step={0.01} value={cur.denoise} onChange={(v) => set("denoise", v)} />
+      <Slider tip={TIPS.denoise} label="Denoise" min={0} max={1} step={0.01} value={cur.denoise} onChange={(v) => set("denoise", v)} />
     </fieldset>
   );
 }

@@ -9,6 +9,7 @@ export function Chip({
   children,
   toggle = true,
   label,
+  tip,
 }: {
   on?: boolean;
   onClick: () => void;
@@ -16,6 +17,7 @@ export function Chip({
   /** false = plain action chip (cycle / open), no on-state dot */
   toggle?: boolean;
   label?: string;
+  tip?: string;
 }) {
   return (
     <button
@@ -23,6 +25,7 @@ export function Chip({
       onClick={onClick}
       aria-pressed={toggle ? !!on : undefined}
       aria-label={label}
+      data-tip={tip}
       className="-my-1 flex-none py-1.5 first:ml-0"
     >
       <span
@@ -44,12 +47,14 @@ export function Toggle({
   label,
   sub,
   disabled,
+  tip,
 }: {
   on: boolean;
   onChange: (v: boolean) => void;
   label: string;
   sub?: ReactNode;
   disabled?: boolean;
+  tip?: string;
 }) {
   return (
     <button
@@ -57,6 +62,7 @@ export function Toggle({
       role="switch"
       aria-checked={on}
       disabled={disabled}
+      data-tip={tip}
       onClick={() => onChange(!on)}
       className="flex min-h-11 w-full items-center justify-between gap-3 text-left text-[14px] disabled:opacity-50"
     >
@@ -84,7 +90,7 @@ export function Segmented<T extends string | number>({
   small,
 }: {
   value: T;
-  options: { value: T; label: ReactNode }[];
+  options: { value: T; label: ReactNode; tip?: string }[];
   onChange: (v: T) => void;
   label: string;
   small?: boolean;
@@ -97,6 +103,7 @@ export function Segmented<T extends string | number>({
           type="button"
           role="radio"
           aria-checked={o.value === value}
+          data-tip={o.tip}
           onClick={() => onChange(o.value)}
           className={cx(
             "grid place-items-center rounded-[9px] px-3.5 text-[13px] font-medium transition-colors",
@@ -120,6 +127,7 @@ export function Slider({
   label,
   format = (v) => v.toFixed(2),
   disabled,
+  tip,
 }: {
   value: number;
   min: number;
@@ -129,12 +137,13 @@ export function Slider({
   label: string;
   format?: (v: number) => string;
   disabled?: boolean;
+  tip?: string;
 }) {
   const pct = max > min ? ((value - min) / (max - min)) * 100 : 0;
   return (
     <div className={disabled ? "opacity-50" : undefined}>
       <div className="flex items-center justify-between text-[13px]">
-        <span className="font-medium text-text-2">{label}</span>
+        <span className="font-medium text-text-2" data-tip={tip}>{label}</span>
         <span className="font-mono text-[13px] text-text">{format(value)}</span>
       </div>
       <input
@@ -163,7 +172,7 @@ export function IconButton({
     <button
       type="button"
       aria-label={label}
-      title={label}
+      data-tip={label}
       {...rest}
       className={cx("grid h-11 w-11 flex-none place-items-center rounded-full text-text-2 transition-colors hover:text-text disabled:opacity-40", className)}
     >
@@ -172,14 +181,18 @@ export function IconButton({
   );
 }
 
-export function Label({ children }: { children: ReactNode }) {
-  return <div className="text-[12px] font-medium tracking-wide text-text-3">{children}</div>;
+export function Label({ children, tip }: { children: ReactNode; tip?: string }) {
+  return (
+    <div className="w-fit text-[12px] font-medium tracking-wide text-text-3" data-tip={tip}>
+      {children}
+    </div>
+  );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({ label, children, tip }: { label: string; children: ReactNode; tip?: string }) {
   return (
     <label className="block">
-      <Label>{label}</Label>
+      <Label tip={tip}>{label}</Label>
       <div className="mt-1">{children}</div>
     </label>
   );

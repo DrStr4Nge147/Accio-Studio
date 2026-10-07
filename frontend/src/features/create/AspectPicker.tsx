@@ -28,6 +28,7 @@ export function AspectPicker() {
               type="button"
               role="radio"
               aria-checked={on}
+              data-tip={`${a.key} · ${a.w}×${a.h} · ${((a.w * a.h) / 1e6).toFixed(2)} MP${a.untested ? " · not tested directly with Krea2" : ""}`}
               onClick={() => set({ aspect: a.key, w: a.w, h: a.h })}
               className={`grid h-11 place-items-center rounded-s border text-[12px] transition-colors ${
                 on ? "border-gold bg-gold-wash text-gold-text" : "border-line-strong text-text-2"
@@ -44,6 +45,7 @@ export function AspectPicker() {
           type="button"
           role="radio"
           aria-checked={size.aspect === CUSTOM}
+          data-tip="Type your own width and height (multiples of 8)"
           onClick={() => set({ ...size, aspect: CUSTOM })}
           className={`grid h-11 place-items-center rounded-s border text-[12px] ${
             size.aspect === CUSTOM ? "border-gold bg-gold-wash text-gold-text" : "border-line-strong text-text-2"

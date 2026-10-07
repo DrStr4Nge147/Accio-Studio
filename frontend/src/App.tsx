@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { startSocket } from "./api/socket";
 import { Settings } from "./components/Settings";
+import { TooltipLayer } from "./components/ui/Tooltip";
 import { cancelCurrent, generate } from "./features/create/actions";
 import { DesktopLayout } from "./layout/DesktopLayout";
 import { MobileLayout } from "./layout/MobileLayout";
@@ -59,6 +60,7 @@ export function App() {
     <>
       {desktop ? <DesktopLayout /> : <MobileLayout />}
       <Settings />
+      <TooltipLayer />
     </>
   );
 }

@@ -1,0 +1,20 @@
+/** Hover / focus explanations for the Create controls (shown by the app tooltip; essentials are also written in the UI). */
+export const TIPS = {
+  standard: "One pass at the chosen size. Faster.",
+  detailed: "Two passes: draws the image, then refines it. Slower, with finer detail.",
+  seedVariance: "Adds controlled variety to the prompt so different seeds give more different images (Krea 2 Turbo tends to repeat itself otherwise). Tune it in Advanced.",
+  sharpen: "Sharpens the finished image slightly (RCAS). Strength is in Advanced.",
+  tEnhancer: "Krea2T-Enhancer: changes how the prompt reaches the image to improve prompt adherence. Off by default.",
+  batch: "How many images one run makes. More images take proportionally longer.",
+  lockSeed: "Keep the same seeds, so the same settings give the same image. Off draws fresh random seeds every run.",
+  upscale: "Enlarges the first-pass image before the refine pass: room for more detail, but slower.",
+  saveFirstPass: "Also keep the image from before the refine pass, so you can compare the two.",
+  turbo: "Krea 2 Turbo LoRA applied in this pass. 0.2 is the workflow's default.",
+  steps: "How many denoising steps. Krea 2 Turbo is tuned for few: 8 for the first pass, 4 for the refine pass.",
+  cfg: "How strongly the prompt is followed. Turbo is tuned for 1; at 1 a negative prompt has no effect.",
+  denoise: "How much of the starting image is redrawn. 1 starts from scratch; the refine pass uses 0.3.",
+  sampler: "The algorithm that removes noise at each step. The default is tuned for this model.",
+  scheduler: "How the step sizes are spread across the run.",
+  sharpenStrength: "How strongly the final image is sharpened.",
+  tEnhancerStrength: "How strongly the enhancer changes the prompt path.",
+} as const;

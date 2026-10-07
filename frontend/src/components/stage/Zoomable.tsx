@@ -209,17 +209,17 @@ export function Zoomable({ children, onExpand, onClose }: { children: ReactNode;
       </div>
 
       <div className={`${glass} absolute bottom-2.5 left-2.5 z-[3] flex items-center rounded-full`} role="group" aria-label="Zoom">
-        <button type="button" aria-label="Zoom out" disabled={k <= 1.005} onClick={() => { const c = center(); zoomAt(view.current.k / STEP, c.cx, c.cy); }} className="grid h-11 w-11 place-items-center rounded-full disabled:opacity-40">
+        <button type="button" aria-label="Zoom out" data-tip="Zoom out ( - )" disabled={k <= 1.005} onClick={() => { const c = center(); zoomAt(view.current.k / STEP, c.cx, c.cy); }} className="grid h-11 w-11 place-items-center rounded-full disabled:opacity-40">
           <Minus size={18} strokeWidth={1.7} />
         </button>
-        <button type="button" aria-label="Toggle fit and actual size" onClick={() => { const c = center(); toggleActual(c.cx, c.cy); }} className="h-11 min-w-12 px-1 text-center font-mono text-[12px]">
+        <button type="button" aria-label="Toggle fit and actual size" data-tip="Fit / actual pixels (double-click)" onClick={() => { const c = center(); toggleActual(c.cx, c.cy); }} className="h-11 min-w-12 px-1 text-center font-mono text-[12px]">
           {label}
         </button>
-        <button type="button" aria-label="Zoom in" disabled={k >= MAX_K - 0.01} onClick={() => { const c = center(); zoomAt(view.current.k * STEP, c.cx, c.cy); }} className="grid h-11 w-11 place-items-center rounded-full disabled:opacity-40">
+        <button type="button" aria-label="Zoom in" data-tip="Zoom in ( + )" disabled={k >= MAX_K - 0.01} onClick={() => { const c = center(); zoomAt(view.current.k * STEP, c.cx, c.cy); }} className="grid h-11 w-11 place-items-center rounded-full disabled:opacity-40">
           <Plus size={18} strokeWidth={1.7} />
         </button>
         {onExpand && (
-          <button type="button" aria-label="Open fullscreen" onClick={onExpand} className="grid h-11 w-11 place-items-center rounded-full border-l border-white/10">
+          <button type="button" aria-label="Open fullscreen" data-tip="Fullscreen" onClick={onExpand} className="grid h-11 w-11 place-items-center rounded-full border-l border-white/10">
             <Maximize2 size={17} strokeWidth={1.7} />
           </button>
         )}
@@ -229,6 +229,7 @@ export function Zoomable({ children, onExpand, onClose }: { children: ReactNode;
         <button
           type="button"
           aria-label="Close fullscreen"
+          data-tip="Close (Esc)"
           onClick={onClose}
           className={`${glass} absolute right-3 top-3 z-[3] grid h-11 w-11 place-items-center rounded-full`}
         >

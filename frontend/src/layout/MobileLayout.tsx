@@ -63,6 +63,7 @@ function CreateMobile() {
             <button
               type="button"
               aria-label="Back to results"
+              data-tip="Back to results"
               onClick={() => set({ viewerOpen: false })}
               className="absolute left-4 top-4 z-10 grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-[rgba(10,9,14,0.62)] text-[#f1eadb] backdrop-blur-md"
             >

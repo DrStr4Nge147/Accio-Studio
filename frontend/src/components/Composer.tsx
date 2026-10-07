@@ -65,7 +65,7 @@ export function Composer({
         if (dy < -32 || Math.abs(dy) < 6) onExpand?.();
       }}
     >
-      <div className="mx-auto h-1 w-9 rounded-full bg-line-strong" role="button" aria-label="Open advanced settings" />
+      <div className="mx-auto h-1 w-9 rounded-full bg-line-strong" role="button" aria-label="Open advanced settings" data-tip="Open advanced settings" />
     </div>
   );
 

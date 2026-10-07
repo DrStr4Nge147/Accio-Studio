@@ -69,7 +69,7 @@ export function ResultView({ job }: { job: Job }) {
           </Zoomable>
           {firstPass && <span className={`${glass} absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-medium`}>First pass</span>}
           <div className="absolute right-2 top-2 flex flex-col gap-2">
-            <a href={url} download={filename} aria-label="Download" title="Download" className={`${glass} grid h-11 w-11 place-items-center rounded-full`}>
+            <a href={url} download={filename} aria-label="Download" data-tip="Download" className={`${glass} grid h-11 w-11 place-items-center rounded-full`}>
               <Download size={20} strokeWidth={1.7} />
             </a>
             {canShareFiles() && (
@@ -119,7 +119,7 @@ function Details({ job }: { job: Job }) {
         {job.params.batch > 1 && ` · ${job.params.batch} images`}
       </div>
       {job.finished_at && (
-        <div className="mt-1 text-[#b9b2a3]" title="From pressing Generate to the finished image, including any wait in the queue">
+        <div className="mt-1 text-[#b9b2a3]" data-tip="From pressing Generate to the finished image, including any wait in the queue">
           Time taken {formatDuration(job.finished_at - job.created_at)}
         </div>
       )}

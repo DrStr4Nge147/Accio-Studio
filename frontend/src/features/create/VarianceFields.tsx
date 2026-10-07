@@ -24,7 +24,7 @@ function VarianceInput({
   const opts = spec?.[1] ?? {};
   if (Array.isArray(kind)) {
     return (
-      <Field label={label(name)}>
+      <Field label={label(name)} tip={opts.tooltip}>
         <select value={String(value)} onChange={(e) => onChange(e.target.value)} className={inputCls}>
           {kind.map((o) => (
             <option key={o}>{o}</option>
@@ -38,6 +38,7 @@ function VarianceInput({
     if (opts.min !== undefined && opts.max !== undefined && opts.max - opts.min <= 1000) {
       return (
         <Slider
+          tip={opts.tooltip}
           label={label(name)}
           min={opts.min}
           max={opts.max}
@@ -49,7 +50,7 @@ function VarianceInput({
       );
     }
     return (
-      <Field label={label(name)}>
+      <Field label={label(name)} tip={opts.tooltip}>
         <input
           type="number"
           inputMode="decimal"
@@ -63,7 +64,7 @@ function VarianceInput({
     );
   }
   return (
-    <Field label={label(name)}>
+    <Field label={label(name)} tip={opts.tooltip}>
       <input type="text" value={String(value)} maxLength={200} onChange={(e) => onChange(e.target.value)} className={inputCls} />
     </Field>
   );

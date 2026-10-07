@@ -1,6 +1,7 @@
 import { Dices } from "lucide-react";
 import { IconButton, Label, Toggle, inputCls } from "../../components/ui/controls";
 import { useJobs } from "../../store/jobs";
+import { TIPS } from "./tips";
 import { useCreate, type Seeds } from "./store";
 
 const MAX_SEED = Number.MAX_SAFE_INTEGER; // 2^53 - 1, the server's limit
@@ -56,6 +57,7 @@ export function SeedFields() {
         on={lockSeed}
         onChange={toggle}
         label="Lock seed"
+        tip={TIPS.lockSeed}
         sub={
           !lockSeed && last ? (
             <span className="font-mono">last: {Object.values(last.seeds).join(" · ")}</span>

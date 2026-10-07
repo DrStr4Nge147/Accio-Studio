@@ -6,6 +6,7 @@ import { LoraSection } from "./LoraSection";
 import { SamplerFields } from "./SamplerFields";
 import { SeedFields } from "./SeedFields";
 import { useCreate } from "./store";
+import { TIPS } from "./tips";
 import { VarianceFields } from "./VarianceFields";
 
 const UPSCALES = [1, 1.25, 1.5, 2] as const;
@@ -40,7 +41,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
             };
             return (
               <div key={key} className="space-y-1">
-                <Toggle on={cur.on} onChange={(on) => setTurbo({ on })} label={title} />
+                <Toggle on={cur.on} onChange={(on) => setTurbo({ on })} label={title} tip={TIPS.turbo} />
                 <Slider
                   label="Strength"
                   min={0}
@@ -54,7 +55,8 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
             );
           })}
           <div>
-            <Label>Upscale before refine</Label>
+            <Label tip={TIPS.upscale}>Upscale before refine</Label>
+            <p className="text-[12px] text-text-3">Enlarges the first image before refining: more detail, slower.</p>
             <div className="mt-1.5">
               <Segmented
                 label="Upscale before refine"
@@ -64,7 +66,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
               />
             </div>
           </div>
-          <Toggle on={s.saveFirstPass} onChange={(saveFirstPass) => s.patch({ saveFirstPass })} label="Save first-pass image" />
+          <Toggle on={s.saveFirstPass} onChange={(saveFirstPass) => s.patch({ saveFirstPass })} label="Save first-pass image" sub="Keep the image from before refining" tip={TIPS.saveFirstPass} />
         </>
       ) : (
         <SamplerFields title="Sampler" def={defaults?.standard.sampler} value={s.sampler} onChange={(sampler) => s.patch({ sampler })} />
@@ -73,6 +75,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
       {s.sharpen && defaults && (
         <Slider
           label="Sharpen strength"
+          tip={TIPS.sharpenStrength}
           min={0}
           max={1}
           step={0.05}
@@ -83,6 +86,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
       {s.tEnhancer && defaults && (
         <Slider
           label="T-Enhancer strength"
+          tip={TIPS.tEnhancerStrength}
           min={0}
           max={2}
           step={0.05}
@@ -92,6 +96,23 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
       )}
       {s.seedVariance && <VarianceFields />}
       <LoraSection />
+
+      {withAspect && (
+        <dl className="space-y-1.5 rounded-m border border-line p-3 text-[12px] leading-snug text-text-3">
+          {(
+            [
+              ["Variance", TIPS.seedVariance],
+              ["Sharpen", TIPS.sharpen],
+              ["T-Enhancer", TIPS.tEnhancer],
+            ] as const
+          ).map(([k, v]) => (
+            <div key={k}>
+              <dt className="inline font-medium text-text-2">{k}: </dt>
+              <dd className="inline">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       <button
         type="button"
