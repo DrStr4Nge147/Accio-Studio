@@ -1,3 +1,4 @@
+import { create } from "zustand";
 import type { Job } from "../api/types";
 import { useUi } from "../store/ui";
 import { generate, reuseSettings } from "./create/actions";
@@ -7,13 +8,26 @@ import { generateEdit, reuseEdit } from "./edit/actions";
 import { useEdit, type EditMode } from "./edit/store";
 import { useServer } from "../store/health";
 
-/** "Reuse settings": load a job's settings (and seeds) into its mode's composer and clear the canvas. */
+/** The job waiting on the "same seed or not?" question after "Reuse settings" was clicked. */
+export const useReusePrompt = create<{ job: Job | null; ask: (job: Job) => void; close: () => void }>((set) => ({
+  job: null,
+  ask: (job) => set({ job }),
+  close: () => set({ job: null }),
+}));
+
+/** "Reuse settings": ask whether to keep the job's seed, then load its settings into its mode's composer. */
 export function reuseAny(job: Job) {
+  useReusePrompt.getState().ask(job);
+}
+
+/** Load a job's settings into its mode's composer and clear the canvas; the seed is kept only when asked. */
+export function applyReuse(job: Job, keepSeed: boolean) {
+  useReusePrompt.getState().close();
   if (job.mode === "create") {
     useUi.getState().set({ tab: "create" });
-    reuseSettings(job);
+    reuseSettings(job, keepSeed);
   } else {
-    void reuseEdit(job);
+    void reuseEdit(job, keepSeed);
   }
 }
 

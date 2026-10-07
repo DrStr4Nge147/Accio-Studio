@@ -153,8 +153,8 @@ export async function continueFromResult(job: Job, outputIndex: number): Promise
 }
 
 /** "Reuse settings" for an Edit job: its settings, seed and (where the backend still has them) its images. */
-export async function reuseEdit(job: Job) {
-  reuseEditSettings(job, defaultsOf());
+export async function reuseEdit(job: Job, keepSeed = true) {
+  reuseEditSettings(job, defaultsOf(), keepSeed);
   useUi.getState().set({ tab: "edit", viewerOpen: false });
   useJobs.getState().select(null);
   useEditSubmit.getState().setError(null);

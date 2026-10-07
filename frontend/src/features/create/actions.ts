@@ -41,8 +41,8 @@ export async function generate() {
 }
 
 /** "Reuse settings": load the job's settings into the composer and clear the canvas for the next image. */
-export function reuseSettings(job: Job) {
-  reuseJob(job, useServer.getState().catalog?.defaults ?? null);
+export function reuseSettings(job: Job, keepSeed = true) {
+  reuseJob(job, useServer.getState().catalog?.defaults ?? null, keepSeed);
   useJobs.getState().select(null);
   useUi.getState().set({ viewerOpen: false });
 }

@@ -126,4 +126,13 @@ describe("reuseJob", () => {
     // Round trip: the rebuilt request carries the same seeds and settings.
     expect(buildParams(s, defaults)).toMatchObject({ seed: 11, seed_pass2: 22, seed_variance_seed: 33, batch: 2, turbo_pass1: { on: false, strength: 0.2 } });
   });
+
+  it("keeps the settings but drops every seed when asked for a new seed", () => {
+    const job = { id: "j", params: { mode: "create", prompt: "p" }, seeds: { pass1: 11, pass2: 22, variance: 33 } } as unknown as Job;
+    reuseJob(job, defaults, false);
+    const s = useCreate.getState();
+    expect(s.prompt).toBe("p");
+    expect(s.lockSeed).toBe(false);
+    expect(s.seeds).toEqual({ main: null, pass2: null, variance: null });
+  });
 });

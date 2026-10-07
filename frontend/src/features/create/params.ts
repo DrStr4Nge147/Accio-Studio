@@ -73,7 +73,7 @@ const diff = (from: Record<string, any> | null | undefined, def: SamplerDefaults
 };
 
 /** "Reuse settings": put a finished Create job's parameters and every seed back in the composer. */
-export function reuseJob(job: Job, d: Defaults | null) {
+export function reuseJob(job: Job, d: Defaults | null, keepSeed = true) {
   const p = job.params;
   if (p.mode !== "create") return;
   const variant: Variant = p.variant === "detailed" ? "detailed" : "standard";
@@ -106,11 +106,13 @@ export function reuseJob(job: Job, d: Defaults | null) {
       on: l.on ?? true,
       target: l.target ?? "both",
     })),
-    lockSeed: true,
-    seeds: {
-      main: job.seeds.main ?? job.seeds.pass1 ?? null,
-      pass2: job.seeds.pass2 ?? null,
-      variance: job.seeds.variance ?? null,
-    },
+    lockSeed: keepSeed,
+    seeds: keepSeed
+      ? {
+          main: job.seeds.main ?? job.seeds.pass1 ?? null,
+          pass2: job.seeds.pass2 ?? null,
+          variance: job.seeds.variance ?? null,
+        }
+      : { main: null, pass2: null, variance: null },
   });
 }

@@ -149,7 +149,7 @@ const diffSampler = (from: Record<string, any> | null | undefined, def: SamplerD
 const CROP_KEYS: CropKey[] = ["context_factor", "blend_pixels", "mask_grow", "mask_blur", "context_pixels", "output_multiple", "target_megapixels"];
 
 /** "Reuse settings" for an Edit job: put its settings and seed back in the composer (images are restored by the caller). */
-export function reuseEditSettings(job: Job, def: import("../../api/types").EditDefaults | null) {
+export function reuseEditSettings(job: Job, def: import("../../api/types").EditDefaults | null, keepSeed = true) {
   const p = job.params;
   const mode = p.mode as EditMode;
   if (mode !== "multiedit" && mode !== "inpaint" && mode !== "outpaint") return;
@@ -161,7 +161,7 @@ export function reuseEditSettings(job: Job, def: import("../../api/types").EditD
     mode,
     ((p.loras ?? []) as { name: string; strength?: number; on?: boolean }[]).map((l) => ({ name: String(l.name), strength: l.strength ?? 1, on: l.on ?? true, target: "both" as const })),
   );
-  st.setSeed(mode, true, job.seeds.main ?? null);
+  st.setSeed(mode, keepSeed, keepSeed ? (job.seeds.main ?? null) : null);
   if (mode === "multiedit") {
     st.patch({ enhancer: { ...useEdit.getState().enhancer, multiedit: p.prompt_enhancer ?? true } });
     const refMp: Record<number, number> = {};

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { startSocket } from "./api/socket";
+import { ReuseSeedPrompt } from "./components/ReuseSeedPrompt";
 import { Settings } from "./components/Settings";
 import { TooltipLayer } from "./components/ui/Tooltip";
 import { cancelCurrent, generate } from "./features/create/actions";
@@ -62,6 +63,7 @@ export function App() {
     <>
       {desktop ? <DesktopLayout /> : <MobileLayout />}
       <Settings />
+      <ReuseSeedPrompt />
       <TooltipLayer />
     </>
   );
