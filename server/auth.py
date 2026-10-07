@@ -261,14 +261,22 @@ def is_https(scope: dict) -> bool:
 
 
 def same_origin(scope: dict) -> bool:
-    """True when the Origin header (if any) names this server's own host. Blocks cross-site form posts and sockets."""
+    """True unless the request looks cross-site. Blocks cross-site form posts and sockets.
+
+    Tunnels and proxies may rewrite the Host header, so a plain Origin == Host comparison would refuse our own page. The
+    browser-set Sec-Fetch-Site header (a page cannot forge it) decides when present; otherwise the Origin must match
+    Host or X-Forwarded-Host.
+    """
     h = _headers(scope)
+    fetch_site = h.get(b"sec-fetch-site", b"").decode("latin-1").lower()
+    if fetch_site:
+        return fetch_site in ("same-origin", "none")
     origin = h.get(b"origin")
     if origin is None:
         return True
-    host = h.get(b"host", b"").decode("latin-1").lower()
-    value = origin.decode("latin-1").lower()
-    return value.split("://", 1)[-1] == host
+    value = origin.decode("latin-1").lower().split("://", 1)[-1]
+    allowed = {h.get(name, b"").decode("latin-1").lower().split(",")[0].strip() for name in (b"host", b"x-forwarded-host")}
+    return value in allowed
 
 
 def session_cookie(token: str, max_age: int, secure: bool) -> str:

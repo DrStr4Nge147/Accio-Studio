@@ -98,6 +98,15 @@ def test_same_origin():
     assert not authlib.same_origin(scope(origin="null"))
 
 
+def test_same_origin_survives_a_tunnel_that_rewrites_host():
+    rewritten = scope(host="127.0.0.1:7862", origin="https://abc.trycloudflare.com")
+    assert not authlib.same_origin(rewritten)  # no other evidence: refuse
+    assert authlib.same_origin(scope(host="127.0.0.1:7862", origin="https://abc.trycloudflare.com", headers=[(b"x-forwarded-host", b"abc.trycloudflare.com")]))
+    assert authlib.same_origin(scope(host="127.0.0.1:7862", origin="https://abc.trycloudflare.com", headers=[(b"sec-fetch-site", b"same-origin")]))
+    assert not authlib.same_origin(scope(origin="http://localhost:7862", headers=[(b"sec-fetch-site", b"cross-site")]))
+    assert not authlib.same_origin(scope(origin="http://localhost:7862", headers=[(b"sec-fetch-site", b"same-site")]))
+
+
 def test_client_key_uses_forwarded_address_only_behind_loopback():
     fwd = [(b"cf-connecting-ip", b"9.9.9.9")]
     assert authlib.client_key(scope(headers=fwd)) == "9.9.9.9"
