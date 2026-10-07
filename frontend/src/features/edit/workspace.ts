@@ -52,10 +52,13 @@ interface Workspace {
   outpaint: { src: Source | null; pads: Pads; upload: OutpaintUpload };
   /** "Before" image of an Edit job, for the compare slider (this session only). */
   before: Record<string, string>;
+  /** Inpaint: the painted shape of a running job (transparent PNG), for the sweep over the area being regenerated. */
+  maskPreview: Record<string, string>;
   setSlots: (fn: (s: Slot[]) => Slot[]) => void;
   setInpaint: (p: Partial<Workspace["inpaint"]>) => void;
   setOutpaint: (p: Partial<Workspace["outpaint"]>) => void;
   setBefore: (jobId: string, url: string) => void;
+  setMaskPreview: (jobId: string, url: string) => void;
 }
 
 export const useWorkspace = create<Workspace>((set) => ({
@@ -63,10 +66,12 @@ export const useWorkspace = create<Workspace>((set) => ({
   inpaint: { src: null, ops: [], redo: [] },
   outpaint: { src: null, pads: NO_PADS, upload: { status: "idle", progress: 0 } },
   before: {},
+  maskPreview: {},
   setSlots: (fn) => set((s) => ({ slots: fn(s.slots) })),
   setInpaint: (p) => set((s) => ({ inpaint: { ...s.inpaint, ...p } })),
   setOutpaint: (p) => set((s) => ({ outpaint: { ...s.outpaint, ...p } })),
   setBefore: (jobId, url) => set((s) => ({ before: { ...s.before, [jobId]: url } })),
+  setMaskPreview: (jobId, url) => set((s) => ({ maskPreview: { ...s.maskPreview, [jobId]: url } })),
 }));
 
 const uid = () => Math.random().toString(36).slice(2, 10);

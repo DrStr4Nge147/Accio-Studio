@@ -7,7 +7,8 @@ import { boxStroke, exportInpaintPng } from "../../lib/inpaintExport";
 import { useServer } from "../../store/health";
 import { useJobs } from "../../store/jobs";
 import { useUi } from "../../store/ui";
-import { boxesOf, isEmptyMask, maskBytes } from "./maskOps";
+import { boxesOf, isEmptyMask, maskBytes, maskPreviewUrl } from "./maskOps";
+import { paddedBefore } from "../../lib/paddedBefore";
 import { editBlocker, inpaintParams, multiParams, outpaintParams, reuseEditSettings } from "./params";
 import { PRESETS, type PresetId } from "./presets";
 import { useEdit, type EditMode } from "./store";
@@ -37,6 +38,7 @@ export async function generateEdit() {
   try {
     let params: Record<string, unknown>;
     let before: string | undefined;
+    let afterJob: ((jobId: string) => void) | undefined; // previews for the running view, built from what is already in the browser
     if (mode === "multiedit") {
       params = multiParams(s, ws.slots, def?.multiedit.base_megapixels ?? 1);
       before = ws.slots[0]?.url;
@@ -53,9 +55,14 @@ export async function generateEdit() {
       const original = await uploadImage("image", src.blob);
       params = inpaintParams(s, file, src, original);
       before = src.url;
+      const ops = ws.inpaint.ops;
+      afterJob = (id) => void maskPreviewUrl(ops, src.w, src.h).then((u) => useWorkspace.getState().setMaskPreview(id, u)).catch(() => undefined);
     } else {
       const o = ws.outpaint;
       params = outpaintParams(s, o.src!, o.upload.file!, o.pads, def?.outpaint.prompt ?? "");
+      const { src: osrc, pads } = o;
+      const fill = s.outpaint.fillMode === "color" ? s.outpaint.fillColor : "#808080";
+      afterJob = (id) => void paddedBefore(id, osrc!.url, pads, fill).then((u) => useWorkspace.getState().setBefore(id, u)).catch(() => undefined);
     }
     useEditSubmit.setState({ stage: "Starting…" });
     const job = await submitJob(params);
@@ -63,6 +70,7 @@ export async function generateEdit() {
     jobs.upsert([job]);
     jobs.select(job.id);
     if (before) useWorkspace.getState().setBefore(job.id, before);
+    afterJob?.(job.id);
     useUi.getState().set({ viewerOpen: true });
     const last = { ...s.loraLastMode };
     for (const l of s.loras[mode]) last[l.name] = "edit";

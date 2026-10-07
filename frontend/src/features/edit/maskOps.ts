@@ -87,3 +87,20 @@ export function maskBytes(ops: Op[], w: number, h: number): Uint8Array {
 }
 
 export const isEmptyMask = (mask: Uint8Array) => !mask.some((v) => v > 0);
+
+/**
+ * The painted shape as a small transparent PNG (object URL), for the "running" view: a CSS mask that lets a light sweep
+ * show only inside the area being regenerated, whatever its shape.
+ */
+export async function maskPreviewUrl(ops: Op[], w: number, h: number, maxPixels = 1_000_000): Promise<string> {
+  const k = Math.min(1, Math.sqrt(maxPixels / (w * h)));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * k));
+  c.height = Math.max(1, Math.round(h * k));
+  const ctx = c.getContext("2d")!;
+  ctx.scale(k, k);
+  renderMask(ctx, ops, w, h, "#fff");
+  const blob = await new Promise<Blob | null>((resolve) => c.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("could not build the mask preview");
+  return URL.createObjectURL(blob);
+}

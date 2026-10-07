@@ -251,6 +251,10 @@ input[type="range"].slider::-moz-range-thumb {
   will-change: transform;
   animation: shimmer 2.4s linear infinite;
 }
+/* Stronger sweep for the gray outpaint area (the plain one is too faint on mid-gray). */
+.shimmer-pad::before {
+  background: linear-gradient(105deg, transparent 0%, transparent 25%, rgba(246, 205, 124, 0.5) 50%, transparent 75%, transparent 100%);
+}
 /* Bubbles: each is a card-high column that drifts upward, so translate percentages follow the card's height.
    They fade in and out at the ends, which hides the loop point. */
 @keyframes bubble-rise {
