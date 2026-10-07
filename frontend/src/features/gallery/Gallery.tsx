@@ -108,6 +108,22 @@ export function Gallery() {
       if (!n.delete(id)) n.add(id);
       return n;
     });
+  const allPicked = items.length > 0 && items.every((j) => picked.has(j.id));
+  const toggleAll = () => setPicked(allPicked ? new Set() : new Set(items.map((j) => j.id)));
+  const toggleAllRef = useRef(toggleAll);
+  toggleAllRef.current = toggleAll;
+  useEffect(() => {
+    if (!selecting) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a" && !(t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        toggleAllRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selecting]);
   const stopSelecting = () => {
     setSelecting(false);
     setPicked(new Set());
@@ -134,6 +150,16 @@ export function Gallery() {
           {selecting ? (
             <>
               <span className="text-[13px] text-text-2">{picked.size} selected</span>
+              {!confirm && (
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  data-tip={hasMore ? "Selects the images loaded so far (Ctrl+A)" : "Ctrl+A"}
+                  className="hover-wash h-11 rounded-full border border-line-strong px-3.5 text-[13px] text-text-2 hover:text-text"
+                >
+                  {allPicked ? "Clear" : "Select all"}
+                </button>
+              )}
               {confirm ? (
                 <button
                   type="button"
@@ -173,6 +199,7 @@ export function Gallery() {
         </div>
       </div>
       {confirm && <p className="flex-none px-4 pb-2 text-[12px] text-text-3">This removes them from Accio's history only. The image files stay in the backend's output folder.</p>}
+      {selecting && !confirm && hasMore && allPicked && <p className="flex-none px-4 pb-2 text-[12px] text-text-3">Only the {items.length} images loaded so far are selected. Scroll down to load more, then select all again.</p>}
 
       <div ref={scroller} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3 lg:px-4" aria-label="Gallery">
         {items.length === 0 && !loading && !error && (
