@@ -18,6 +18,8 @@ export const EDIT_MODES: { value: EditMode; label: string; short: string }[] = [
 export interface MultiState {
   keepOriginal: boolean;
   pixelDrift: boolean;
+  /** Pixel Drift Fix was switched off by turning Manual size on (it would resize the result back); turning Manual size off restores it */
+  driftAuto?: boolean;
   manualSize: boolean;
   manualW: number;
   manualH: number;
@@ -65,6 +67,10 @@ export interface EditSettings {
 interface EditActions {
   patch: (p: Partial<EditSettings>) => void;
   setMulti: (p: Partial<MultiState>) => void;
+  /** Manual size on turns Pixel Drift Fix off (the user can turn it back on); off restores what was switched off */
+  setManualSize: (on: boolean) => void;
+  /** an explicit choice by the user: forget that it was switched off automatically */
+  setPixelDrift: (on: boolean) => void;
   setInpaint: (p: Partial<InpaintState>) => void;
   setOutpaint: (p: Partial<OutpaintState>) => void;
   setPrompt: (mode: EditMode, text: string) => void;
@@ -109,6 +115,13 @@ export const useEdit = create<EditSettings & EditActions>()(
       ...initial(),
       patch: (p) => set(p),
       setMulti: (p) => set((s) => ({ multi: { ...s.multi, ...p } })),
+      setManualSize: (on) =>
+        set((s) => {
+          const m = s.multi;
+          if (on) return { multi: { ...m, manualSize: true, pixelDrift: false, driftAuto: m.pixelDrift } };
+          return { multi: { ...m, manualSize: false, pixelDrift: m.driftAuto ? true : m.pixelDrift, driftAuto: false } };
+        }),
+      setPixelDrift: (on) => set((s) => ({ multi: { ...s.multi, pixelDrift: on, driftAuto: false } })),
       setInpaint: (p) => set((s) => ({ inpaint: { ...s.inpaint, ...p } })),
       setOutpaint: (p) => set((s) => ({ outpaint: { ...s.outpaint, ...p } })),
       setPrompt: (mode, text) => set((s) => ({ prompts: { ...s.prompts, [mode]: text } })),

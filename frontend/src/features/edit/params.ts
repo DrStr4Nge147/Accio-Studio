@@ -169,6 +169,7 @@ export function reuseEditSettings(job: Job, def: import("../../api/types").EditD
     st.setMulti({
       keepOriginal: !!p.keep_original_resolution,
       pixelDrift: p.pixel_drift_fix ?? true,
+      driftAuto: false,
       manualSize: !!p.manual_size,
       manualW: p.manual_width ?? 1024,
       manualH: p.manual_height ?? 1024,

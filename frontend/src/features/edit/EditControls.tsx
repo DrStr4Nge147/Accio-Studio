@@ -52,7 +52,7 @@ export function EditChips() {
           <Chip on={s.multi.keepOriginal} onClick={() => s.setMulti({ keepOriginal: !s.multi.keepOriginal })} tip={T.keepOriginal}>
             Keep size
           </Chip>
-          <Chip on={s.multi.pixelDrift} onClick={() => s.setMulti({ pixelDrift: !s.multi.pixelDrift })} tip={T.pixelDrift}>
+          <Chip on={s.multi.pixelDrift} onClick={() => s.setPixelDrift(!s.multi.pixelDrift)} tip={T.pixelDrift}>
             Pixel drift
           </Chip>
         </>
@@ -99,7 +99,7 @@ export function EditToggles() {
         {mode === "multiedit" && (
           <>
             <Toggle on={s.multi.keepOriginal} onChange={(keepOriginal) => s.setMulti({ keepOriginal })} label="Keep original resolution" tip={T.keepOriginal} />
-            <Toggle on={s.multi.pixelDrift} onChange={(pixelDrift) => s.setMulti({ pixelDrift })} label="Pixel Drift Fix" tip={T.pixelDrift} />
+            <Toggle on={s.multi.pixelDrift} onChange={(on) => s.setPixelDrift(on)} label="Pixel Drift Fix" tip={T.pixelDrift} />
           </>
         )}
       </div>

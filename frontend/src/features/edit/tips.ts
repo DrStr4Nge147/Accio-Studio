@@ -3,7 +3,7 @@ export const EDIT_TIPS = {
   enhancer: "Rewrites your prompt into a clearer instruction before editing. The rewritten text is shown under the result. If the rewrite fails, your own prompt is used.",
   keepOriginal: "Keep image 1 at its own resolution. Off scales it to about 1 megapixel first, which is faster and what the model is tuned for.",
   pixelDrift: "Corrects the slight shift that edit models can add, so unchanged parts stay aligned with the original.",
-  manualSize: "Choose the output size yourself instead of following image 1.",
+  manualSize: "Choose the output size yourself instead of following image 1. Turns Pixel Drift Fix off, because that fix returns the result at image 1's size.",
   baseMp: "Size image 1 is scaled to (in megapixels) before editing. Only applies when Keep original resolution is off.",
   refMp: "Size this reference image is scaled to (in megapixels) before it is shown to the model.",
   invert: "Swap the mask: change everything except the painted area.",

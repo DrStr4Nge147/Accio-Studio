@@ -178,3 +178,36 @@ describe("reuse", () => {
     expect(state().outpaint).toMatchObject({ fillMode: "mirror", fillColor: "#112233", feather: 64, seam: undefined });
   });
 });
+
+describe("Manual size and Pixel Drift Fix", () => {
+  it("turning Manual size on switches Pixel Drift Fix off, turning it off restores it", () => {
+    expect(state().multi.pixelDrift).toBe(true);
+    state().setManualSize(true);
+    expect(state().multi).toMatchObject({ manualSize: true, pixelDrift: false, driftAuto: true });
+    expect(multiParams(state(), [slot()])).toMatchObject({ manual_size: true, pixel_drift_fix: false });
+    state().setManualSize(false);
+    expect(state().multi).toMatchObject({ manualSize: false, pixelDrift: true, driftAuto: false });
+  });
+
+  it("the user can turn it back on while Manual size stays on, and that choice sticks", () => {
+    state().setManualSize(true);
+    state().setPixelDrift(true);
+    expect(state().multi).toMatchObject({ manualSize: true, pixelDrift: true, driftAuto: false });
+    state().setManualSize(false);
+    expect(state().multi.pixelDrift).toBe(true);
+  });
+
+  it("does not switch it on when the user had already turned it off", () => {
+    state().setPixelDrift(false);
+    state().setManualSize(true);
+    expect(state().multi.driftAuto).toBe(false);
+    state().setManualSize(false);
+    expect(state().multi.pixelDrift).toBe(false);
+  });
+
+  it("Reuse settings does not carry a stale automatic switch-off", () => {
+    state().setManualSize(true);
+    reuseEditSettings({ id: "j", mode: "multiedit", params: { mode: "multiedit", prompt: "p", pixel_drift_fix: true }, seeds: { main: 1 } } as never, null);
+    expect(state().multi).toMatchObject({ pixelDrift: true, driftAuto: false });
+  });
+});

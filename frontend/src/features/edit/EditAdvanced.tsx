@@ -42,11 +42,12 @@ function SeedField({ mode }: { mode: EditMode }) {
 function MultiFields({ def }: { def: EditDefaults["multiedit"] }) {
   const m = useEdit((s) => s.multi);
   const set = useEdit((s) => s.setMulti);
+  const setManual = useEdit((s) => s.setManualSize);
   const count = useWorkspace((s) => s.slots.length);
   return (
     <div className="space-y-3">
       <div>
-        <Toggle on={m.manualSize} onChange={(manualSize) => set({ manualSize })} label="Manual output size" sub="Otherwise the result follows image 1" tip={T.manualSize} />
+        <Toggle on={m.manualSize} onChange={(on) => setManual(on)} label="Manual output size" sub="Otherwise the result follows image 1" tip={T.manualSize} />
         {m.manualSize && (
           <>
             <div className="mt-1 grid grid-cols-2 gap-2">
@@ -57,7 +58,11 @@ function MultiFields({ def }: { def: EditDefaults["multiedit"] }) {
                 <input type="number" inputMode="numeric" step={8} min={64} max={8192} value={m.manualH} onChange={(e) => set({ manualH: Number(e.target.value) })} className={`${inputCls} font-mono`} />
               </Field>
             </div>
-            {m.pixelDrift && <p className="mt-1.5 text-[12px] text-text-3">Pixel Drift Fix with a manual size has only had one test run. If the result looks warped, turn Pixel Drift Fix off.</p>}
+            {m.pixelDrift ? (
+              <p className="mt-1.5 text-[12px] text-text-3">Pixel Drift Fix is on: it realigns the result to image 1 and returns it at image 1's size, which undoes this manual size. Turn it off to keep the size.</p>
+            ) : (
+              <p className="mt-1.5 text-[12px] text-text-3">{m.driftAuto ? "Pixel Drift Fix was turned off because it would resize the result back to image 1's size. You can turn it back on." : "Pixel Drift Fix is off."}</p>
+            )}
           </>
         )}
       </div>

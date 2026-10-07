@@ -382,7 +382,7 @@ def _build_multiedit(p: MultiEditParams, cat: Catalog, seeds_src: Callable[[], i
     _set(pr, "45", "filename_prefix", f"{prefix}/edit")
     warnings = []
     if p.manual_size and p.pixel_drift_fix:
-        warnings.append("Pixel Drift Fix with Manual size is untested (APP_SPEC 6.3).")
+        warnings.append("Pixel Drift Fix is on with a manual size: the fix returns the result at image 1's size, which can undo the manual size.")
     return Built(pr, name, {"main": seed}, {"45": "final"}, "280", "multiedit", "Edit · Multi-Edit", warnings)
 
 
