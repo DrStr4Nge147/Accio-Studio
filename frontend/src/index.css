@@ -226,9 +226,11 @@ input[type="range"].slider::-moz-range-thumb {
 }
 
 /* Progress shimmer + the summon reveal (transform / opacity / clip-path only). */
+/* The light sweep travels on transform from fully off one edge to fully off the other, so the loop point is
+   invisible (the band is transparent at both ends of its gradient). */
 @keyframes shimmer {
-  from { background-position: 150% 0; }
-  to { background-position: -100% 0; }
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
 }
 .shimmer::before {
   content: "";
@@ -236,8 +238,8 @@ input[type="range"].slider::-moz-range-thumb {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(110deg, transparent 30%, rgba(246, 205, 124, 0.16) 50%, transparent 70%);
-  background-size: 250% 100%;
+  background: linear-gradient(105deg, transparent 0%, transparent 30%, rgba(246, 205, 124, 0.16) 50%, transparent 70%, transparent 100%);
+  will-change: transform;
   animation: shimmer 2.4s linear infinite;
 }
 @keyframes summon {
@@ -270,7 +272,7 @@ input[type="range"].slider::-moz-range-thumb {
 .fade-in { animation: fade-in 0.2s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .shimmer::before { animation: none; }
+  .shimmer::before { display: none; }
   .reveal-img { animation: fade-in 0.25s both; }
   .reveal-glow::after { display: none; }
   .sheet-in { animation: fade-in 0.15s both; }
