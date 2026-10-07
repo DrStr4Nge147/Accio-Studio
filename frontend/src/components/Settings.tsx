@@ -45,14 +45,14 @@ export function Settings() {
           <Row k="Accio server" v={unreachable ? "Unreachable" : "Running"} ok={!unreachable} />
           <Row k="Live updates" v={connected ? "Connected" : "Reconnecting…"} ok={connected} />
           <Row
-            k="ComfyUI"
-            v={!health ? "Checking…" : health.comfy_online ? `Online${health.comfy_version ? ` · ${health.comfy_version}` : ""}` : "Offline"}
+            k="Backend server"
+            v={!health ? "Checking…" : health.comfy_online ? "Online" : "Offline"}
             ok={health ? health.comfy_online : undefined}
           />
           {health?.comfy_online && (
             <>
               <Row k="Required models" v={health.missing_models.length ? `${health.missing_models.length} missing` : "All found"} ok={!health.missing_models.length} />
-              <Row k="Custom nodes" v={health.missing_nodes.length ? `${health.missing_nodes.length} missing` : "All found"} ok={!health.missing_nodes.length} />
+              <Row k="Components" v={health.missing_nodes.length ? `${health.missing_nodes.length} missing` : "All found"} ok={!health.missing_nodes.length} />
             </>
           )}
         </div>
@@ -69,7 +69,7 @@ export function Settings() {
         )}
         {health && health.missing_nodes.length > 0 && (
           <div>
-            <Label>Missing nodes</Label>
+            <Label>Missing components</Label>
             <p className="mt-1 font-mono text-[12px] text-text-2">{health.missing_nodes.join(", ")}</p>
           </div>
         )}

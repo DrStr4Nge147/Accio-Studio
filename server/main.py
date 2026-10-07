@@ -172,7 +172,7 @@ async def health(request: Request):
     warnings = []
     if version and version != pinned:  # non-blocking (spec 11.3)
         warnings.append(
-            f"ComfyUI {version} is running, but the templates were exported against {pinned}. "
+            f"The backend is version {version}, but the templates were exported against {pinned}. "
             "Outputs may differ; see scripts/export-templates.md to re-export."
         )
     return {

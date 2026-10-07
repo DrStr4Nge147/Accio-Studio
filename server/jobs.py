@@ -24,10 +24,10 @@ PREVIEW_MIN_INTERVAL = 0.1  # <= 10 preview frames/s towards the UI
 def friendly_execution_error(data: dict[str, Any]) -> str:
     text = f"{data.get('exception_type', '')} {data.get('exception_message', '')}".lower()
     if "out of memory" in text or "oom" in text:
-        return "ComfyUI ran out of GPU memory for this job."
+        return "The backend ran out of GPU memory for this job."
     if "not found" in text or "no such file" in text:
         return "A model file required by this job wasn't found."
-    return "ComfyUI hit an error while running this job."
+    return "The backend hit an error while running this job."
 
 
 class JobManager:
@@ -196,9 +196,9 @@ class JobManager:
         except ComfyError:
             hist = None
         if not hist:
-            self._finish(jid, "error", error="The job finished but its result couldn't be read from ComfyUI.")
+            self._finish(jid, "error", error="The job finished but its result couldn't be read from the backend.")
         elif hist.get("status", {}).get("status_str") == "error":
-            self._finish(jid, "error", error="ComfyUI hit an error while running this job.")
+            self._finish(jid, "error", error="The backend hit an error while running this job.")
         else:
             built = self._built.get(jid)
             outs = hist.get("outputs", {})
@@ -256,7 +256,7 @@ class JobManager:
                     self._built[job["id"]] = _built_stub(job)
                 await self._complete(job["id"])
             elif not in_queue and not hist:
-                self._finish(job["id"], "error", error="This job was lost (ComfyUI restarted or cleared its queue).")
+                self._finish(job["id"], "error", error="This job was lost (the backend restarted or cleared its queue).")
                 await self._broadcast_job(job["id"])
         await self._refresh_positions()
 

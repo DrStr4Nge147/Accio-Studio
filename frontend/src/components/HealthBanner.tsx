@@ -6,9 +6,9 @@ export function HealthBanner() {
   const { health, unreachable, refreshHealth } = useServer();
   let text: string | null = null;
   if (unreachable) text = "Can't reach the Accio server.";
-  else if (health && !health.comfy_online) text = "ComfyUI is offline. Start it with Run_Accio.bat, then check again.";
+  else if (health && !health.comfy_online) text = "The backend server is offline. Start it with Run_Accio.bat, then check again.";
   else if (health?.missing_models.length) text = `${health.missing_models.length} required model${health.missing_models.length === 1 ? " is" : "s are"} missing.`;
-  else if (health?.missing_nodes.length) text = "Some ComfyUI custom nodes are missing.";
+  else if (health?.missing_nodes.length) text = "Some backend components are missing.";
   if (!text) return null;
   return (
     <div role="status" className="flex flex-none items-center justify-between gap-3 border-b border-line bg-raised px-4 py-2 text-[13px]">

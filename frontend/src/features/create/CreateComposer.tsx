@@ -28,7 +28,7 @@ export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; abo
       running={running}
       cancelling={cancelling}
       disabled={busy || !prompt.trim() || offline}
-      disabledReason={offline ? "ComfyUI is offline, so nothing can be generated right now." : null}
+      disabledReason={offline ? "The backend server is offline, so nothing can be generated right now." : null}
       error={error}
       onGenerate={() => void generate()}
       onCancel={() => void cancelCurrent()}

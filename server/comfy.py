@@ -22,7 +22,7 @@ class ComfyError(Exception):
 
 class ComfyOffline(ComfyError):
     def __init__(self, detail: str = ""):
-        super().__init__("ComfyUI isn't reachable. Make sure it is running.", kind="offline", detail=detail)
+        super().__init__("The backend server isn't reachable. Make sure it is running.", kind="offline", detail=detail)
 
 
 class ComfyClient:
@@ -47,7 +47,7 @@ class ComfyClient:
         r = await self._request(method, path, **kw)
         if r.status_code >= 400:
             log.warning("ComfyUI %s %s -> %s %s", method, path, r.status_code, r.text[:500])
-            raise ComfyError("ComfyUI returned an error.", detail=f"{r.status_code} {r.text[:500]}")
+            raise ComfyError("The backend returned an error.", detail=f"{r.status_code} {r.text[:500]}")
         return r.json()
 
     async def system_stats(self) -> dict:
@@ -87,7 +87,7 @@ class ComfyClient:
         except ValueError:
             pass
         raise ComfyError(
-            "ComfyUI rejected this job. A model or input may be missing or invalid.",
+            "The backend rejected this job. A model or input may be missing or invalid.",
             kind="validation",
             detail=detail,
             node_errors=node_errors,
@@ -102,7 +102,7 @@ class ComfyClient:
         )
         if r.status_code != 200:
             log.warning("ComfyUI upload failed: %s %s", r.status_code, r.text[:500])
-            raise ComfyError("Couldn't upload the image to ComfyUI.", detail=r.text[:500])
+            raise ComfyError("Couldn't upload the image to the backend.", detail=r.text[:500])
         return r.json()
 
     def view_stream(self, filename: str, subfolder: str, type_: str) -> httpx.Request:

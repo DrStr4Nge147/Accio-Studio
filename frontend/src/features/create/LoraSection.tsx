@@ -103,7 +103,7 @@ export function LoraSection() {
                   )
                 );
               })}
-              {!catalog && <p className="p-2 text-[13px] text-text-3">Couldn't load the LoRA list from ComfyUI.</p>}
+              {!catalog && <p className="p-2 text-[13px] text-text-3">Couldn't load the LoRA list from the backend.</p>}
               {catalog && own.length + shared.length === taken.size && <p className="p-2 text-[13px] text-text-3">No more LoRAs to add.</p>}
               <button type="button" onClick={() => setAdding(false)} className="hover-wash h-11 w-full rounded-s text-[13px] text-text-2 hover:text-text">
                 Cancel

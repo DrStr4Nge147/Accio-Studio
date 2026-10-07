@@ -100,7 +100,7 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
         <div className="mt-2 flex items-center justify-between gap-2 text-[12px] text-[#b9b2a3]">
           <span>
             {cancelling
-              ? "Waiting for ComfyUI to reach a stopping point…"
+              ? "Waiting for the backend to reach a stopping point…"
               : [!decoding && eta !== null && !compact ? `${formatEta(eta)} left in this pass` : null, waiting].filter(Boolean).join(" · ") ||
                 (queued ? "Starting…" : "Working…")}
           </span>
