@@ -145,6 +145,8 @@ function EditMobile() {
   const previewing = viewerOpen && selectedIsMode;
   const srcUrl = useWorkspace((s) => s.inpaint.src?.url);
   const maskFullscreen = useUi((s) => s.maskFullscreen);
+  // While an image is open in the editor the canvas needs the height; Recent comes back when previewing or empty.
+  const editing = useWorkspace((s) => (mode === "multiedit" ? s.slots.length > 0 : mode === "inpaint" ? !!s.inpaint.src : !!s.outpaint.src));
   // A newly chosen Inpaint image opens the full-screen painter.
   useEffect(() => {
     if (mode === "inpaint" && srcUrl && srcUrl !== paintedUrl) set({ maskFullscreen: true });
@@ -156,7 +158,8 @@ function EditMobile() {
       <div className="flex-none px-3.5 pb-2 [@media(max-height:700px)]:pb-1.5">
         <EditModeSwitch stretch />
       </div>
-      <div className="relative min-h-0 flex-1 px-2.5 pb-2.5">
+      {/* Inpaint here is only a preview under the full-screen button, so its tool strip is hidden (the painter has it). */}
+      <div className={`relative min-h-0 flex-1 px-2.5 pb-2.5 ${mode === "inpaint" && !previewing ? "[&_[data-mask-tools]]:hidden" : ""}`}>
         <EditCanvas />
         {/* Too small to paint on a phone: the canvas is covered, and the button opens the full-screen painter. */}
         {mode === "inpaint" && srcUrl && !previewing && (
@@ -172,7 +175,7 @@ function EditMobile() {
           </button>
         )}
       </div>
-      <RecentStrip group="edit" compact />
+      {(previewing || !editing) && <RecentStrip group="edit" compact />}
       {!previewing && <EditComposer layout="dock" />}
       <Sheet open={advancedOpen} onClose={() => set({ advancedOpen: false })} title={`Advanced · ${title}`}>
         <EditAdvanced withPadding />
@@ -185,8 +188,8 @@ function EditMobile() {
 function SettingsTab() {
   const set = useUi((s) => s.set);
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-4">
-      <h1 className="serif mb-3 text-[22px] font-medium">Settings</h1>
+    <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-1">
+      <h1 className="serif mb-4 text-[22px] font-medium">Settings</h1>
       <SettingsBody open />
       <button
         type="button"

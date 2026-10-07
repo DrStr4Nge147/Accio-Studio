@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -41,6 +41,44 @@ export function Chip({
   );
 }
 
+/**
+ * A sideways-scrolling strip whose edges fade only while more content is hidden past them. Returns the ref for the
+ * scrolling element and the mask style to put on it.
+ */
+export function useScrollFade<T extends HTMLElement>(deps: unknown) {
+  const ref = useRef<T>(null);
+  const [more, setMore] = useState({ l: false, r: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setMore({ l: el.scrollLeft > 1, r: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 });
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    for (const c of el.children) ro.observe(c);
+    el.addEventListener("scroll", check, { passive: true });
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("scroll", check);
+    };
+  }, [deps]);
+  const mask = `linear-gradient(to right, ${more.l ? "transparent, #000 20px" : "#000"}, ${more.r ? "#000 calc(100% - 28px), transparent" : "#000"})`;
+  return { ref, style: { maskImage: mask, WebkitMaskImage: mask } };
+}
+
+/** Mobile row of chips under the prompt: the chips scroll sideways and `end` (the Options chip) stays pinned at the right. */
+export function ChipRow({ children, end }: { children: ReactNode; end?: ReactNode }) {
+  const fade = useScrollFade<HTMLDivElement>(children);
+  return (
+    <div className="flex items-center gap-1.5">
+      <div ref={fade.ref} style={fade.style} className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-1">
+        {children}
+      </div>
+      {end}
+    </div>
+  );
+}
+
 export function Toggle({
   on,
   onChange,
@@ -64,9 +102,9 @@ export function Toggle({
       disabled={disabled}
       data-tip={tip}
       onClick={() => onChange(!on)}
-      className="flex min-h-11 w-full items-center justify-between gap-3 text-left text-[14px] disabled:opacity-50"
+      className="flex min-h-11 w-full items-center justify-between gap-3 py-1 text-left text-[14px] disabled:opacity-50"
     >
-      <span>
+      <span className="min-w-0">
         {label}
         {sub && <span className="block text-[12px] text-text-3">{sub}</span>}
       </span>

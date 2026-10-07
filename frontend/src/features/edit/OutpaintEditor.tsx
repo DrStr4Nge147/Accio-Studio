@@ -1,6 +1,7 @@
 import { useRef, type PointerEvent } from "react";
 import { ImagePlus, RotateCcw, X } from "lucide-react";
 import { Box } from "../../components/stage/Box";
+import { useScrollFade } from "../../components/ui/controls";
 import { Zoomable } from "../../components/stage/Zoomable";
 import { EmptyPicker, receiveFiles } from "./ImagePicker";
 import { useEdit } from "./store";
@@ -62,6 +63,7 @@ function Editor({ src }: { src: NonNullable<ReturnType<typeof useWorkspace.getSt
   const upload = useWorkspace((s) => s.outpaint.upload);
   const drag = useRef<{ side: Side; start: number; origin: number; scale: number } | null>(null);
   const content = useRef<HTMLDivElement>(null);
+  const fade = useScrollFade<HTMLDivElement>(src.url);
 
   // The view always has room to grow by 60% of the longer side; typing more widens it.
   const room = Math.round(Math.max(src.w, src.h) * 0.6);
@@ -97,31 +99,38 @@ function Editor({ src }: { src: NonNullable<ReturnType<typeof useWorkspace.getSt
   // The ratio buttons sit in a strip above the canvas, not over it, so nothing hides part of the picture.
   const strip = (
     <div className="flex flex-none flex-col items-center gap-1.5">
-      <div className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full border border-line bg-raised p-0.5 text-text no-scrollbar" role="toolbar" aria-label="Expand to a ratio">
-        {RATIOS.map((r) => (
-          <button key={r.label} type="button" data-tip={`Grow the canvas to ${r.label}`} onClick={() => setPads(padsForRatio(src.w, src.h, r.w, r.h))} className="hover-wash h-11 flex-none rounded-full px-3 font-mono text-[12px]">
-            {r.label}
+      {/* One row on any phone: the ratios scroll sideways (faded edge), reset and the image actions stay put. */}
+      <div className="flex max-w-full items-center gap-1.5 text-text">
+        <div className="flex min-w-0 items-center gap-0.5 rounded-full border border-line bg-raised p-0.5">
+          <div ref={fade.ref} style={fade.style} className="no-scrollbar flex min-w-0 items-center gap-0.5 overflow-x-auto rounded-full" role="toolbar" aria-label="Expand to a ratio">
+            {RATIOS.map((r) => (
+              <button key={r.label} type="button" data-tip={`Grow the canvas to ${r.label}`} onClick={() => setPads(padsForRatio(src.w, src.h, r.w, r.h))} className="hover-wash h-11 flex-none rounded-full px-2.5 font-mono text-[12px] sm:px-3">
+                {r.label}
+              </button>
+            ))}
+          </div>
+          <i className="mx-0.5 h-6 w-px flex-none bg-line-strong" />
+          <button type="button" aria-label="Reset padding" data-tip="Reset padding" disabled={!pads.l && !pads.t && !pads.r && !pads.b} onClick={() => setPads(NO_PADS)} className="hover-wash grid h-11 w-11 flex-none place-items-center rounded-full disabled:opacity-35">
+            <RotateCcw size={18} strokeWidth={1.7} />
           </button>
-        ))}
-        <i className="mx-0.5 h-6 w-px flex-none bg-line-strong" />
-        <button type="button" aria-label="Reset padding" data-tip="Reset padding" disabled={!pads.l && !pads.t && !pads.r && !pads.b} onClick={() => setPads(NO_PADS)} className="hover-wash grid h-11 w-11 flex-none place-items-center rounded-full disabled:opacity-35">
-          <RotateCcw size={18} strokeWidth={1.7} />
-        </button>
-        <label className="hover-wash grid h-11 w-11 flex-none cursor-pointer place-items-center rounded-full" data-tip="Choose another image" aria-label="Choose another image">
-          <ImagePlus size={19} strokeWidth={1.7} />
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => {
-              if (e.target.files?.length) void receiveFiles("outpaint", [...e.target.files]);
-              e.target.value = "";
-            }}
-          />
-        </label>
-        <button type="button" aria-label="Close the image and start over" data-tip="Close the image and start over" onClick={() => setOutpaintSource(null)} className="hover-wash grid h-11 w-11 flex-none place-items-center rounded-full">
-          <X size={20} strokeWidth={1.7} />
-        </button>
+        </div>
+        <div className="flex flex-none items-center gap-0.5 rounded-full border border-line bg-raised p-0.5">
+          <label className="hover-wash grid h-11 w-11 flex-none cursor-pointer place-items-center rounded-full" data-tip="Choose another image" aria-label="Choose another image">
+            <ImagePlus size={19} strokeWidth={1.7} />
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                if (e.target.files?.length) void receiveFiles("outpaint", [...e.target.files]);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          <button type="button" aria-label="Close the image and start over" data-tip="Close the image and start over" onClick={() => setOutpaintSource(null)} className="hover-wash grid h-11 w-11 flex-none place-items-center rounded-full">
+            <X size={20} strokeWidth={1.7} />
+          </button>
+        </div>
       </div>
       {upload.status !== "ready" && (
         <p className="text-[13px] text-text-2" role="status">

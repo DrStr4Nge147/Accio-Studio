@@ -1,5 +1,5 @@
 import { ChevronDown, Info, SlidersHorizontal } from "lucide-react";
-import { Chip, Label, Segmented, Toggle } from "../../components/ui/controls";
+import { Chip, ChipRow, Label, Segmented, Toggle } from "../../components/ui/controls";
 import { useUi } from "../../store/ui";
 import { AspectPicker } from "./AspectPicker";
 import { CreateAdvanced } from "./CreateAdvanced";
@@ -34,11 +34,12 @@ export function DetailedNote({ compact }: { compact?: boolean }) {
   );
 }
 
-/** Opens the mobile Options (Advanced) sheet. Always the last chip, so the row is at most three choices plus this. */
+/** Opens the mobile Options (Advanced) sheet. Pinned after the scrolling chips; just the icon on narrow phones. */
 export function OptionsChip() {
   return (
     <Chip toggle={false} onClick={() => useUi.getState().set({ advancedOpen: true })} label="Options" tip="Finishing toggles, aspect, sampler and more">
-      <SlidersHorizontal size={16} strokeWidth={1.7} /> Options
+      <SlidersHorizontal size={16} strokeWidth={1.7} />
+      <span className="max-[399px]:hidden">Options</span>
     </Chip>
   );
 }
@@ -50,7 +51,7 @@ export function CreateChips() {
   const openAdvanced = () => useUi.getState().set({ advancedOpen: true });
   return (
     <>
-    <div className="no-scrollbar -mx-3.5 flex items-center gap-1.5 overflow-x-auto px-3.5 py-1">
+    <ChipRow end={<OptionsChip />}>
       <Chip toggle={false} onClick={() => s.patch({ variant: next(["standard", "detailed"] as Variant[], s.variant) })} label={`Mode: ${s.variant}. Tap to switch`} tip={s.variant === "standard" ? TIPS.standard : TIPS.detailed}>
         {s.variant === "standard" ? "Standard" : "Detailed"}
       </Chip>
@@ -60,8 +61,7 @@ export function CreateChips() {
       <Chip toggle={false} onClick={() => s.patch({ batch: next(BATCHES, s.batch) })} label={`Images per run: ${s.batch}. Tap to change`} tip={TIPS.batch}>
         ×{s.batch}
       </Chip>
-      <OptionsChip />
-    </div>
+    </ChipRow>
     {s.variant === "detailed" && <DetailedNote compact />}
     </>
   );

@@ -203,7 +203,7 @@ function Editor({ src }: { src: Source }) {
   // The tools sit in a strip above the canvas, not over it: nothing on screen hides part of the picture.
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
-      <div className="flex flex-none flex-wrap items-center justify-center gap-2">
+      <div className="flex flex-none flex-wrap items-center justify-center gap-2" data-mask-tools>
         <div className={`${pill} flex items-center gap-0.5 rounded-full p-0.5`} role="toolbar" aria-label="Mask tools">
           <ToolButton label="Brush (B)" on={tool === "brush"} onClick={() => setTool("brush")}>
             <Brush size={20} strokeWidth={1.7} />
@@ -226,7 +226,7 @@ function Editor({ src }: { src: Source }) {
           </ToolButton>
         </div>
         {(tool === "brush" || tool === "eraser") && (
-          <label className={`${pill} flex h-12 w-48 items-center gap-2 rounded-full px-3.5 text-[12px] text-text-2`}>
+          <label className={`${pill} flex h-12 w-36 items-center gap-2 rounded-full px-3.5 text-[12px] text-text-2 sm:w-48`}>
             <span className="flex-none">Size</span>
             <input
               type="range"

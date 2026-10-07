@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { Chip, Label, Segmented, Toggle } from "../../components/ui/controls";
+import { Chip, ChipRow, Label, Segmented, Toggle } from "../../components/ui/controls";
 import { useUi } from "../../store/ui";
 import { selectEditMode, togglePreset } from "./actions";
 import { OptionsChip } from "../create/CreateControls";
@@ -27,13 +27,13 @@ export function EditModeSwitch({ stretch }: { stretch?: boolean }) {
 const presetsFor = (mode: EditMode): PresetId[] => (mode === "multiedit" ? MULTI_PRESETS : mode === "inpaint" ? INPAINT_PRESETS : []);
 const activePreset = (mode: EditMode, multi: PresetId | null, inpaint: PresetId | null) => (mode === "multiedit" ? multi : mode === "inpaint" ? inpaint : null);
 
-/** Mobile main controls: one scrolling row of chips; everything else is in the Advanced sheet. */
+/** Mobile main controls: one scrolling row of chips with Options pinned at the end; everything else is in the Advanced sheet. */
 export function EditChips() {
   const s = useEdit();
   const mode = s.mode;
   const active = activePreset(mode, s.multi.preset, s.inpaint.preset);
   return (
-    <div className="no-scrollbar -mx-3.5 flex items-center gap-1.5 overflow-x-auto px-3.5 py-1">
+    <ChipRow end={<OptionsChip />}>
       {presetsFor(mode).map((id) => (
         <Chip key={id} on={active === id} onClick={() => togglePreset(id)} tip={PRESETS[id].tip}>
           {PRESETS[id].label}
@@ -52,8 +52,7 @@ export function EditChips() {
           {FILL_CYCLE.find((f) => f.value === s.outpaint.fillMode)?.label}
         </Chip>
       )}
-      <OptionsChip />
-    </div>
+    </ChipRow>
   );
 }
 
