@@ -1,4 +1,5 @@
 import { LayoutGrid, Settings as GearIcon, Sparkles, WandSparkles } from "lucide-react";
+import { CoffeeBadge } from "../components/CoffeeBadge";
 import { HealthBanner } from "../components/HealthBanner";
 import { IconButton } from "../components/ui/controls";
 import { SelectedStage } from "../components/stage/Stage";
@@ -77,9 +78,12 @@ export function DesktopLayout() {
       <aside className="flex min-h-0 flex-col border-r border-line bg-surface" aria-label="Controls">
         <div className="flex h-14 flex-none items-center justify-between border-b border-line px-4">
           <Wordmark size={24} />
-          <IconButton label="Settings" onClick={() => set({ settingsOpen: true })} className="h-9 w-9">
-            <GearIcon size={20} strokeWidth={1.7} />
-          </IconButton>
+          <div className="flex items-center gap-1.5">
+            <CoffeeBadge compact />
+            <IconButton label="Settings" onClick={() => set({ settingsOpen: true })} className="h-9 w-9">
+              <GearIcon size={20} strokeWidth={1.7} />
+            </IconButton>
+          </div>
         </div>
         {tab === "create" ? (
           <CreateComposer layout="pane" above={nav} />

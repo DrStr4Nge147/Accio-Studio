@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, LayoutGrid, Settings as GearIcon, Sparkles, Terminal, WandSparkles } from "lucide-react";
+import { CoffeeBadge } from "../components/CoffeeBadge";
 import { Wordmark } from "../components/Wordmark";
 import { HealthBanner } from "../components/HealthBanner";
 import { SettingsBody } from "../components/Settings";
@@ -142,10 +143,11 @@ export function MobileLayout() {
   useConsolePolling(consoleOpen, 1000);
   return (
     <div className="flex h-full flex-col bg-bg">
-      <header className="safe-t flex flex-none items-center px-3.5">
+      <header className="safe-t flex flex-none items-center justify-between px-3.5">
         <div className="flex h-12 items-center">
           <Wordmark size={24} />
         </div>
+        <CoffeeBadge />
       </header>
       <Sheet open={consoleOpen} onClose={() => set({ consoleOpen: false })} title="Console" height="70%">
         <div className="-mx-4 flex flex-col">
