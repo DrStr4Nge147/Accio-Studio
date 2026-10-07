@@ -32,7 +32,7 @@ export function LoraSection() {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-12 w-full items-center justify-between px-3 text-[14px] text-text-2"
+        className="hover-wash flex h-12 w-full items-center justify-between rounded-m px-3 text-[14px] text-text-2 hover:text-text"
       >
         <span>LoRAs</span>
         <span className="flex items-center gap-1 text-[12px] text-text-3">
@@ -94,7 +94,7 @@ export function LoraSection() {
                           role="option"
                           aria-selected={false}
                           onClick={() => add(n)}
-                          className="block min-h-11 w-full rounded-lg px-2 text-left text-[14px] hover:bg-overlay"
+                          className="block min-h-11 w-full rounded-lg px-2 text-left text-[14px] hover:bg-overlay hover:text-text"
                         >
                           {loraLabel(n)}
                         </button>
@@ -105,7 +105,7 @@ export function LoraSection() {
               })}
               {!catalog && <p className="p-2 text-[13px] text-text-3">Couldn't load the LoRA list from ComfyUI.</p>}
               {catalog && own.length + shared.length === taken.size && <p className="p-2 text-[13px] text-text-3">No more LoRAs to add.</p>}
-              <button type="button" onClick={() => setAdding(false)} className="h-11 w-full text-[13px] text-text-2">
+              <button type="button" onClick={() => setAdding(false)} className="hover-wash h-11 w-full rounded-s text-[13px] text-text-2 hover:text-text">
                 Cancel
               </button>
             </div>
@@ -113,7 +113,7 @@ export function LoraSection() {
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="flex h-11 w-full items-center justify-center gap-1.5 rounded-s border border-dashed border-line-strong text-[13px] text-text-2"
+              className="hover-wash flex h-11 w-full items-center justify-center gap-1.5 rounded-s border border-dashed border-line-strong text-[13px] text-text-2 hover:border-text-3 hover:text-text"
             >
               <Plus size={16} strokeWidth={1.7} /> Add LoRA
             </button>

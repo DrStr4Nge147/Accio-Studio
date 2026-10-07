@@ -93,7 +93,7 @@ export function VarianceFields() {
       <legend className="flex items-center gap-2 px-1 text-[13px] font-medium text-text-2">
         Seed variance
         {Object.keys(overrides).length > 0 && (
-          <button type="button" onClick={() => patch({ variance: {} })} className="h-7 rounded-full px-2 text-[12px] text-gold-text">
+          <button type="button" onClick={() => patch({ variance: {} })} className="hover-wash h-7 rounded-full px-2 text-[12px] text-gold-text">
             Reset
           </button>
         )}
@@ -109,7 +109,7 @@ export function VarianceFields() {
         type="button"
         aria-expanded={more}
         onClick={() => setMore((m) => !m)}
-        className="flex h-11 w-full items-center justify-between text-[13px] text-text-2"
+        className="hover-wash flex h-11 w-full items-center justify-between rounded-s px-2 text-[13px] text-text-2 hover:text-text"
       >
         All settings
         <ChevronDown size={18} strokeWidth={1.7} className={more ? "rotate-180" : ""} />

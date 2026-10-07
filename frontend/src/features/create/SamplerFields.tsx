@@ -34,7 +34,7 @@ export function SamplerFields({
       <legend className="flex items-center gap-2 px-1 text-[13px] font-medium text-text-2">
         {title}
         {changed && (
-          <button type="button" onClick={() => onChange({})} className="h-7 rounded-full px-2 text-[12px] text-gold-text">
+          <button type="button" onClick={() => onChange({})} className="hover-wash h-7 rounded-full px-2 text-[12px] text-gold-text">
             Reset
           </button>
         )}

@@ -94,7 +94,7 @@ export function Composer({
         <button
           type="button"
           onClick={onCancel}
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-line-strong bg-raised text-[16px] font-semibold text-text"
+          className="hover-wash flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-line-strong bg-raised text-[16px] font-semibold text-text"
         >
           <X size={20} strokeWidth={1.7} /> Cancel
           {!dock && <kbd className="rounded-md border border-line-strong px-1.5 font-mono text-[11px] text-text-2">Esc</kbd>}
@@ -105,7 +105,7 @@ export function Composer({
           onClick={onGenerate}
           disabled={disabled}
           title={disabledReason ?? undefined}
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-hi to-gold text-[16px] font-semibold text-on-gold shadow-[0_6px_20px_color-mix(in_srgb,var(--gold)_30%,transparent)] transition-opacity disabled:opacity-50"
+          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-hi to-gold text-[16px] font-semibold text-on-gold shadow-[0_6px_20px_color-mix(in_srgb,var(--gold)_30%,transparent)] transition-[opacity,filter] hover:brightness-105 disabled:opacity-50"
         >
           {generateIcon} Generate
           {!dock && <kbd className="rounded-md border border-black/20 px-1.5 font-mono text-[11px] opacity-70">Ctrl+Enter</kbd>}

@@ -108,7 +108,7 @@ export function MobileLayout() {
             type="button"
             aria-current={tab === id ? "page" : undefined}
             onClick={() => set({ tab: id })}
-            className={`flex h-[60px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${tab === id ? "text-gold-text" : "text-text-3"}`}
+            className={`flex h-[60px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${tab === id ? "text-gold-text" : "text-text-3 hover:text-text-2"}`}
           >
             <Icon size={22} strokeWidth={1.7} />
             {label}

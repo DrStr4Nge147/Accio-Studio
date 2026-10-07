@@ -117,7 +117,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
       <button
         type="button"
         onClick={() => s.reset()}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-s text-[13px] text-text-2"
+        className="hover-wash flex h-11 w-full items-center justify-center gap-2 rounded-s text-[13px] text-text-2 hover:text-text"
       >
         <RotateCcw size={16} strokeWidth={1.7} /> Reset everything to workflow defaults
       </button>

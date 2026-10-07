@@ -26,12 +26,12 @@ export function Chip({
       aria-pressed={toggle ? !!on : undefined}
       aria-label={label}
       data-tip={tip}
-      className="-my-1 flex-none py-1.5 first:ml-0"
+      className="group -my-1 flex-none py-1.5 first:ml-0"
     >
       <span
         className={cx(
           "flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[13px] transition-colors",
-          on ? "border-gold/55 bg-gold-wash text-gold-text" : "border-line-strong text-text-2",
+          on ? "border-gold/55 bg-gold-wash text-gold-text group-hover:border-gold" : "border-line-strong text-text-2 group-hover:border-text-3 group-hover:bg-raised group-hover:text-text",
         )}
       >
         {toggle && <i className={cx("h-[7px] w-[7px] rounded-full", on ? "bg-gold-ui" : "bg-text-3")} />}
@@ -108,7 +108,7 @@ export function Segmented<T extends string | number>({
           className={cx(
             "grid place-items-center rounded-[9px] px-3.5 text-[13px] font-medium transition-colors",
             small ? "h-8 min-w-9" : "h-9 min-w-11",
-            o.value === value ? "bg-overlay text-text" : "text-text-2",
+            o.value === value ? "bg-overlay text-text" : "text-text-2 hover:bg-overlay/60 hover:text-text",
           )}
         >
           {o.label}
@@ -174,7 +174,7 @@ export function IconButton({
       aria-label={label}
       data-tip={label}
       {...rest}
-      className={cx("grid h-11 w-11 flex-none place-items-center rounded-full text-text-2 transition-colors hover:text-text disabled:opacity-40", className)}
+      className={cx("hover-wash grid h-11 w-11 flex-none place-items-center rounded-full text-text-2 transition-colors hover:text-text disabled:opacity-40", className)}
     >
       {children}
     </button>

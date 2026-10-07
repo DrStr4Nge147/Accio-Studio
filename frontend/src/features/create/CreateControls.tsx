@@ -91,7 +91,7 @@ export function CreateToggles() {
         type="button"
         aria-expanded={open}
         onClick={() => useUi.getState().set({ advancedInline: !open })}
-        className="flex h-11 w-full items-center justify-between rounded-m border border-line px-3 text-[14px] text-text-2"
+        className="hover-wash flex h-11 w-full items-center justify-between rounded-m border border-line px-3 text-[14px] text-text-2 transition-colors hover:border-line-strong hover:text-text"
       >
         Advanced
         <ChevronDown size={18} strokeWidth={1.7} className={open ? "rotate-180" : ""} />

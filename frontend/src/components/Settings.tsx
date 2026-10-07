@@ -78,7 +78,7 @@ export function Settings() {
             {w}
           </p>
         ))}
-        <button type="button" onClick={() => void refreshHealth()} className="h-11 rounded-full border border-line-strong px-4 text-[14px] text-text-2">
+        <button type="button" onClick={() => void refreshHealth()} className="hover-wash h-11 rounded-full border border-line-strong px-4 text-[14px] text-text-2 hover:text-text">
           Check again
         </button>
       </div>

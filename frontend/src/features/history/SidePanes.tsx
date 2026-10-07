@@ -50,7 +50,7 @@ export function QueuePane() {
                   aria-label="Cancel job"
                   data-tip="Cancel this job"
                   onClick={() => void cancelJob(j.id).catch(() => undefined)}
-                  className="grid h-11 w-11 flex-none place-items-center rounded-full text-text-2"
+                  className="hover-wash grid h-11 w-11 flex-none place-items-center rounded-full text-text-2 hover:text-text"
                 >
                   <X size={16} strokeWidth={1.7} />
                 </button>
@@ -82,7 +82,7 @@ export function HistoryPane() {
                   aria-label={`Open: ${String(j.params.prompt ?? j.label).slice(0, 60)}`}
                   aria-current={j.id === selectedId}
                   data-tip={String(j.params.prompt ?? j.label).slice(0, 140)}
-                  className={`block aspect-square w-full overflow-hidden rounded-s border ${j.id === selectedId ? "border-gold" : "border-line"}`}
+                  className={`block aspect-square w-full overflow-hidden rounded-s border ${j.id === selectedId ? "border-gold" : "border-line hover:border-text-3"}`}
                 >
                   <Thumb job={j} className="h-full w-full" />
                 </button>
@@ -110,7 +110,7 @@ export function RecentStrip() {
           aria-current={j.id === selectedId}
           data-tip={isActive(j) ? "Being generated" : String(j.params.prompt ?? j.label).slice(0, 140)}
           onClick={() => useJobs.getState().select(j.id)}
-          className={`h-[72px] w-[72px] flex-none overflow-hidden rounded-s border ${j.id === selectedId ? "border-gold" : "border-line-strong"}`}
+          className={`h-[72px] w-[72px] flex-none overflow-hidden rounded-s border ${j.id === selectedId ? "border-gold" : "border-line-strong hover:border-text-3"}`}
         >
           <Thumb job={j} className="h-full w-full" />
         </button>

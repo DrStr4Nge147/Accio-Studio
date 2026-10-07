@@ -38,13 +38,13 @@ function Problem({ job, title }: { job: Job; title: string }) {
         <h3 className="mt-3 text-[16px] font-semibold">{title}</h3>
         {job.error && <p className="mt-1.5 text-[14px] text-text-2">{job.error}</p>}
         <div className="mt-4 flex justify-center gap-2">
-          <button type="button" onClick={retry} className="flex h-11 items-center gap-2 rounded-full bg-raised px-4 text-[14px] font-medium">
+          <button type="button" onClick={retry} className="hover-wash flex h-11 items-center gap-2 rounded-full bg-raised px-4 text-[14px] font-medium">
             <RotateCcw size={16} strokeWidth={1.7} /> Try again
           </button>
           <button
             type="button"
             onClick={() => reuseSettings(job)}
-            className="h-11 rounded-full border border-line-strong px-4 text-[14px] text-text-2"
+            className="hover-wash h-11 rounded-full border border-line-strong px-4 text-[14px] text-text-2 hover:text-text"
           >
             Reuse settings
           </button>

@@ -69,7 +69,7 @@ export function ResultView({ job }: { job: Job }) {
           </Zoomable>
           {firstPass && <span className={`${glass} absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-medium`}>First pass</span>}
           <div className="absolute right-2 top-2 flex flex-col gap-2">
-            <a href={url} download={filename} aria-label="Download" data-tip="Download" className={`${glass} grid h-11 w-11 place-items-center rounded-full`}>
+            <a href={url} download={filename} aria-label="Download" data-tip="Download" className={`${glass} hover-wash grid h-11 w-11 place-items-center rounded-full`}>
               <Download size={20} strokeWidth={1.7} />
             </a>
             {canShareFiles() && (
@@ -97,7 +97,7 @@ export function ResultView({ job }: { job: Job }) {
               aria-selected={n === index}
               aria-label={it.o.role === "final" ? `Image ${n + 1}` : "First pass image"}
               onClick={() => setIndex(n)}
-              className={`relative h-14 w-14 flex-none overflow-hidden rounded-s border ${n === index ? "border-gold" : "border-line-strong"}`}
+              className={`relative h-14 w-14 flex-none overflow-hidden rounded-s border ${n === index ? "border-gold" : "border-line-strong hover:border-text-3"}`}
             >
               <img src={imageUrl(job.id, it.i)} alt="" loading="lazy" className="h-full w-full object-cover" />
               {it.o.role !== "final" && <span className="absolute inset-x-0 bottom-0 bg-black/60 text-[9px] text-white">1st pass</span>}
@@ -139,7 +139,7 @@ function Details({ job }: { job: Job }) {
       <button
         type="button"
         onClick={() => void navigator.clipboard?.writeText(seeds.map(([k, v]) => `${k}: ${v}`).join("\n")).catch(() => undefined)}
-        className="mt-2 flex h-11 items-center gap-1.5 text-[12px] text-gold-hi"
+        className="hover-wash -ml-2 mt-2 flex h-11 items-center gap-1.5 rounded-full px-2 text-[12px] text-gold-hi"
       >
         <Copy size={14} strokeWidth={1.7} /> Copy seeds
       </button>

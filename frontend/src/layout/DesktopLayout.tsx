@@ -42,9 +42,8 @@ export function DesktopLayout() {
           key={id}
           type="button"
           aria-current={tab === id ? "page" : undefined}
-          data-tip={`${label} (${i + 1})`}
           onClick={() => set({ tab: id })}
-          className={`flex h-11 items-center gap-2.5 rounded-xl px-3 text-[14px] font-medium ${tab === id ? "bg-gold-wash text-gold-text" : "text-text-2"}`}
+          className={`flex h-11 items-center gap-2.5 rounded-xl px-3 text-[14px] font-medium ${tab === id ? "bg-gold-wash text-gold-text" : "text-text-2 hover:text-text hover-wash"} transition-colors`}
         >
           <Icon size={20} strokeWidth={1.7} />
           {label}

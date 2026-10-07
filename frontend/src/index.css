@@ -130,6 +130,15 @@
     color: var(--text-3);
   }
 }
+/* Hover highlight: a faint wash of the text colour laid over whatever background the element has. Pointer devices only. */
+@utility hover-wash {
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background-image: linear-gradient(color-mix(in srgb, var(--text) 9%, transparent), color-mix(in srgb, var(--text) 9%, transparent));
+    }
+  }
+}
+
 /* Slim scrollbars: a hairline pill that stays out of the way and warms to gold while dragged. */
 * {
   scrollbar-width: thin;

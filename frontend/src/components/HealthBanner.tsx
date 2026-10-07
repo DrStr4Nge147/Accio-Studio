@@ -17,10 +17,10 @@ export function HealthBanner() {
         {text}
       </span>
       <span className="flex flex-none gap-1">
-        <button type="button" onClick={() => void refreshHealth()} className="h-11 px-2 text-gold-text">
+        <button type="button" onClick={() => void refreshHealth()} className="hover-wash h-11 rounded-full px-3 text-gold-text">
           Check again
         </button>
-        <button type="button" onClick={() => useUi.getState().set({ settingsOpen: true })} className="h-11 px-2 text-text-2">
+        <button type="button" onClick={() => useUi.getState().set({ settingsOpen: true })} className="hover-wash h-11 rounded-full px-3 text-text-2 hover:text-text">
           Details
         </button>
       </span>
