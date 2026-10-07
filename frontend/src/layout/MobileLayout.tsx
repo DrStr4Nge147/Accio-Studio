@@ -98,16 +98,20 @@ function EditMobile() {
   const set = useUi((s) => s.set);
   const mode = useEdit((s) => s.mode);
   const title = EDIT_MODES.find((m) => m.value === mode)?.label ?? "Edit";
+  // Previewing a result: the prompt box is not needed (Prompt used has the text), so the picture gets the room.
+  const viewerOpen = useUi((s) => s.viewerOpen);
+  const selectedIsMode = useJobs((s) => s.jobs[s.selectedId ?? ""]?.mode === mode);
+  const previewing = viewerOpen && selectedIsMode;
   return (
     <>
-      <div className="flex-none px-3.5 pb-2">
+      <div className="flex-none px-3.5 pb-2 [@media(max-height:700px)]:pb-1.5">
         <EditModeSwitch stretch />
       </div>
       <div className="relative min-h-0 flex-1 px-2.5 pb-2.5">
         <EditCanvas />
       </div>
       <RecentStrip group="edit" compact />
-      <EditComposer layout="dock" />
+      {!previewing && <EditComposer layout="dock" />}
       <Sheet open={advancedOpen} onClose={() => set({ advancedOpen: false })} title={`Advanced · ${title}`}>
         <EditAdvanced withPadding />
       </Sheet>
@@ -168,7 +172,7 @@ export function MobileLayout() {
             type="button"
             aria-current={tab === id ? "page" : undefined}
             onClick={() => set({ tab: id })}
-            className={`flex h-[60px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${tab === id ? "text-gold-text" : "text-text-3 hover:text-text-2"}`}
+            className={`flex h-[60px] [@media(max-height:700px)]:h-[52px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${tab === id ? "text-gold-text" : "text-text-3 hover:text-text-2"}`}
           >
             <Icon size={22} strokeWidth={1.7} />
             {label}

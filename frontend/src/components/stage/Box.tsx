@@ -16,7 +16,8 @@ export function Box({ w, h, children, className }: { w: number; h: number; child
   return (
     <FitBox>
       <div
-        className={`relative ${className ?? ""}`}
+        // inline-size container: controls inside can shrink when the picture is narrower than they are
+        className={`relative [container-type:inline-size] ${className ?? ""}`}
         style={{ aspectRatio: `${w} / ${h}`, width: `min(100cqw, 100cqh * ${w / h})` }}
       >
         {children}

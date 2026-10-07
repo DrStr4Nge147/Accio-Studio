@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Loader2, Sparkles, X } from "lucide-react";
+import { useMedia } from "../lib/useMedia";
 import { applyTag, detectTagTrigger, type TagTrigger } from "../lib/tagSuggest";
 
 /** One image the prompt can refer to as <imageN> (Multi-edit). */
@@ -58,6 +59,7 @@ export function Composer({
   const area = useRef<HTMLTextAreaElement>(null);
   const grab = useRef<number | null>(null);
   const dock = layout === "dock";
+  const short = useMedia("(max-height: 700px)"); // small phones: the dock must leave room for the image
   const [trig, setTrig] = useState<TagTrigger | null>(null);
   const [active, setActive] = useState(0);
   const options = trig && tags ? tags.filter((t) => String(t.n).startsWith(trig.digits)) : [];
@@ -93,14 +95,14 @@ export function Composer({
     const el = area.current;
     if (!el) return;
     el.style.height = "auto";
-    const cap = dock ? 132 : 220;
+    const cap = dock ? (short ? 44 : 64) : 220; // long prompts scroll inside the box instead of squeezing the image
     el.style.height = `${Math.min(el.scrollHeight, cap)}px`;
     el.style.overflowY = el.scrollHeight > cap ? "auto" : "hidden";
-  }, [prompt, dock]);
+  }, [prompt, dock, short]);
 
   const handle = (
     <div
-      className="touch-none pb-2"
+      className="touch-none pb-1.5 [@media(max-height:700px)]:pb-1"
       onPointerDown={(e) => {
         grab.current = e.clientY;
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -129,7 +131,7 @@ export function Composer({
         onClick={(e) => refresh(e.currentTarget)}
         onBlur={() => setTrig(null)}
         placeholder={placeholder}
-        rows={dock ? 2 : 4}
+        rows={dock ? (short ? 1 : 2) : 4}
         aria-label="Prompt"
         aria-autocomplete={tags ? "list" : undefined}
         maxLength={8000}
@@ -174,7 +176,7 @@ export function Composer({
           onClick={onGenerate}
           disabled={disabled}
           title={disabledReason ?? undefined}
-          className="flex h-[52px] min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl px-4 bg-gradient-to-b from-gold-hi to-gold text-[16px] font-semibold text-on-gold shadow-[0_6px_20px_color-mix(in_srgb,var(--gold)_30%,transparent)] transition-[opacity,filter] hover:brightness-105 disabled:opacity-50"
+          className="flex h-[52px] min-w-0 flex-1 [@media(max-height:700px)]:h-12 items-center justify-center gap-2 rounded-2xl px-4 bg-gradient-to-b from-gold-hi to-gold text-[16px] font-semibold text-on-gold shadow-[0_6px_20px_color-mix(in_srgb,var(--gold)_30%,transparent)] transition-[opacity,filter] hover:brightness-105 disabled:opacity-50"
         >
           {generateIcon} {running ? "Add to queue" : "Generate"}
           {!dock && !running && <kbd className="rounded-md border border-black/20 px-1.5 font-mono text-[11px] opacity-70">Ctrl+Enter</kbd>}
@@ -187,7 +189,7 @@ export function Composer({
             aria-busy={cancelling}
             aria-label={cancelling ? "Cancelling" : "Cancel the current job"}
             data-tip={cancelling ? "Cancelling…" : "Cancel the current job (Esc)"}
-            className="hover-wash flex h-[52px] w-[52px] flex-none items-center justify-center rounded-2xl border border-line-strong bg-raised text-text"
+            className="hover-wash flex h-[52px] w-[52px] flex-none [@media(max-height:700px)]:h-12 [@media(max-height:700px)]:w-12 items-center justify-center rounded-2xl border border-line-strong bg-raised text-text"
           >
             {cancelling ? <Loader2 size={20} strokeWidth={1.7} className="animate-spin motion-reduce:animate-none" /> : <X size={20} strokeWidth={1.7} />}
           </button>
@@ -199,7 +201,7 @@ export function Composer({
 
   if (dock) {
     return (
-      <div className="safe-b relative z-10 flex-none rounded-t-[24px] border-t border-line bg-surface px-3.5 pb-3 pt-2 shadow-[0_-10px_30px_rgba(0,0,0,0.25)]">
+      <div className="safe-b relative z-10 flex-none rounded-t-[24px] border-t border-line bg-surface px-3.5 pb-3 pt-2 [@media(max-height:700px)]:pb-2 shadow-[0_-10px_30px_rgba(0,0,0,0.25)]">
         {handle}
         {fieldHeader}
         {field}

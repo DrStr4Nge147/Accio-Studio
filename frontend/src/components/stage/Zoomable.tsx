@@ -289,17 +289,17 @@ export function Zoomable({
       </div>
 
       <div className={`${glass} absolute bottom-2.5 left-2.5 z-[3] flex items-center rounded-full`} role="group" aria-label="Zoom">
-        <button type="button" aria-label="Zoom out" data-tip="Zoom out ( - )" disabled={k <= 1.005} onClick={() => { const c = center(); zoomAt(view.current.k / STEP, c.cx, c.cy); }} className="hover-wash grid h-11 w-11 place-items-center rounded-full disabled:opacity-40">
+        <button type="button" aria-label="Zoom out" data-tip="Zoom out ( - )" disabled={k <= 1.005} onClick={() => { const c = center(); zoomAt(view.current.k / STEP, c.cx, c.cy); }} className="hover-wash grid h-11 w-11 place-items-center rounded-full disabled:opacity-40 @max-[240px]:hidden">
           <Minus size={18} strokeWidth={1.7} />
         </button>
-        <button type="button" aria-label="Toggle fit and actual size" data-tip="Fit / actual pixels (double-click)" onClick={() => { const c = center(); toggleActual(c.cx, c.cy); }} className="hover-wash h-11 min-w-12 px-1 text-center font-mono text-[12px]">
+        <button type="button" aria-label="Toggle fit and actual size" data-tip="Fit / actual pixels (double-click)" onClick={() => { const c = center(); toggleActual(c.cx, c.cy); }} className="hover-wash h-11 min-w-12 px-1 text-center font-mono text-[12px] @max-[240px]:hidden">
           {label}
         </button>
-        <button type="button" aria-label="Zoom in" data-tip="Zoom in ( + )" disabled={k >= MAX_K - 0.01} onClick={() => { const c = center(); zoomAt(view.current.k * STEP, c.cx, c.cy); }} className="hover-wash grid h-11 w-11 place-items-center rounded-full disabled:opacity-40">
+        <button type="button" aria-label="Zoom in" data-tip="Zoom in ( + )" disabled={k >= MAX_K - 0.01} onClick={() => { const c = center(); zoomAt(view.current.k * STEP, c.cx, c.cy); }} className="hover-wash grid h-11 w-11 place-items-center rounded-full disabled:opacity-40 @max-[240px]:hidden">
           <Plus size={18} strokeWidth={1.7} />
         </button>
         {onExpand && (
-          <button type="button" aria-label="Open fullscreen" data-tip="Fullscreen" onClick={onExpand} className="hover-wash grid h-11 w-11 place-items-center rounded-full border-l border-white/10">
+          <button type="button" aria-label="Open fullscreen" data-tip="Fullscreen" onClick={onExpand} className="hover-wash grid h-11 w-11 place-items-center rounded-full border-l border-white/10 @max-[240px]:border-l-0">
             <Maximize2 size={17} strokeWidth={1.7} />
           </button>
         )}

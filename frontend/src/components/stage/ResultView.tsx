@@ -33,6 +33,7 @@ export function ResultView({ job }: { job: Job }) {
   const [full, setFull] = useState(false);
   const [compare, setCompare] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [natural, setNatural] = useState<{ url: string; w: number; h: number } | null>(null);
   const revealing = useJobs((s) => !!s.reveal[job.id]);
@@ -85,6 +86,69 @@ export function ResultView({ job }: { job: Job }) {
     />
   );
 
+  // One set of actions, two placements: a column over the image on desktop, a bar under it on phones (a column of
+  // 44 px buttons does not fit beside a short image and was clipped).
+  const actions = (bar: boolean) => {
+    const cls = bar ? "!h-11 !w-auto min-w-0 max-w-12 flex-1 border-0 bg-transparent text-text-2" : glass;
+    const ic = bar ? "" : "text-[#f1eadb]";
+    return (
+      <>
+        <a href={url} download={filename} aria-label="Download" data-tip="Download" className={`${bar ? cls : glass} hover-wash grid h-11 w-11 place-items-center rounded-full`}>
+          <Download size={20} strokeWidth={1.7} />
+        </a>
+        {canShareFiles() && (
+          <IconButton label="Share" className={cls} onClick={() => void shareImage(url, filename).catch(() => undefined)}>
+            <Share2 size={20} strokeWidth={1.7} className={ic} />
+          </IconButton>
+        )}
+        {job.mode !== "create" && !firstPass && (
+          <IconButton label="Edit this result" className={cls} onClick={() => void continueFromResult(job, cur.i).then(setSendError)}>
+            <Repeat size={20} strokeWidth={1.7} className={ic} />
+          </IconButton>
+        )}
+        <IconButton label="Send to Edit" className={cls} aria-expanded={sendOpen} onClick={() => { setPromptOpen(false); setDetails(false); setSendOpen((o) => !o); }}>
+          <WandSparkles size={20} strokeWidth={1.7} className={ic} />
+        </IconButton>
+        {canCompare && (
+          <IconButton label={compare ? "Hide before / after" : "Compare with the original"} className={cls} aria-pressed={compare} onClick={() => setCompare((c) => !c)}>
+            <Columns2 size={20} strokeWidth={1.7} className={ic} />
+          </IconButton>
+        )}
+        <IconButton label="Reuse settings" className={cls} onClick={() => reuseAny(job)}>
+          <RotateCcw size={20} strokeWidth={1.7} className={ic} />
+        </IconButton>
+        {bar && enhancedText(job) && (
+          <IconButton label="Prompt used" className={cls} aria-expanded={promptOpen} onClick={() => { setSendOpen(false); setDetails(false); setPromptOpen((o) => !o); }}>
+            <TextQuote size={20} strokeWidth={1.7} />
+          </IconButton>
+        )}
+        <IconButton label="Details" className={cls} aria-expanded={details} onClick={() => { setSendOpen(false); setPromptOpen(false); setDetails((d) => !d); }}>
+          <Info size={20} strokeWidth={1.7} className={ic} />
+        </IconButton>
+      </>
+    );
+  };
+
+  const sendMenu = (place: string) => (
+    <div role="menu" aria-label="Send to Edit" className={`${glass} z-[4] rounded-m p-1 ${place}`}>
+      <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-[#b9b2a3]">Send to Edit</p>
+      {SEND_TARGETS.map((t) => (
+        <button
+          key={t.mode}
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            setSendOpen(false);
+            void sendToEdit(job, cur.i, t.mode).then(setSendError);
+          }}
+          className="hover-wash flex h-11 w-full items-center rounded-lg px-3 text-left text-[14px]"
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
       {full && (
@@ -106,54 +170,8 @@ export function ResultView({ job }: { job: Job }) {
             </div>
           )}
           {firstPass && <span className={`${glass} absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-medium`}>First pass</span>}
-          <div className="absolute right-2 top-2 z-[3] flex flex-col gap-2">
-            <a href={url} download={filename} aria-label="Download" data-tip="Download" className={`${glass} hover-wash grid h-11 w-11 place-items-center rounded-full`}>
-              <Download size={20} strokeWidth={1.7} />
-            </a>
-            {canShareFiles() && (
-              <IconButton label="Share" className={glass} onClick={() => void shareImage(url, filename).catch(() => undefined)}>
-                <Share2 size={20} strokeWidth={1.7} className="text-[#f1eadb]" />
-              </IconButton>
-            )}
-            {job.mode !== "create" && !firstPass && (
-              <IconButton label="Edit this result" className={glass} onClick={() => void continueFromResult(job, cur.i).then(setSendError)}>
-                <Repeat size={20} strokeWidth={1.7} className="text-[#f1eadb]" />
-              </IconButton>
-            )}
-            <IconButton label="Send to Edit" className={glass} aria-expanded={sendOpen} onClick={() => setSendOpen((o) => !o)}>
-              <WandSparkles size={20} strokeWidth={1.7} className="text-[#f1eadb]" />
-            </IconButton>
-            {canCompare && (
-              <IconButton label={compare ? "Hide before / after" : "Compare with the original"} className={glass} aria-pressed={compare} onClick={() => setCompare((c) => !c)}>
-                <Columns2 size={20} strokeWidth={1.7} className="text-[#f1eadb]" />
-              </IconButton>
-            )}
-            <IconButton label="Reuse settings" className={glass} onClick={() => reuseAny(job)}>
-              <RotateCcw size={20} strokeWidth={1.7} className="text-[#f1eadb]" />
-            </IconButton>
-            <IconButton label="Details" className={glass} aria-expanded={details} onClick={() => setDetails((d) => !d)}>
-              <Info size={20} strokeWidth={1.7} className="text-[#f1eadb]" />
-            </IconButton>
-          </div>
-          {sendOpen && (
-            <div role="menu" aria-label="Send to Edit" className={`${glass} absolute right-16 top-2 z-[4] w-44 rounded-m p-1`}>
-              <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-[#b9b2a3]">Send to Edit</p>
-              {SEND_TARGETS.map((t) => (
-                <button
-                  key={t.mode}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setSendOpen(false);
-                    void sendToEdit(job, cur.i, t.mode).then(setSendError);
-                  }}
-                  className="hover-wash flex h-11 w-full items-center rounded-lg px-3 text-left text-[14px]"
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="absolute right-2 top-2 z-[3] hidden flex-col gap-2 lg:flex">{actions(false)}</div>
+          {sendOpen && sendMenu("absolute right-16 top-2 hidden w-44 lg:block")}
           {sendError && (
             <p role="alert" className="absolute inset-x-3 top-3 z-[5] mx-auto w-fit max-w-[80%] rounded-full bg-[rgba(10,9,14,0.88)] px-3.5 py-2 text-[13px] text-danger">
               {sendError}
@@ -162,9 +180,17 @@ export function ResultView({ job }: { job: Job }) {
               </button>
             </p>
           )}
-          {enhancedText(job) && <PromptUsed job={job} />}
+          {enhancedText(job) && <PromptUsed job={job} open={promptOpen} onOpen={setPromptOpen} />}
           {details && <Details job={job} w={w} h={h} />}
         </Box>
+      </div>
+      <div className="relative flex-none lg:hidden">
+        {sendOpen && sendMenu("absolute bottom-full right-0 mb-2 w-44")}
+        {enhancedText(job) && <PromptUsed job={job} open={promptOpen} onOpen={setPromptOpen} bar />}
+        {details && <Details job={job} w={w} h={h} bar />}
+        <div className="flex items-center justify-between rounded-full border border-line bg-surface px-4" role="toolbar" aria-label="Result actions">
+          {actions(true)}
+        </div>
       </div>
       {items.length > 1 && (
         <div className="flex flex-none gap-2 overflow-x-auto no-scrollbar" role="tablist" aria-label="Outputs">
@@ -189,22 +215,23 @@ export function ResultView({ job }: { job: Job }) {
 }
 
 /** What the prompt enhancer actually sent to the model, with "use as prompt" (APP_SPEC 6.3). */
-function PromptUsed({ job }: { job: Job }) {
-  const [open, setOpen] = useState(false);
+/** `bar`: the phone placement, a wide popover above the toolbar; otherwise a panel inside the picture (desktop only). */
+function PromptUsed({ job, open, onOpen: setOpen, bar }: { job: Job; open: boolean; onOpen: (v: boolean) => void; bar?: boolean }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<number>(0);
   const text = enhancedText(job) ?? "";
   const mode = job.mode as EditMode;
   useEffect(() => () => window.clearTimeout(timer.current), []);
   if (!open) {
+    if (bar) return null;
     return (
-      <button type="button" onClick={() => setOpen(true)} data-tip="See the prompt the enhancer wrote" className={`${glass} hover-wash absolute bottom-2.5 right-2.5 z-[3] flex h-11 items-center gap-1.5 rounded-full px-3.5 text-[13px]`}>
+      <button type="button" onClick={() => setOpen(true)} data-tip="See the prompt the enhancer wrote" className={`${glass} hover-wash absolute bottom-2.5 right-2.5 z-[3] hidden h-11 items-center lg:flex gap-1.5 rounded-full px-3.5 text-[13px]`}>
         <TextQuote size={16} strokeWidth={1.7} /> Prompt used
       </button>
     );
   }
   return (
-    <div className="absolute inset-x-0 bottom-0 z-[4] max-h-[60%] overflow-y-auto bg-[rgba(10,9,14,0.9)] p-3.5 text-[13px] leading-snug text-[#f1eadb] backdrop-blur-md" role="region" aria-label="Prompt used">
+    <div className={`${bar ? "absolute inset-x-0 bottom-full z-[4] mb-2 max-h-[45vh] rounded-m border border-white/10 bg-[rgba(10,9,14,0.96)] lg:hidden" : "absolute inset-x-0 bottom-0 z-[4] hidden max-h-[60%] bg-[rgba(10,9,14,0.9)] lg:block"} overflow-y-auto p-3.5 text-[13px] leading-snug text-[#f1eadb] backdrop-blur-md`} role="region" aria-label="Prompt used">
       <div className="flex items-center justify-between">
         <span className="font-medium">Prompt used</span>
         <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="hover-wash -mr-2 grid h-11 w-11 place-items-center rounded-full">
@@ -233,10 +260,10 @@ function PromptUsed({ job }: { job: Job }) {
   );
 }
 
-function Details({ job, w, h }: { job: Job; w: number; h: number }) {
+function Details({ job, w, h, bar }: { job: Job; w: number; h: number; bar?: boolean }) {
   const seeds = Object.entries(job.seeds);
   return (
-    <div className="absolute inset-x-0 bottom-0 z-[4] max-h-[70%] overflow-y-auto bg-[rgba(10,9,14,0.88)] p-3.5 text-[12px] leading-snug text-[#f1eadb] backdrop-blur-md">
+    <div className={`${bar ? "absolute inset-x-0 bottom-full z-[4] mb-2 max-h-[45vh] rounded-m border border-white/10 bg-[rgba(10,9,14,0.96)] lg:hidden" : "absolute inset-x-0 bottom-0 z-[4] hidden max-h-[70%] bg-[rgba(10,9,14,0.88)] lg:block"} overflow-y-auto p-3.5 text-[12px] leading-snug text-[#f1eadb] backdrop-blur-md`}>
       <div className="font-medium">
         {job.label} · {w}×{h}
         {job.params.batch > 1 && ` · ${job.params.batch} images`}
