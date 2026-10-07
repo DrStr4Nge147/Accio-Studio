@@ -14,6 +14,8 @@ export interface ZoomTool {
   cancel: () => void;
   hover?: (e: PointerEvent) => void;
   leave?: () => void;
+  /** return false to let this press pan the view instead (k = current zoom, 1 = fit) */
+  accepts?: (e: PointerEvent, k: number) => boolean;
 }
 
 interface View {
@@ -161,7 +163,7 @@ export function Zoomable({
     if (pointers.current.size === 1) {
       const { x, y } = local(e);
       Object.assign(tap.current, { sx: x, sy: y, moved: false });
-      gesture.current = tool && !pan && !space.current && e.button === 0 ? "tool" : "pan";
+      gesture.current = tool && !pan && !space.current && e.button === 0 && (tool.accepts?.(e, view.current.k) ?? true) ? "tool" : "pan";
       if (gesture.current === "tool") tool!.down(e);
     }
     if (pointers.current.size === 2) {
