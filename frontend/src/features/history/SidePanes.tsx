@@ -4,6 +4,8 @@ import { requestCancel } from "../../features/create/actions";
 import type { Job } from "../../api/types";
 import { isEnhancing, jobGroup, shortLabel, type JobGroup } from "../../lib/jobView";
 import { isActive, useJobs } from "../../store/jobs";
+import { openContextMenu } from "../../components/ui/ContextMenu";
+import { jobMenuItems } from "./jobMenu";
 import { openJob } from "./open";
 import { Thumb } from "./Thumb";
 
@@ -32,7 +34,7 @@ export function QueuePane() {
             const { step, max, queue_ahead: ahead } = j.live;
             return (
               <li key={j.id} className="flex items-center gap-2.5 rounded-m border border-line bg-raised p-2 text-[13px]">
-                <button type="button" onClick={() => openJob(j)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
+                <button type="button" onClick={() => openJob(j)} onContextMenu={(e) => openContextMenu(e, jobMenuItems(j))} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
                   <Thumb job={j} className="h-10 w-10 flex-none rounded-lg" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{cancelling[j.id] ? "Cancelling…" : isEnhancing(j) ? "Improving prompt" : j.status === "running" ? "Running" : "Waiting"}</span>
@@ -83,6 +85,7 @@ export function HistoryPane({ group = "create" }: { group?: JobGroup }) {
                 <button
                   type="button"
                   onClick={() => openJob(j)}
+                  onContextMenu={(e) => openContextMenu(e, jobMenuItems(j))}
                   aria-label={`Open: ${String(j.params.prompt || j.label).slice(0, 60)}`}
                   aria-current={j.id === selectedId}
                   data-tip={String(j.params.prompt || j.label).slice(0, 140)}
@@ -114,6 +117,7 @@ export function RecentStrip({ group = "create", compact }: { group?: JobGroup; c
           aria-current={j.id === selectedId}
           data-tip={isActive(j) ? "Being generated" : String(j.params.prompt || j.label).slice(0, 140)}
           onClick={() => openJob(j)}
+          onContextMenu={(e) => openContextMenu(e, jobMenuItems(j))}
           className={`${compact ? "h-11 w-11" : "h-[72px] w-[72px]"} flex-none overflow-hidden rounded-s border ${j.id === selectedId ? "border-gold" : "border-line-strong hover:border-text-3"}`}
         >
           <Thumb job={j} className="h-full w-full" />

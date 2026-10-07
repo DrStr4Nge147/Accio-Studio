@@ -4,11 +4,13 @@ import { useShallow } from "zustand/react/shallow";
 import { deleteJob, fetchDoneJobs } from "../../api/endpoints";
 import { ApiError } from "../../api/http";
 import type { Job } from "../../api/types";
+import { openContextMenu } from "../../components/ui/ContextMenu";
 import { Segmented } from "../../components/ui/controls";
 import { gridLayout, itemPosition, nearEnd, visibleRange } from "../../lib/virtualGrid";
 import { jobGroup, shortLabel, type JobGroup } from "../../lib/jobView";
 import { useServer } from "../../store/health";
 import { useJobs } from "../../store/jobs";
+import { jobMenuItems } from "../history/jobMenu";
 import { openJob } from "../history/open";
 import { Thumb } from "../history/Thumb";
 
@@ -42,7 +44,8 @@ export function Gallery() {
   const [busy, setBusy] = useState(false);
   const canDelete = useServer((s) => s.health?.can_delete_files === true); // Accio owns the output folder
   const live = useJobs(useShallow((s) => s.order.map((id) => s.jobs[id]!).filter((j) => j.status === "done")));
-  const items = useMemo(() => mergeJobs(loaded, live, filter), [loaded, live, filter]);
+  const known = useJobs((s) => s.jobs); // jobs deleted elsewhere (right-click menu) leave the store
+  const items = useMemo(() => mergeJobs(loaded.filter((j) => known[j.id]), live, filter), [loaded, known, live, filter]);
 
   const scroller = useRef<HTMLDivElement>(null);
   const [view, setView] = useState({ w: 0, h: 0, top: 0 });
@@ -224,6 +227,7 @@ export function Gallery() {
                   aria-pressed={selecting ? on : undefined}
                   data-tip={String(job.params.prompt || job.label).slice(0, 140)}
                   onClick={() => (selecting ? toggle(job.id) : openJob(job))}
+                  onContextMenu={selecting ? undefined : (e) => openContextMenu(e, jobMenuItems(job))}
                   className={`relative block h-full w-full overflow-hidden rounded-s border ${on ? "border-gold" : "border-line hover:border-text-3"}`}
                 >
                   <Thumb job={job} size={layout.cell > 190 ? 1024 : 384} className="h-full w-full" />

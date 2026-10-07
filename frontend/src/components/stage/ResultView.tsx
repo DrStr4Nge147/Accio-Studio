@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Columns2, Copy, Download, Info, Repeat, RotateCcw, Share2, TextQuote, WandSparkles, X } from "lucide-react";
+import { Columns2, Copy, Download, Info, Maximize2, Repeat, RotateCcw, Share2, TextQuote, WandSparkles, X } from "lucide-react";
 import { imageUrl } from "../../api/http";
 import type { Job } from "../../api/types";
 import { continueFromResult, sendToEdit } from "../../features/edit/actions";
@@ -10,7 +10,9 @@ import { reuseAny } from "../../features/reuse";
 import { enhancedText, formatDuration, jobSize } from "../../lib/jobView";
 import { canShareFiles, shareImage } from "../../lib/share";
 import { useJobs } from "../../store/jobs";
+import { openContextMenu } from "../ui/ContextMenu";
 import { IconButton } from "../ui/controls";
+import { jobMenuItems } from "../../features/history/jobMenu";
 import { Box } from "./Box";
 import { Compare } from "./Compare";
 import { Zoomable } from "./Zoomable";
@@ -87,9 +89,11 @@ export function ResultView({ job }: { job: Job }) {
           {compare && canCompare ? (
             <Compare before={before!} after={url} />
           ) : (
-            <Zoomable key={url} onExpand={() => setFull(true)}>
-              {picture}
-            </Zoomable>
+            <div className="contents" onContextMenu={(e) => openContextMenu(e, [{ label: "Full screen", icon: <Maximize2 size={16} strokeWidth={1.7} />, onSelect: () => setFull(true) }, ...jobMenuItems(job, cur.i).filter((i) => i.label !== "Open")])}>
+              <Zoomable key={url} onExpand={() => setFull(true)}>
+                {picture}
+              </Zoomable>
+            </div>
           )}
           {firstPass && <span className={`${glass} absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-medium`}>First pass</span>}
           <div className="absolute right-2 top-2 z-[3] flex flex-col gap-2">

@@ -4,6 +4,7 @@ import { AuthScreen } from "./features/auth/AuthScreen";
 import { useAuth } from "./store/auth";
 import { ReuseSeedPrompt } from "./components/ReuseSeedPrompt";
 import { Settings } from "./components/Settings";
+import { ContextMenuLayer } from "./components/ui/ContextMenu";
 import { TooltipLayer } from "./components/ui/Tooltip";
 import { cancelCurrent, generate } from "./features/create/actions";
 import { generateEdit } from "./features/edit/actions";
@@ -67,6 +68,7 @@ function Main() {
       <Settings />
       <ReuseSeedPrompt />
       <TooltipLayer />
+      <ContextMenuLayer />
     </>
   );
 }
