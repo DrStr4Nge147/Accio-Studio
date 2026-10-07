@@ -4,7 +4,7 @@ import { useJobs } from "./jobs";
 
 const job = (id: string, status: Job["status"], created_at: number) => ({ id, status, created_at, outputs: [], live: {} }) as unknown as Job;
 
-beforeEach(() => useJobs.setState({ jobs: {}, order: [], selectedId: null, reveal: {}, preview: null }));
+beforeEach(() => useJobs.setState({ jobs: {}, order: [], selectedId: null, reveal: {}, cancelling: {}, preview: null }));
 
 describe("jobs store selection", () => {
   it("keeps the canvas blank until a job is picked", () => {
@@ -25,5 +25,22 @@ describe("jobs store selection", () => {
     useJobs.getState().upsert([job("a", "running", 1), job("old", "done", 0)]);
     useJobs.getState().upsert([job("a", "done", 1), job("old", "done", 0)]);
     expect(Object.keys(useJobs.getState().reveal)).toEqual(["a"]);
+  });
+});
+
+describe("cancelling flag", () => {
+  it("stays set while the job is active and clears once the job leaves the active states", () => {
+    useJobs.getState().upsert([job("a", "running", 1)]);
+    useJobs.getState().setCancelling("a", true);
+    useJobs.getState().upsert([job("a", "running", 1)]); // progress update: still cancelling
+    expect(useJobs.getState().cancelling).toEqual({ a: true });
+    useJobs.getState().upsert([job("a", "cancelled", 1)]);
+    expect(useJobs.getState().cancelling).toEqual({});
+  });
+
+  it("can be withdrawn when the cancel request fails", () => {
+    useJobs.getState().setCancelling("a", true);
+    useJobs.getState().setCancelling("a", false);
+    expect(useJobs.getState().cancelling).toEqual({});
   });
 });

@@ -1,6 +1,6 @@
-import { X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { cancelJob } from "../../api/endpoints";
+import { requestCancel } from "../../features/create/actions";
 import type { Job } from "../../api/types";
 import { isActive, useJobs } from "../../store/jobs";
 import { Thumb } from "./Thumb";
@@ -20,6 +20,7 @@ export function PaneHeader({ title, hint }: { title: string; hint?: string }) {
 
 export function QueuePane() {
   const jobs = [...useJobList(isActive)].reverse(); // oldest (running) first
+  const cancelling = useJobs((s) => s.cancelling);
   return (
     <section aria-label="Queue" className="flex-none">
       <PaneHeader title="Queue" hint={jobs.length ? `${jobs.length} job${jobs.length === 1 ? "" : "s"}` : "idle"} />
@@ -32,7 +33,7 @@ export function QueuePane() {
                 <button type="button" onClick={() => useJobs.getState().select(j.id)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
                   <Thumb job={j} className="h-10 w-10 flex-none rounded-lg" />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate">{j.status === "running" ? "Running" : "Waiting"}</span>
+                    <span className="block truncate">{cancelling[j.id] ? "Cancelling…" : j.status === "running" ? "Running" : "Waiting"}</span>
                     {j.status === "running" && max ? (
                       <span className="mt-1.5 block h-[3px] overflow-hidden rounded-full bg-track">
                         <span className="block h-full rounded-full bg-gold-ui" style={{ width: `${((step ?? 0) / max) * 100}%` }} />
@@ -49,10 +50,11 @@ export function QueuePane() {
                   type="button"
                   aria-label="Cancel job"
                   data-tip="Cancel this job"
-                  onClick={() => void cancelJob(j.id).catch(() => undefined)}
+                  onClick={() => void requestCancel(j.id)}
+                  disabled={!!cancelling[j.id]}
                   className="hover-wash grid h-11 w-11 flex-none place-items-center rounded-full text-text-2 hover:text-text"
                 >
-                  <X size={16} strokeWidth={1.7} />
+                  {cancelling[j.id] ? <Loader2 size={16} strokeWidth={1.7} className="animate-spin motion-reduce:animate-none" /> : <X size={16} strokeWidth={1.7} />}
                 </button>
               </li>
             );

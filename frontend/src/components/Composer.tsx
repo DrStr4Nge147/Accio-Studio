@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { Sparkles, X } from "lucide-react";
+import { Loader2, Sparkles, X } from "lucide-react";
 
 /**
  * The one composer shared by every mode: prompt, main controls, Generate/Cancel. `dock` is the mobile bottom sheet
@@ -12,6 +12,7 @@ export function Composer({
   placeholder,
   controls,
   running,
+  cancelling,
   disabled,
   disabledReason,
   error,
@@ -27,6 +28,8 @@ export function Composer({
   placeholder: string;
   controls: ReactNode;
   running: boolean;
+  /** a cancel was requested and has not taken effect yet */
+  cancelling?: boolean;
   disabled?: boolean;
   disabledReason?: string | null;
   error?: string | null;
@@ -94,10 +97,13 @@ export function Composer({
         <button
           type="button"
           onClick={onCancel}
+          disabled={cancelling}
+          aria-busy={cancelling}
           className="hover-wash flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-line-strong bg-raised text-[16px] font-semibold text-text"
         >
-          <X size={20} strokeWidth={1.7} /> Cancel
-          {!dock && <kbd className="rounded-md border border-line-strong px-1.5 font-mono text-[11px] text-text-2">Esc</kbd>}
+          {cancelling ? <Loader2 size={20} strokeWidth={1.7} className="animate-spin motion-reduce:animate-none" /> : <X size={20} strokeWidth={1.7} />}
+          {cancelling ? "Cancelling…" : "Cancel"}
+          {!dock && !cancelling && <kbd className="rounded-md border border-line-strong px-1.5 font-mono text-[11px] text-text-2">Esc</kbd>}
         </button>
       ) : (
         <button

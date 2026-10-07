@@ -45,10 +45,23 @@ export function reuseSettings(job: Job) {
   useUi.getState().set({ viewerOpen: false });
 }
 
+/** Ask the server to cancel a job. The UI shows "cancelling" until the job's status actually changes. */
+export async function requestCancel(id: string) {
+  const jobs = useJobs.getState();
+  if (jobs.cancelling[id]) return;
+  jobs.setCancelling(id, true);
+  try {
+    await cancelJob(id);
+  } catch (e) {
+    useJobs.getState().setCancelling(id, false);
+    useSubmit.setState({ error: e instanceof ApiError ? e.message : "Couldn't cancel the job." });
+  }
+}
+
 /** Cancel the job on screen if it is active, otherwise the oldest of our active jobs. */
 export async function cancelCurrent() {
   const { jobs, order, selectedId } = useJobs.getState();
   const sel = selectedId ? jobs[selectedId] : undefined;
   const target = isActive(sel) ? sel : order.map((id) => jobs[id]).reverse().find(isActive);
-  if (target) await cancelJob(target.id).catch(() => undefined);
+  if (target) await requestCancel(target.id);
 }

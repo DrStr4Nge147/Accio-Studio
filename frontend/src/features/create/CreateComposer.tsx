@@ -13,6 +13,7 @@ export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; abo
   const patch = useCreate((s) => s.patch);
   const { busy, error } = useSubmit();
   const running = useJobs((s) => s.order.some((id) => isActive(s.jobs[id])));
+  const cancelling = useJobs((s) => s.order.some((id) => isActive(s.jobs[id]) && !!s.cancelling[id]));
   const online = useServer((s) => s.health?.comfy_online);
   const offline = online === false;
 
@@ -25,6 +26,7 @@ export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; abo
       placeholder="Describe what to create…"
       controls={layout === "dock" ? <CreateChips /> : <CreateToggles />}
       running={running}
+      cancelling={cancelling}
       disabled={busy || !prompt.trim() || offline}
       disabledReason={offline ? "ComfyUI is offline, so nothing can be generated right now." : null}
       error={error}
