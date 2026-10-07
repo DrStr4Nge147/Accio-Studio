@@ -1,6 +1,7 @@
 import { Ring } from "../../components/Wordmark";
 import { imageUrl } from "../../api/http";
 import type { Job } from "../../api/types";
+import { isActive } from "../../store/jobs";
 
 /** Index of the image to show for a job: its first final output. */
 export const coverIndex = (job: Job) => {
@@ -9,13 +10,13 @@ export const coverIndex = (job: Job) => {
 };
 
 /**
- * Job thumbnail. Until the gallery phase adds server-side thumbnails this loads the full image lazily, so keep
+ * Job thumbnail; a job that is still generating gets the same sliding light as its canvas card. Until the gallery phase adds server-side thumbnails this loads the full image lazily, so keep
  * the number of thumbnails on screen small.
  */
 export function Thumb({ job, className = "" }: { job: Job; className?: string }) {
   const has = job.status === "done" && job.outputs.length > 0;
   return (
-    <div className={`relative overflow-hidden bg-raised ${className}`}>
+    <div className={`relative overflow-hidden bg-raised ${isActive(job) ? "shimmer" : ""} ${className}`}>
       {has ? (
         <img src={imageUrl(job.id, coverIndex(job))} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
       ) : (

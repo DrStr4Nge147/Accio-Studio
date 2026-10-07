@@ -95,7 +95,7 @@ export function HistoryPane() {
 
 /** "Recent" strip under the canvas: flip through the latest results without opening the gallery. */
 export function RecentStrip() {
-  const jobs = useJobList((j) => j.status === "done").slice(0, 10);
+  const jobs = useJobList((j) => j.status === "done" || isActive(j)).slice(0, 10); // running jobs first, newest first
   const selectedId = useJobs((s) => s.selectedId);
   if (!jobs.length) return null;
   return (
@@ -104,7 +104,7 @@ export function RecentStrip() {
         <button
           key={j.id}
           type="button"
-          aria-label="Show this result"
+          aria-label={isActive(j) ? "Show the image being generated" : "Show this result"}
           aria-current={j.id === selectedId}
           onClick={() => useJobs.getState().select(j.id)}
           className={`h-[72px] w-[72px] flex-none overflow-hidden rounded-s border ${j.id === selectedId ? "border-gold" : "border-line-strong"}`}
