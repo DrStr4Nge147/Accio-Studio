@@ -3,7 +3,7 @@ import { Copy, Download, Info, RotateCcw, Share2 } from "lucide-react";
 import { imageUrl } from "../../api/http";
 import type { Job } from "../../api/types";
 import { reuseJob } from "../../features/create/params";
-import { jobSize } from "../../lib/jobView";
+import { formatDuration, jobSize } from "../../lib/jobView";
 import { canShareFiles, shareImage } from "../../lib/share";
 import { useServer } from "../../store/health";
 import { useJobs } from "../../store/jobs";
@@ -98,6 +98,11 @@ function Details({ job }: { job: Job }) {
         {job.label} · {w}×{h}
         {job.params.batch > 1 && ` · ${job.params.batch} images`}
       </div>
+      {job.finished_at && (
+        <div className="mt-1 text-[#b9b2a3]" title="From pressing Generate to the finished image, including any wait in the queue">
+          Time taken {formatDuration(job.finished_at - job.created_at)}
+        </div>
+      )}
       <p className="mt-1.5 text-[#b9b2a3]">{job.params.prompt}</p>
       <div className="mt-2 font-mono text-[11px] text-gold-hi">
         {seeds.map(([k, v]) => (

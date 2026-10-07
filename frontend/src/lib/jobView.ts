@@ -16,6 +16,15 @@ export function passOf(job: Job): { pass: 1 | 2; of: 2 } | null {
   return null;
 }
 
+/** "42 s", "3 min 05 s", "1 h 02 min": how long a finished job took. */
+export function formatDuration(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  if (s < 60) return `${s} s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min ${String(s % 60).padStart(2, "0")} s`;
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min`;
+}
+
 export function formatEta(seconds: number): string {
   if (seconds < 8) return "a few seconds";
   if (seconds < 90) return `about ${Math.round(seconds / 5) * 5} s`;
