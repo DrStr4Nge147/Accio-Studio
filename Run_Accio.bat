@@ -26,49 +26,49 @@ for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py
 for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py external`) do set "COMFY_EXTERNAL=%%a"
 
 :: Step 1: ComfyUI (bundled; reuse it if it is already running)
-echo [1/3] Checking ComfyUI at %COMFY_URL% ...
+echo [1/3] Checking the backend at %COMFY_URL% ...
 if "%COMFY_EXTERNAL%"=="1" (
-    echo       Using an external ComfyUI ^(external_comfy_url in settings.json^); the bundled one is not started.
+    echo       Using an external backend ^(external_comfy_url in settings.json^); the bundled one is not started.
 )
 curl.exe -s -m 3 -o nul "%COMFY_URL%/system_stats"
 if !errorlevel! equ 0 (
-    echo       ComfyUI is already running.
+    echo       The backend is already running.
     goto :comfy_ready
 )
 if "%COMFY_EXTERNAL%"=="1" (
-    echo [ERROR] The external ComfyUI at %COMFY_URL% is not responding.
+    echo [ERROR] The external backend at %COMFY_URL% is not responding.
     pause
     exit /b 1
 )
 if not exist "%COMFY_DIR%\python_embeded\python.exe" (
-    echo [ERROR] The bundled ComfyUI was not found at "%COMFY_DIR%".
+    echo [ERROR] The bundled backend was not found at "%COMFY_DIR%".
     echo         Please run Install.bat first.
     pause
     exit /b 1
 )
 if not exist "data\logs" mkdir "data\logs"
-echo       Starting ComfyUI... ^(own minimized window; log: data\logs\comfyui.log^)
+echo       Starting the backend... ^(own minimized window; ComfyUI log: data\logs\comfyui.log^)
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
-start "ComfyUI (Accio)" /min /d "%COMFY_DIR%" cmd /c ".\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port %COMFY_PORT% --disable-auto-launch %COMFY_FLAGS% > "%~dp0data\logs\comfyui.log" 2>&1"
+start "Accio backend (ComfyUI)" /min /d "%COMFY_DIR%" cmd /c ".\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port %COMFY_PORT% --disable-auto-launch %COMFY_FLAGS% > "%~dp0data\logs\comfyui.log" 2>&1"
 set /a WAITED=0
 
 :wait_comfy
 curl.exe -s -m 3 -o nul "%COMFY_URL%/system_stats"
 if !errorlevel! equ 0 goto :comfy_ready
 if !WAITED! geq 180 (
-    echo [ERROR] ComfyUI did not answer within 3 minutes.
-    echo         See data\logs\comfyui.log for the reason.
+    echo [ERROR] The backend did not answer within 3 minutes.
+    echo         See the ComfyUI log, data\logs\comfyui.log, for the reason.
     pause
     exit /b 1
 )
-echo       Waiting for ComfyUI... ^(!WAITED!s^)
+echo       Waiting for the backend... ^(!WAITED!s^)
 ping -n 4 127.0.0.1 >nul
 set /a WAITED+=3
 goto :wait_comfy
 
 :comfy_ready
-echo       ComfyUI is ready.
+echo       The backend is ready.
 
 :: Step 2: Frontend build self-heal (release zips already contain frontend\dist)
 echo.
