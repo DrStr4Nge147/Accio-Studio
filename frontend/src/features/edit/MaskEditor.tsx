@@ -10,7 +10,7 @@ import { useEdit } from "./store";
 import { clearOps, pushOp, redoOp, undoOp, useWorkspace, type Source } from "./workspace";
 
 type ToolId = "brush" | "eraser" | "box" | "pan";
-const glass = "bg-[rgba(10,9,14,0.62)] text-[#f1eadb] border border-white/10 backdrop-blur-md";
+const pill = "border border-line bg-raised text-text";
 const MIN_BRUSH = 0.5;
 const MAX_BRUSH = 25;
 const clampBrush = (v: number) => Math.min(MAX_BRUSH, Math.max(MIN_BRUSH, v));
@@ -200,19 +200,11 @@ function Editor({ src }: { src: Source }) {
 
   const cursor = tool === "pan" ? undefined : tool === "box" ? "crosshair" : "none";
 
+  // The tools sit in a strip above the canvas, not over it: nothing on screen hides part of the picture.
   return (
-    <div ref={wrap} className="relative h-full overflow-hidden rounded-m border border-line bg-raised">
-      <Zoomable tool={zoomTool} pan={tool === "pan"} cursor={cursor}>
-        <Box w={src.w} h={src.h}>
-          <img src={src.url} alt="Image to edit" draggable={false} className="absolute inset-0 h-full w-full select-none" />
-          <canvas ref={fill} width={src.w} height={src.h} className="absolute inset-0 h-full w-full opacity-60" aria-hidden />
-          <canvas ref={lines} width={src.w} height={src.h} className="absolute inset-0 h-full w-full" aria-hidden />
-        </Box>
-      </Zoomable>
-      <div ref={ring} aria-hidden className="pointer-events-none absolute left-0 top-0 rounded-full border border-white opacity-0 mix-blend-difference" style={{ boxShadow: "0 0 0 1px rgba(0,0,0,0.5)" }} />
-
-      <div className="pointer-events-none absolute inset-x-0 top-2.5 z-[3] flex flex-col items-center gap-2 px-2">
-        <div className={`${glass} pointer-events-auto flex items-center gap-0.5 rounded-full p-0.5`} role="toolbar" aria-label="Mask tools">
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      <div className="flex flex-none flex-wrap items-center justify-center gap-2">
+        <div className={`${pill} flex items-center gap-0.5 rounded-full p-0.5`} role="toolbar" aria-label="Mask tools">
           <ToolButton label="Brush (B)" on={tool === "brush"} onClick={() => setTool("brush")}>
             <Brush size={20} strokeWidth={1.7} />
           </ToolButton>
@@ -225,7 +217,7 @@ function Editor({ src }: { src: Source }) {
           <ToolButton label="Move the view (H, or hold Space)" on={tool === "pan"} onClick={() => setTool("pan")}>
             <Hand size={20} strokeWidth={1.7} />
           </ToolButton>
-          <i className="mx-0.5 h-6 w-px bg-white/15" />
+          <i className="mx-0.5 h-6 w-px bg-line-strong" />
           <ToolButton label="Undo (Ctrl+Z)" disabled={!ops.length} onClick={undoOp}>
             <Undo2 size={20} strokeWidth={1.7} />
           </ToolButton>
@@ -233,44 +225,51 @@ function Editor({ src }: { src: Source }) {
             <Redo2 size={20} strokeWidth={1.7} />
           </ToolButton>
         </div>
-        <div className="pointer-events-none flex w-full max-w-md items-center justify-between gap-2">
-          {tool === "brush" || tool === "eraser" ? (
-            <label className={`${glass} pointer-events-auto flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full px-3.5 text-[12px]`}>
-              <span className="flex-none">Size</span>
-              <input
-                type="range"
-                className="slider min-w-0 flex-1"
-                aria-label="Brush size"
-                min={MIN_BRUSH}
-                max={MAX_BRUSH}
-                step={0.5}
-                value={brush}
-                style={{ ["--pct" as string]: `${((brush - MIN_BRUSH) / (MAX_BRUSH - MIN_BRUSH)) * 100}%` }}
-                onChange={(e) => setInpaint({ brush: Number(e.target.value) })}
-              />
-            </label>
-          ) : (
-            <span className="flex-1" />
-          )}
-          <div className={`${glass} pointer-events-auto flex rounded-full p-0.5`}>
-            <ToolButton label="Clear everything" disabled={!ops.length} onClick={clearOps}>
-              <Trash2 size={19} strokeWidth={1.7} />
-            </ToolButton>
-            <ChangeImage />
-          </div>
+        {(tool === "brush" || tool === "eraser") && (
+          <label className={`${pill} flex h-12 w-48 items-center gap-2 rounded-full px-3.5 text-[12px] text-text-2`}>
+            <span className="flex-none">Size</span>
+            <input
+              type="range"
+              className="slider min-w-0 flex-1"
+              aria-label="Brush size"
+              min={MIN_BRUSH}
+              max={MAX_BRUSH}
+              step={0.5}
+              value={brush}
+              style={{ ["--pct" as string]: `${((brush - MIN_BRUSH) / (MAX_BRUSH - MIN_BRUSH)) * 100}%` }}
+              onChange={(e) => setInpaint({ brush: Number(e.target.value) })}
+            />
+          </label>
+        )}
+        <div className={`${pill} flex rounded-full p-0.5`}>
+          <ToolButton label="Clear everything" disabled={!ops.length} onClick={clearOps}>
+            <Trash2 size={19} strokeWidth={1.7} />
+          </ToolButton>
+          <ChangeImage />
         </div>
       </div>
 
       {(rule || note) && (
-        <div className={`${glass} pointer-events-none absolute inset-x-3 bottom-14 z-[3] mx-auto w-fit max-w-[92%] rounded-full px-4 py-2 text-center text-[13px]`} role="status">
+        <p className="flex-none text-center text-[13px] text-text-2" role="status">
           {note ?? rule!.hint}
           {rule && !note && (
-            <span className="ml-2 font-mono text-gold-hi">
+            <span className="ml-2 font-mono text-gold-text">
               {boxCount}/{rule.min === rule.max ? rule.max : `${rule.min}+`}
             </span>
           )}
-        </div>
+        </p>
       )}
+
+      <div ref={wrap} className="relative min-h-0 flex-1 overflow-hidden rounded-m border border-line bg-raised">
+        <Zoomable tool={zoomTool} pan={tool === "pan"} cursor={cursor}>
+          <Box w={src.w} h={src.h}>
+            <img src={src.url} alt="Image to edit" draggable={false} className="absolute inset-0 h-full w-full select-none" />
+            <canvas ref={fill} width={src.w} height={src.h} className="absolute inset-0 h-full w-full opacity-60" aria-hidden />
+            <canvas ref={lines} width={src.w} height={src.h} className="absolute inset-0 h-full w-full" aria-hidden />
+          </Box>
+        </Zoomable>
+        <div ref={ring} aria-hidden className="pointer-events-none absolute left-0 top-0 rounded-full border border-white opacity-0 mix-blend-difference" style={{ boxShadow: "0 0 0 1px rgba(0,0,0,0.5)" }} />
+      </div>
     </div>
   );
 }
