@@ -35,6 +35,23 @@ function ContextLine() {
 export function DesktopLayout() {
   const tab = useUi((s) => s.tab);
   const set = useUi((s) => s.set);
+  const nav = (
+    <nav aria-label="Main" className="flex flex-none flex-col gap-1">
+      {NAV.map(({ id, label, icon: Icon }, i) => (
+        <button
+          key={id}
+          type="button"
+          aria-current={tab === id ? "page" : undefined}
+          onClick={() => set({ tab: id })}
+          className={`flex h-11 items-center gap-2.5 rounded-xl px-3 text-[14px] font-medium ${tab === id ? "bg-gold-wash text-gold-text" : "text-text-2"}`}
+        >
+          <Icon size={20} strokeWidth={1.7} />
+          {label}
+          <kbd className="ml-auto rounded-md border border-line-strong bg-raised px-1.5 font-mono text-[11px] text-text-2">{i + 1}</kbd>
+        </button>
+      ))}
+    </nav>
+  );
   return (
     <div className="grid h-full grid-cols-[316px_minmax(0,1fr)_272px] bg-bg">
       <aside className="flex min-h-0 flex-col border-r border-line bg-surface" aria-label="Controls">
@@ -44,24 +61,14 @@ export function DesktopLayout() {
             <GearIcon size={20} strokeWidth={1.7} />
           </IconButton>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-3.5">
-          <nav aria-label="Main" className="flex flex-none flex-col gap-1">
-            {NAV.map(({ id, label, icon: Icon }, i) => (
-              <button
-                key={id}
-                type="button"
-                aria-current={tab === id ? "page" : undefined}
-                onClick={() => set({ tab: id })}
-                className={`flex h-11 items-center gap-2.5 rounded-xl px-3 text-[14px] font-medium ${tab === id ? "bg-gold-wash text-gold-text" : "text-text-2"}`}
-              >
-                <Icon size={20} strokeWidth={1.7} />
-                {label}
-                <kbd className="ml-auto rounded-md border border-line-strong bg-raised px-1.5 font-mono text-[11px] text-text-2">{i + 1}</kbd>
-              </button>
-            ))}
-          </nav>
-          {tab === "create" ? <CreateComposer layout="pane" /> : <p className="text-[13px] text-text-3">Controls for this mode arrive with it.</p>}
-        </div>
+        {tab === "create" ? (
+          <CreateComposer layout="pane" above={nav} />
+        ) : (
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3.5">
+            {nav}
+            <p className="text-[13px] text-text-3">Controls for this mode arrive with it.</p>
+          </div>
+        )}
       </aside>
 
       <section className="flex min-h-0 min-w-0 flex-col" aria-label="Canvas">

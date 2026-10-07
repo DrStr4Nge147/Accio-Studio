@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Composer } from "../../components/Composer";
 import { useServer } from "../../store/health";
 import { isActive, useJobs } from "../../store/jobs";
@@ -7,7 +8,7 @@ import { CreateChips, CreateToggles } from "./CreateControls";
 import { useCreate } from "./store";
 
 /** Create's instance of the shared composer, in the layout the viewport asks for. */
-export function CreateComposer({ layout }: { layout: "dock" | "pane" }) {
+export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; above?: ReactNode }) {
   const prompt = useCreate((s) => s.prompt);
   const patch = useCreate((s) => s.patch);
   const { busy, error } = useSubmit();
@@ -18,6 +19,7 @@ export function CreateComposer({ layout }: { layout: "dock" | "pane" }) {
   return (
     <Composer
       layout={layout}
+      above={above}
       prompt={prompt}
       onPrompt={(prompt) => patch({ prompt })}
       placeholder="Describe what to create…"
