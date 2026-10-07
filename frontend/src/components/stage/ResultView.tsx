@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Columns2, Copy, Download, Info, RotateCcw, Share2, TextQuote, WandSparkles, X } from "lucide-react";
+import { Columns2, Copy, Download, Info, Repeat, RotateCcw, Share2, TextQuote, WandSparkles, X } from "lucide-react";
 import { imageUrl } from "../../api/http";
 import { inputUrl } from "../../api/upload";
 import type { Job } from "../../api/types";
-import { sendToEdit } from "../../features/edit/actions";
+import { continueFromResult, sendToEdit } from "../../features/edit/actions";
 import { useEdit, type EditMode } from "../../features/edit/store";
 import { useWorkspace } from "../../features/edit/workspace";
 import { reuseAny } from "../../features/reuse";
@@ -110,6 +110,11 @@ export function ResultView({ job }: { job: Job }) {
             {canShareFiles() && (
               <IconButton label="Share" className={glass} onClick={() => void shareImage(url, filename).catch(() => undefined)}>
                 <Share2 size={20} strokeWidth={1.7} className="text-[#f1eadb]" />
+              </IconButton>
+            )}
+            {job.mode !== "create" && !firstPass && (
+              <IconButton label="Edit this result" className={glass} onClick={() => void continueFromResult(job, cur.i).then(setSendError)}>
+                <Repeat size={20} strokeWidth={1.7} className="text-[#f1eadb]" />
               </IconButton>
             )}
             <IconButton label="Send to Edit" className={glass} aria-expanded={sendOpen} onClick={() => setSendOpen((o) => !o)}>

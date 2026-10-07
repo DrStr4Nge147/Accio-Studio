@@ -70,6 +70,7 @@ Multi-edit, Inpaint and Outpaint, end to end, on the bundled ComfyUI 0.38.0 with
 - Edit sub-modes on mobile are a full-width segmented control in a row under the header (not inside the header: three labels do not fit next to the wordmark and gear at 375 px).
 - "Reuse settings" for an Edit job restores its prompt, toggles, overrides, LoRAs and seed (locked); Multi-edit images and the Outpaint image come back from the backend's input folder. Inpaint's image is **not** restored (the stored file is the RGBA mask upload); the user picks it again. "Try again" uses a new seed.
 - Compare slider: Multi-edit (image 1 from the backend) and Inpaint (this session's source); not offered for Outpaint (different canvas size), nor for Inpaint after a reload.
+- **"Edit this result"** (repeat button on Edit results, added after the first test): makes the result the input of the same mode and returns to the editor. Multi-edit: it replaces image 1, references stay. Inpaint / Outpaint: it replaces the source and clears mask / padding. Plain Generate again still reuses the original images (checked in the browser for Inpaint).
 - Not built, deliberately: drag from the history pane into a Multi-edit slot (the design mentions it; Send to Edit and Reuse cover the need), resizing or moving a drawn box (undo and redraw instead).
 
 **Known issues / not done in Phase 5:**

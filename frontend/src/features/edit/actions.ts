@@ -11,7 +11,7 @@ import { boxesOf, isEmptyMask, maskBytes } from "./maskOps";
 import { editBlocker, inpaintParams, multiParams, outpaintParams, reuseEditSettings } from "./params";
 import { PRESETS, type PresetId } from "./presets";
 import { useEdit, type EditMode } from "./store";
-import { giveFilesToMode, loadSource, restoreSlots, setPads, useWorkspace } from "./workspace";
+import { giveFilesToMode, loadSource, replaceBaseSlot, restoreSlots, setPads, setInpaintSource, setOutpaintSource, useWorkspace } from "./workspace";
 
 interface SubmitState {
   busy: boolean;
@@ -112,6 +112,29 @@ export async function sendToEdit(job: Job, outputIndex: number, mode: EditMode):
     selectEditMode(mode);
     useUi.getState().set({ tab: "edit", viewerOpen: false });
     useJobs.getState().select(null);
+    return null;
+  } catch {
+    return "Couldn't load that image.";
+  }
+}
+
+/**
+ * "Edit this result": make the result the input of the same Edit mode and return to the editor, so the next Generate builds
+ * on it. Multi-edit: it becomes image 1 (references stay). Inpaint / Outpaint: it replaces the source (mask and padding reset).
+ */
+export async function continueFromResult(job: Job, outputIndex: number): Promise<string | null> {
+  const mode = job.mode as EditMode;
+  try {
+    const res = await fetch(imageUrl(job.id, outputIndex));
+    if (!res.ok) return "Couldn't load that image.";
+    const blob = await res.blob();
+    const file = new File([blob], `accio-${job.seeds.main ?? "result"}.png`, { type: blob.type || "image/png" });
+    if (mode === "multiedit") replaceBaseSlot(file);
+    else if (mode === "inpaint") setInpaintSource(await loadSource(file, file.name));
+    else setOutpaintSource(await loadSource(file, file.name));
+    useJobs.getState().select(null);
+    useUi.getState().set({ viewerOpen: false });
+    useEditSubmit.getState().setError(null);
     return null;
   } catch {
     return "Couldn't load that image.";

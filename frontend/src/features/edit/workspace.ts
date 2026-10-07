@@ -125,6 +125,15 @@ export function addSlotFiles(files: File[]): number {
   return files.length - take.length; // how many did not fit
 }
 
+/** Make this file image 1 (the base): it takes the first slot's place, the other images stay as references. */
+export function replaceBaseSlot(file: File) {
+  const first = useWorkspace.getState().slots[0];
+  if (first) removeSlot(first.id);
+  addSlotFiles([file]);
+  const n = useWorkspace.getState().slots.length;
+  if (n > 1) moveSlot(n - 1, 0);
+}
+
 export function retrySlot(id: string) {
   const f = pending.get(id);
   if (!f) return;
