@@ -18,7 +18,7 @@ describe("showing the enhanced prompt in the prompt box", () => {
     showEnhanced("multiedit", latest);
     expect(ed().prompts.multiedit).toBe(latest.text);
     expect(ed().enhancer.multiedit).toBe(false);
-    expect(useEnhancedView.getState().active.multiedit).toBe(true);
+    expect(useEnhancedView.getState().active.multiedit).toEqual(latest);
   });
 
   it("switching back restores the user's prompt and the enhancer setting they had", () => {

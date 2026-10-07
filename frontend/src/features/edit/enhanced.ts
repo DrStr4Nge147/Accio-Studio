@@ -12,8 +12,8 @@ export interface EnhancedText {
 }
 
 interface State {
-  /** modes whose prompt box currently shows the enhancer's rewrite instead of the user's own prompt */
-  active: Partial<Record<EnhancedMode, true>>;
+  /** modes whose prompt box currently shows the enhancer's rewrite instead of the user's own prompt (and which rewrite) */
+  active: Partial<Record<EnhancedMode, EnhancedText>>;
   /** what the box held before switching (restored when switching back) */
   saved: Partial<Record<EnhancedMode, { prompt: string; enhancer: boolean }>>;
   /** the rewrite as the user last edited it, kept while they look at their own prompt */
@@ -31,7 +31,7 @@ export function showEnhanced(mode: EnhancedMode, latest: EnhancedText) {
   const view = useEnhancedView.getState();
   const text = view.draft[mode]?.id === latest.id ? view.draft[mode]!.text : latest.text;
   useEnhancedView.setState({
-    active: { ...view.active, [mode]: true },
+    active: { ...view.active, [mode]: latest },
     saved: view.active[mode] ? view.saved : { ...view.saved, [mode]: { prompt: edit.prompts[mode], enhancer: edit.enhancer[mode] } },
   });
   edit.setPrompt(mode, text);

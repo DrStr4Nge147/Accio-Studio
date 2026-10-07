@@ -106,7 +106,7 @@ export function Segmented<T extends string | number>({
           data-tip={o.tip}
           onClick={() => onChange(o.value)}
           className={cx(
-            "grid place-items-center rounded-[9px] px-3.5 text-[13px] font-medium transition-colors",
+            "grid place-items-center whitespace-nowrap rounded-[9px] px-3.5 text-[13px] font-medium transition-colors",
             small ? "h-8 min-w-9" : "h-9 min-w-11",
             o.value === value ? "bg-overlay text-text" : "text-text-2 hover:bg-overlay/60 hover:text-text",
           )}
