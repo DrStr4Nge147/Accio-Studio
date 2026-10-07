@@ -161,9 +161,14 @@ export function moveSlot(from: number, to: number) {
 
 /** Slots restored from a past job: the files are already in the backend's input folder. */
 export function restoreSlots(images: { file: string; name?: string }[], urlOf: (file: string) => string) {
-  useWorkspace.getState().setSlots(() =>
-    images.map((i) => ({ id: uid(), name: i.name || i.file, url: urlOf(i.file), status: "ready" as const, progress: 1, file: i.file })),
-  );
+  const slots = images.map((i) => ({ id: uid(), name: i.name || i.file, url: urlOf(i.file), status: "ready" as const, progress: 1, file: i.file }));
+  useWorkspace.getState().setSlots(() => slots);
+  // Read each picture's size, as for a freshly added file: the next job's card needs image 1's shape (size hint).
+  for (const s of slots) {
+    const img = new Image();
+    img.onload = () => patchSlot(s.id, { w: img.naturalWidth, h: img.naturalHeight });
+    img.src = s.url;
+  }
 }
 
 // ----------------------------------------------------------------------------- Inpaint / Outpaint sources
