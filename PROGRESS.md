@@ -165,6 +165,7 @@ Structural parity (spec 7.1) for all 20 templates: **PASS** (fresh re-export fro
 
 ```powershell
 .\Install.bat                      # once; add  --models-from "<existing ComfyUI folder>"  to reuse its models
+.\Stop_Accio.bat                   # stops everything this folder started (server, bundled backend, tunnels); touches nothing else
 .\Run_Accio.bat                    # pick 1; starts bundled ComfyUI (8189) + Accio (http://127.0.0.1:7862); dev test page at /dev
 env\Scripts\python.exe -m pytest tests -q
 cd frontend; npm run dev           # Vite dev server, proxies /api to :7862
