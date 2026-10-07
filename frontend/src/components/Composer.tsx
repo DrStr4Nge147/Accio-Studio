@@ -171,10 +171,10 @@ export function Composer({
           onClick={onGenerate}
           disabled={disabled}
           title={disabledReason ?? undefined}
-          className="flex h-[52px] min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-hi to-gold text-[16px] font-semibold text-on-gold shadow-[0_6px_20px_color-mix(in_srgb,var(--gold)_30%,transparent)] transition-[opacity,filter] hover:brightness-105 disabled:opacity-50"
+          className="flex h-[52px] min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl px-4 bg-gradient-to-b from-gold-hi to-gold text-[16px] font-semibold text-on-gold shadow-[0_6px_20px_color-mix(in_srgb,var(--gold)_30%,transparent)] transition-[opacity,filter] hover:brightness-105 disabled:opacity-50"
         >
           {generateIcon} {running ? "Add to queue" : "Generate"}
-          {!dock && <kbd className="rounded-md border border-black/20 px-1.5 font-mono text-[11px] opacity-70">Ctrl+Enter</kbd>}
+          {!dock && !running && <kbd className="rounded-md border border-black/20 px-1.5 font-mono text-[11px] opacity-70">Ctrl+Enter</kbd>}
         </button>
         {running && (
           <button
