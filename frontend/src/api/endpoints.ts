@@ -53,4 +53,10 @@ export const fetchDoneJobs = ({ before, group, limit = 60 }: JobsPage = {}) => {
   if (group) q.set("group", group);
   return get<{ jobs: Job[] }>(`/api/jobs?${q}`).then((r) => r.jobs);
 };
-export const deleteJob = (id: string) => del<{ ok: true }>(`/api/jobs/${id}`);
+export interface DeleteResult {
+  ok: true;
+  files_deleted: number;
+  /** Image files left on disk (external backend, or a file that could not be removed). */
+  files_kept: number;
+}
+export const deleteJob = (id: string) => del<DeleteResult>(`/api/jobs/${id}`);

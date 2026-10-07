@@ -26,12 +26,13 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import engine
+import outputs
 import thumbs
 import tunnels
 from auth import Auth
 from authapi import GuardMiddleware, router as auth_router
 from comfy import ComfyClient, ComfyError
-from config import DATA_DIR, FRONTEND_DIST, ROOT, comfy_url, load_manifest, load_settings, template_files
+from config import DATA_DIR, FRONTEND_DIST, ROOT, comfy_dir, comfy_url, load_manifest, load_settings, template_files
 from history import History
 from jobs import JobManager
 from logtail import read_log
@@ -213,7 +214,13 @@ async def health(request: Request):
     try:
         stats = await comfy.system_stats()
     except ComfyError:
-        return {"comfy_online": False, "missing_models": [], "missing_nodes": [], "warnings": []}
+        return {
+            "comfy_online": False,
+            "missing_models": [],
+            "missing_nodes": [],
+            "warnings": [],
+            "can_delete_files": outputs.can_delete(request.app.state.settings, comfy_dir(request.app.state.settings)),
+        }
     missing = []
     for folder, names in REQUIRED_MODELS.items():
         have = set(await comfy.models(folder))
@@ -233,6 +240,7 @@ async def health(request: Request):
         "missing_models": missing,
         "missing_nodes": sorted(template_classes() - info),
         "warnings": warnings,
+        "can_delete_files": outputs.can_delete(request.app.state.settings, comfy_dir(request.app.state.settings)),
     }
 
 
@@ -287,11 +295,21 @@ async def get_job(job_id: str, request: Request):
 
 @app.delete("/api/jobs/{job_id}")
 async def delete_job(job_id: str, request: Request):
-    """Remove a finished job from the history (and its cached thumbnails). The backend keeps its output file."""
-    if not request.app.state.history.delete(job_id):
+    """Delete a finished job: its history record, cached thumbnails and, for the bundled backend, its image files."""
+    job = request.app.state.history.get(job_id)
+    if not job or job["status"] in ("queued", "running"):
         raise HTTPException(404, "Job not found, or it is still running.")
+    settings = request.app.state.settings
+    files = {"deleted": 0, "failed": 0}
+    if outputs.can_delete(settings, comfy_dir(settings)):
+        files["deleted"], files["failed"] = await asyncio.to_thread(
+            outputs.delete_files, outputs.output_dir(comfy_dir(settings)), job["outputs"]
+        )
+    else:
+        files["failed"] = len(job["outputs"])  # not ours to delete (external backend): left on disk
+    request.app.state.history.delete(job_id)
     await asyncio.to_thread(thumbs.remove_for_job, THUMBS_DIR, job_id)
-    return {"ok": True}
+    return {"ok": True, "files_deleted": files["deleted"], "files_kept": files["failed"]}
 
 
 @app.post("/api/jobs/{job_id}/cancel")

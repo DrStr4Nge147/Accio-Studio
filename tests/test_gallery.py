@@ -105,6 +105,8 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DATA_DIR", tmp_path)
     monkeypatch.setattr(main, "DATA_DIR", tmp_path)
     monkeypatch.setattr(main, "THUMBS_DIR", tmp_path / "thumbs")
+    monkeypatch.setattr(main, "comfy_dir", lambda settings: tmp_path / "comfy")  # never touch the real output folder
+    (tmp_path / "comfy" / "ComfyUI" / "output" / "AccioStudio").mkdir(parents=True)
     with TestClient(main.app) as c:
         code = c.app.state.auth.setup_code
         assert c.post("/api/auth/setup", json={"password": "correct horse battery", "code": code}).status_code == 200
@@ -159,3 +161,46 @@ def test_delete_needs_login(client):
     jid = seed_job(client)
     client.post("/api/auth/logout")
     assert client.delete(f"/api/jobs/{jid}").status_code == 401
+
+
+def test_delete_removes_the_image_files_too(client, tmp_path):
+    out = tmp_path / "comfy" / "ComfyUI" / "output" / "AccioStudio"
+    (out / "a.png").write_bytes(b"x")
+    jid = seed_job(client)
+    assert client.get("/api/health").json()["can_delete_files"] is True
+    r = client.delete(f"/api/jobs/{jid}")
+    assert r.json() == {"ok": True, "files_deleted": 1, "files_kept": 0}
+    assert not (out / "a.png").exists()
+
+
+def test_files_are_kept_for_an_external_backend(client, tmp_path):
+    out = tmp_path / "comfy" / "ComfyUI" / "output" / "AccioStudio"
+    (out / "a.png").write_bytes(b"x")
+    jid = seed_job(client)
+    client.app.state.settings = {**client.app.state.settings, "external_comfy_url": "http://elsewhere:8188"}
+    try:
+        assert client.get("/api/health").json()["can_delete_files"] is False
+        assert client.delete(f"/api/jobs/{jid}").json() == {"ok": True, "files_deleted": 0, "files_kept": 1}
+        assert (out / "a.png").exists()
+    finally:
+        client.app.state.settings = {**client.app.state.settings, "external_comfy_url": ""}
+
+
+def test_delete_files_never_leaves_the_output_folder(tmp_path):
+    import outputs
+
+    root = tmp_path / "output"
+    (root / "sub").mkdir(parents=True)
+    (root / "sub" / "ok.png").write_bytes(b"x")
+    secret = tmp_path / "secret.txt"
+    secret.write_text("keep me")
+    entries = [
+        {"filename": "ok.png", "subfolder": "sub", "type": "output"},
+        {"filename": "secret.txt", "subfolder": "..", "type": "output"},
+        {"filename": r"..\..\secret.txt", "subfolder": "", "type": "output"},
+        {"filename": "ok.png", "subfolder": "sub", "type": "temp"},
+        {"filename": "gone.png", "subfolder": "sub", "type": "output"},  # already missing: fine
+    ]
+    deleted, failed = outputs.delete_files(root, entries)
+    assert secret.read_text() == "keep me" and not (root / "sub" / "ok.png").exists()
+    assert (deleted, failed) == (2, 3)

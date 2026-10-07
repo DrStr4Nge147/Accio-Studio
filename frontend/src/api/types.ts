@@ -40,6 +40,8 @@ export interface Health {
   missing_models: string[];
   missing_nodes: string[];
   warnings: string[];
+  /** True when Accio owns the backend output folder, so deleting from the gallery also deletes the image files. */
+  can_delete_files?: boolean;
 }
 
 export interface SamplerDefaults {

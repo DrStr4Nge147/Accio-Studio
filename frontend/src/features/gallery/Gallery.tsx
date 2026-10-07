@@ -7,6 +7,7 @@ import type { Job } from "../../api/types";
 import { Segmented } from "../../components/ui/controls";
 import { gridLayout, itemPosition, nearEnd, visibleRange } from "../../lib/virtualGrid";
 import { jobGroup, shortLabel, type JobGroup } from "../../lib/jobView";
+import { useServer } from "../../store/health";
 import { useJobs } from "../../store/jobs";
 import { openJob } from "../history/open";
 import { Thumb } from "../history/Thumb";
@@ -39,6 +40,7 @@ export function Gallery() {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
+  const canDelete = useServer((s) => s.health?.can_delete_files === true); // Accio owns the output folder
   const live = useJobs(useShallow((s) => s.order.map((id) => s.jobs[id]!).filter((j) => j.status === "done")));
   const items = useMemo(() => mergeJobs(loaded, live, filter), [loaded, live, filter]);
 
@@ -137,7 +139,9 @@ export function Gallery() {
     const gone = ids.filter((_, i) => results[i]!.status === "fulfilled");
     useJobs.getState().remove(gone);
     setLoaded((l) => l.filter((j) => !gone.includes(j.id)));
+    const kept = results.reduce((n, r) => n + (r.status === "fulfilled" ? r.value.files_kept : 0), 0);
     if (gone.length < ids.length) setError("Some images couldn't be removed. Try again.");
+    else if (kept > 0 && canDelete) setError(`${kept} image file${kept === 1 ? "" : "s"} couldn't be deleted from disk (removed from the gallery only).`);
     setBusy(false);
     stopSelecting();
   };
@@ -168,7 +172,7 @@ export function Gallery() {
                   className="flex h-11 items-center gap-1.5 rounded-full bg-danger px-4 text-[13px] font-semibold text-bg disabled:opacity-60"
                 >
                   {busy && <Loader2 size={15} className="animate-spin motion-reduce:animate-none" />}
-                  Remove {picked.size} from history
+                  {canDelete ? `Delete ${picked.size} permanently` : `Remove ${picked.size} from history`}
                 </button>
               ) : (
                 <button
@@ -178,7 +182,7 @@ export function Gallery() {
                   className="hover-wash flex h-11 items-center gap-1.5 rounded-full border border-line-strong px-3.5 text-[13px] text-text-2 hover:text-text disabled:opacity-40"
                 >
                   <Trash2 size={16} strokeWidth={1.7} />
-                  Remove
+                  {canDelete ? "Delete" : "Remove"}
                 </button>
               )}
               <button type="button" aria-label="Stop selecting" data-tip="Stop selecting" onClick={stopSelecting} className="hover-wash grid h-11 w-11 place-items-center rounded-full text-text-2 hover:text-text">
@@ -198,7 +202,9 @@ export function Gallery() {
           )}
         </div>
       </div>
-      {confirm && <p className="flex-none px-4 pb-2 text-[12px] text-text-3">This removes them from Accio's history only. The image files stay in the backend's output folder.</p>}
+      {confirm && <p className="flex-none px-4 pb-2 text-[12px] text-text-3">{canDelete
+            ? "This permanently deletes the images from your computer's output folder and from the gallery. It can't be undone."
+            : "This removes them from Accio's history only. The image files stay where the backend saved them."}</p>}
       {selecting && !confirm && hasMore && allPicked && <p className="flex-none px-4 pb-2 text-[12px] text-text-3">Only the {items.length} images loaded so far are selected. Scroll down to load more, then select all again.</p>}
 
       <div ref={scroller} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3 lg:px-4" aria-label="Gallery">
