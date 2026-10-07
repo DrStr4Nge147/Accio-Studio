@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Copy, Download, Info, RotateCcw, Share2 } from "lucide-react";
 import { imageUrl } from "../../api/http";
 import type { Job } from "../../api/types";
@@ -8,6 +8,7 @@ import { canShareFiles, shareImage } from "../../lib/share";
 import { useJobs } from "../../store/jobs";
 import { IconButton } from "../ui/controls";
 import { Box } from "./Box";
+import { Zoomable } from "./Zoomable";
 
 const glass = "bg-[rgba(10,9,14,0.62)] text-[#f1eadb] border border-white/10 backdrop-blur-md";
 
@@ -15,9 +16,17 @@ const glass = "bg-[rgba(10,9,14,0.62)] text-[#f1eadb] border border-white/10 bac
 export function ResultView({ job }: { job: Job }) {
   const [index, setIndex] = useState(0);
   const [details, setDetails] = useState(false);
+  const [full, setFull] = useState(false);
   const revealing = useJobs((s) => !!s.reveal[job.id]);
   const clearReveal = useJobs((s) => s.clearReveal);
   const { w, h } = jobSize(job);
+
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setFull(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [full]);
 
   // Final images first, then the first-pass image(s); each keeps its index into job.outputs for the URL.
   const items = job.outputs
@@ -31,20 +40,33 @@ export function ResultView({ job }: { job: Job }) {
   const filename = `accio-${seed}-${cur.i + 1}.png`;
   const firstPass = cur.o.role === "first_pass";
 
+  const picture = (
+    <img
+      src={url}
+      alt={job.params.prompt ?? "Generated image"}
+      width={w}
+      height={h}
+      decoding="async"
+      draggable={false}
+      className={`h-full w-full object-contain ${revealing && !firstPass ? "reveal-img" : ""}`}
+      onAnimationEnd={() => clearReveal(job.id)}
+    />
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
+      {full && (
+        <div role="dialog" aria-modal="true" aria-label="Image viewer" className="fade-in fixed inset-0 z-50 bg-black/95">
+          <Zoomable onClose={() => setFull(false)}>
+            <img src={url} alt={job.params.prompt ?? "Generated image"} draggable={false} className="h-full w-full object-contain" />
+          </Zoomable>
+        </div>
+      )}
       <div className="min-h-0 flex-1">
         <Box w={w} h={h} className={`${revealing && !firstPass ? "reveal-glow" : ""} overflow-hidden rounded-m border border-line bg-raised`}>
-          <img
-            key={url}
-            src={url}
-            alt={job.params.prompt ?? "Generated image"}
-            width={w}
-            height={h}
-            decoding="async"
-            className={`absolute inset-0 h-full w-full object-contain ${revealing && !firstPass ? "reveal-img" : ""}`}
-            onAnimationEnd={() => clearReveal(job.id)}
-          />
+          <Zoomable key={url} onExpand={() => setFull(true)}>
+            {picture}
+          </Zoomable>
           {firstPass && <span className={`${glass} absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-medium`}>First pass</span>}
           <div className="absolute right-2 top-2 flex flex-col gap-2">
             <a href={url} download={filename} aria-label="Download" title="Download" className={`${glass} grid h-11 w-11 place-items-center rounded-full`}>
@@ -91,7 +113,7 @@ function Details({ job }: { job: Job }) {
   const seeds = Object.entries(job.seeds);
   const { w, h } = jobSize(job);
   return (
-    <div className="absolute inset-x-0 bottom-0 max-h-[70%] overflow-y-auto bg-[rgba(10,9,14,0.88)] p-3.5 text-[12px] leading-snug text-[#f1eadb] backdrop-blur-md">
+    <div className="absolute inset-x-0 bottom-0 z-[4] max-h-[70%] overflow-y-auto bg-[rgba(10,9,14,0.88)] p-3.5 text-[12px] leading-snug text-[#f1eadb] backdrop-blur-md">
       <div className="font-medium">
         {job.label} · {w}×{h}
         {job.params.batch > 1 && ` · ${job.params.batch} images`}
