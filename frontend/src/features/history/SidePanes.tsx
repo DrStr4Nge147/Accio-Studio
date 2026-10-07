@@ -83,9 +83,9 @@ export function HistoryPane({ group = "create" }: { group?: JobGroup }) {
                 <button
                   type="button"
                   onClick={() => openJob(j)}
-                  aria-label={`Open: ${String(j.params.prompt ?? j.label).slice(0, 60)}`}
+                  aria-label={`Open: ${String(j.params.prompt || j.label).slice(0, 60)}`}
                   aria-current={j.id === selectedId}
-                  data-tip={String(j.params.prompt ?? j.label).slice(0, 140)}
+                  data-tip={String(j.params.prompt || j.label).slice(0, 140)}
                   className={`block aspect-square w-full overflow-hidden rounded-s border ${j.id === selectedId ? "border-gold" : "border-line hover:border-text-3"}`}
                 >
                   <Thumb job={j} className="h-full w-full" />
@@ -112,7 +112,7 @@ export function RecentStrip({ group = "create", compact }: { group?: JobGroup; c
           type="button"
           aria-label={isActive(j) ? "Show the image being generated" : "Show this result"}
           aria-current={j.id === selectedId}
-          data-tip={isActive(j) ? "Being generated" : String(j.params.prompt ?? j.label).slice(0, 140)}
+          data-tip={isActive(j) ? "Being generated" : String(j.params.prompt || j.label).slice(0, 140)}
           onClick={() => openJob(j)}
           className={`${compact ? "h-11 w-11" : "h-[72px] w-[72px]"} flex-none overflow-hidden rounded-s border ${j.id === selectedId ? "border-gold" : "border-line-strong hover:border-text-3"}`}
         >

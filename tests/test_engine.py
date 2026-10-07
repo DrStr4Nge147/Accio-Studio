@@ -181,3 +181,10 @@ def test_size_hint_is_display_only_and_validated():
         mk(mode="inpaint", prompt="x", image="a.png", size_hint=[1024])
     with pytest.raises(ValidationError):
         mk(mode="inpaint", prompt="x", image="a.png", size_hint=[0, 10])
+
+
+def test_inpaint_source_is_display_only():
+    b = build(mk(mode="inpaint", prompt="x", image="m.png", source="orig.png"), CAT, seed_source=lambda: 1)
+    assert "orig.png" not in json.dumps(b.prompt)
+    with pytest.raises(ValidationError):
+        mk(mode="inpaint", prompt="x", image="m.png", source="../orig.png")

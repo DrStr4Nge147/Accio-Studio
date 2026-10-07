@@ -49,7 +49,9 @@ export async function generateEdit() {
       const png = await exportInpaintPng({ file: src.blob, w: src.w, h: src.h, mask, boxes: burn, stroke: boxStroke(src.w, src.h) });
       useEditSubmit.setState({ stage: "Uploading the mask…" });
       const file = await uploadImage("mask", png);
-      params = inpaintParams(s, file, src);
+      // The untouched original too (a plain upload, nothing re-encoded), so the result can be compared with it later.
+      const original = await uploadImage("image", src.blob);
+      params = inpaintParams(s, file, src, original);
       before = src.url;
     } else {
       const o = ws.outpaint;

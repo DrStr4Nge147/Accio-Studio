@@ -95,7 +95,7 @@ export function multiParams(s: EditSettings, slots: Slot[], baseMp = 1): Record<
   return p;
 }
 
-export function inpaintParams(s: EditSettings, image: string, src: Source): Record<string, unknown> {
+export function inpaintParams(s: EditSettings, image: string, src: Source, source?: string): Record<string, unknown> {
   const i = s.inpaint;
   const p: Record<string, unknown> = {
     mode: "inpaint",
@@ -107,6 +107,7 @@ export function inpaintParams(s: EditSettings, image: string, src: Source): Reco
     remover: i.preset === "remove",
     mover: i.preset === "move",
     size_hint: [src.w, src.h],
+    ...(source ? { source } : {}),
     ...common(s, "inpaint"),
   };
   for (const [k, v] of Object.entries(i.crop)) if (v !== undefined) p[k] = v;

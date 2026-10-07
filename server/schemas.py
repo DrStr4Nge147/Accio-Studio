@@ -115,6 +115,8 @@ class InpaintParams(Strict):
     mover: bool = False
     seed: Seed | None = None
     sampler: SamplerOpts | None = None
+    # Display-only: the untouched original (plain upload) so the result can be compared with it later. Never reaches a node.
+    source: Filename | None = None
     size_hint: SizeHint | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
 
