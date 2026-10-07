@@ -164,6 +164,16 @@ export async function reuseEdit(job: Job, keepSeed = true) {
   const p = job.params;
   if (p.mode === "multiedit") {
     restoreSlots(p.images as { file: string; name?: string }[], (f) => inputUrl("media", f));
+  } else if (p.mode === "inpaint") {
+    // Only the untouched original was kept (p.image is the masked export), so the source comes back but the mask has to be repainted.
+    if (!p.source) return;
+    try {
+      const res = await fetch(inputUrl("image", p.source));
+      if (!res.ok) return;
+      setInpaintSource(await loadSource(await res.blob(), "image"));
+    } catch {
+      /* the original is gone from the backend's input folder: settings are restored, the image has to be chosen again */
+    }
   } else if (p.mode === "outpaint") {
     try {
       const res = await fetch(inputUrl("image", p.image));
