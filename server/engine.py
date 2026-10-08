@@ -34,6 +34,7 @@ UPLOAD_SUBFOLDER = "accio"  # inpaint / outpaint uploads
 MEDIA_SUBFOLDER = "minimax_h3"  # multi-edit uploads (spec 5.2)
 LORA_ADD_MARKER = "➕ Add Lora"
 UNET_CLASS = "UNETLoader"
+GRAIN_NODE = "film_grain"  # id of the node inserted before the Save step
 KLEIN_MAX_IMAGES = 3
 KLEIN_IMAGE_NODES = [("76", "109"), ("81", "115"), ("102", "116")]  # (LoadImage, ImageScaleToTotalPixels) per input image
 KLEIN_LORA_NODES = ["120", "121", "122", "123", "124", "125"]  # model-only LoRA loaders, chained in this order
@@ -189,6 +190,21 @@ def _inject_loras(prompt: dict, node: str, entries: list[LoraEntry], cat: Catalo
     if LORA_ADD_MARKER not in inputs:
         rebuilt.update(added)
     prompt[node]["inputs"] = rebuilt
+
+
+def _apply_grain(prompt: dict, save_node: str, strength: float | None, seed: int) -> None:
+    """Film grain: ComfyUI's own seeded ImageAddNoise sits between the image and its SaveImage. Same seed = same grain."""
+    if strength is None:
+        return
+    save = prompt[save_node]["inputs"]
+    if not is_link(save.get("images")):
+        raise BuildError(f"template drift: node {save_node} has no image link")
+    prompt[GRAIN_NODE] = {
+        "inputs": {"image": save["images"], "seed": seed, "strength": strength},
+        "class_type": "ImageAddNoise",
+        "_meta": {"title": "Film grain"},
+    }
+    save["images"] = [GRAIN_NODE, 0]
 
 
 def _lora_slot(prompt: dict, node: str, slot: str, *, on: bool | None = None, strength: float | None = None) -> None:
@@ -446,6 +462,7 @@ def _build_klein_multiedit(p: MultiEditParams, cat: Catalog, seeds_src: Callable
     for node in KLEIN_LORA_NODES[len(used):]:
         del pr[node]
     _set(pr, "117", "model", [used[-1] if used else "107", 0])
+    _apply_grain(pr, "200", p.film_grain, seed)
     _set(pr, "200", "filename_prefix", f"{prefix}/edit")
     warnings = []
     ignored = [label for label, on in (("Keep original resolution", p.keep_original_resolution), ("Head swap", p.head_swap), ("Body swap", p.body_swap)) if on]
@@ -479,6 +496,7 @@ def _build_multiedit(p: MultiEditParams, cat: Catalog, seeds_src: Callable[[], i
     _lora_slot(pr, "24", "lora_2", on=p.body_swap)
     _inject_loras(pr, "24", p.loras, cat)
     _apply_unet(pr, p.unet_name, cat)
+    _apply_grain(pr, "45", p.film_grain, seed)
     _set(pr, "45", "filename_prefix", f"{prefix}/edit")
     warnings = []
     if p.manual_size and p.pixel_drift_fix:
@@ -505,6 +523,7 @@ def _build_inpaint(p: InpaintParams, cat: Catalog, seeds_src: Callable[[], int],
     _lora_slot(pr, "213", "lora_2", on=p.mover)
     _inject_loras(pr, "213", p.loras, cat)
     _apply_unet(pr, p.unet_name, cat)
+    _apply_grain(pr, "64", p.film_grain, seed)
     _set(pr, "64", "filename_prefix", f"{prefix}/inpaint")
     return Built(pr, "qwen_inpaint", {"main": seed}, {"64": "final"}, "215", "inpaint", "Edit · Inpaint")
 
@@ -529,6 +548,7 @@ def _build_outpaint(p: OutpaintParams, cat: Catalog, seeds_src: Callable[[], int
     _lora_slot(pr, "252", "lora_1", on=p.outpaint_lora_on, strength=p.outpaint_lora_strength)
     _inject_loras(pr, "252", p.loras, cat)
     _apply_unet(pr, p.unet_name, cat)
+    _apply_grain(pr, "78", p.film_grain, seed)
     _set(pr, "78", "filename_prefix", f"{prefix}/outpaint")
     return Built(pr, "qwen_outpaint", {"main": seed}, {"78": "final"}, None, "outpaint", "Edit · Outpaint")
 

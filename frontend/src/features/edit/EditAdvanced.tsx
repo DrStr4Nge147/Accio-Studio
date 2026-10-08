@@ -6,6 +6,7 @@ import { Field, Label, Slider, Toggle, inputCls } from "../../components/ui/cont
 import { useServer } from "../../store/health";
 import { SamplerFields } from "../create/SamplerFields";
 import { SeedInput, randomSeed } from "../create/SeedFields";
+import { GRAIN_MAX, GRAIN_MIN } from "./grain";
 import { isKleinModel, KLEIN_MAX_IMAGES } from "./klein";
 import { PaddingFields } from "./PaddingFields";
 import { EDIT_TIPS as T } from "./tips";
@@ -93,6 +94,18 @@ function ModelField({ def }: { def: string }) {
       {model && isKleinModel(model) && <p className="mt-1.5 text-[12px] text-text-3">Klein does Multi-edit only, with up to {KLEIN_MAX_IMAGES} images. It has no Prompt enhancer, Pixel Drift Fix or head/body swap. Inpaint and Outpaint always use the default model.</p>}
       {model && !isKleinModel(model) && <p className="mt-1.5 text-[12px] text-text-3">The default settings suit the default turbo model. A different model may need other sampler steps and CFG.</p>}
     </Field>
+  );
+}
+
+/** Film grain on the saved result, for every Edit mode. */
+function GrainField() {
+  const grain = useEdit((s) => s.grain);
+  const setGrain = useEdit((s) => s.setGrain);
+  return (
+    <div>
+      <Toggle on={grain.on} onChange={(on) => setGrain({ on })} label="Film grain" sub="Adds grain to the finished image" tip={T.grain} />
+      {grain.on && <Slider label="Grain strength" tip={T.grain} min={GRAIN_MIN} max={GRAIN_MAX} step={0.005} value={grain.strength} format={(v) => v.toFixed(3)} onChange={(strength) => setGrain({ strength })} />}
+    </div>
   );
 }
 
@@ -265,6 +278,7 @@ export function EditAdvanced({ withPadding }: { withPadding?: boolean }) {
       {multiDef && mode === "multiedit" && <MultiFields def={multiDef} klein={klein} />}
       {def && mode === "inpaint" && <InpaintFields def={def.inpaint} />}
       {def && mode === "outpaint" && <OutpaintFields def={def.outpaint} />}
+      <GrainField />
       <LoraList mode="edit" loras={loras} loraLastMode={loraLastMode} onChange={(l) => setLoras(mode, l)} />
       <button type="button" onClick={() => reset(mode)} className="hover-wash flex h-11 w-full items-center justify-center gap-2 rounded-s text-[13px] text-text-2 hover:text-text">
         <RotateCcw size={16} strokeWidth={1.7} /> Reset this mode to workflow defaults

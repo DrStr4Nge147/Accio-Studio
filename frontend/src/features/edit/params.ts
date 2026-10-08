@@ -64,6 +64,7 @@ function common(s: EditSettings, mode: EditMode): Record<string, unknown> {
   }
   if (sampler) p.sampler = sampler;
   if (model) p.unet_name = model;
+  if (s.grain.on) p.film_grain = s.grain.strength;
   if (s.lockSeed[mode] && s.seeds[mode] !== null) p.seed = s.seeds[mode];
   if (s.loras[mode].length) p.loras = s.loras[mode].map((l) => ({ name: l.name, strength: l.strength, on: l.on }));
   return p;
@@ -168,6 +169,7 @@ export function reuseEditSettings(job: Job, def: import("../../api/types").EditD
   if (mode !== "multiedit" && mode !== "inpaint" && mode !== "outpaint") return;
   const st = useEdit.getState();
   st.patch({ mode, model: p.unet_name ?? undefined });
+  st.setGrain(p.film_grain ? { on: true, strength: p.film_grain } : { on: false });
   st.setPrompt(mode, p.prompt ?? "");
   const klein = isKleinModel(p.unet_name ?? undefined);
   st.setSampler(mode, diffSampler(p.sampler, klein && def ? (def.klein.sampler as SamplerDefaults) : def?.[mode].sampler));

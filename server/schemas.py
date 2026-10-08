@@ -16,6 +16,8 @@ Dim = Annotated[int, Field(ge=64, le=8192, multiple_of=8)]
 SizeHint = Annotated[list[Annotated[int, Field(ge=1, le=32768)]], Field(min_length=2, max_length=2)]
 # Qwen Edit only: a diffusion model file name from ComfyUI's list (checked against it in engine.py). None = the template's model.
 UnetName = Annotated[str, StringConstraints(min_length=1, max_length=300)]
+# Edit only: film grain strength added to the result before it is saved. None = no grain.
+FilmGrain = Annotated[float, Field(gt=0, le=0.5)]
 
 
 class Strict(BaseModel):
@@ -97,6 +99,7 @@ class MultiEditParams(Strict):
     size_hint: SizeHint | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
     unet_name: UnetName | None = None
+    film_grain: FilmGrain | None = None
 
 
 class InpaintParams(Strict):
@@ -123,6 +126,7 @@ class InpaintParams(Strict):
     size_hint: SizeHint | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
     unet_name: UnetName | None = None
+    film_grain: FilmGrain | None = None
 
 
 class OutpaintParams(Strict):
@@ -148,6 +152,7 @@ class OutpaintParams(Strict):
     size_hint: SizeHint | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
     unet_name: UnetName | None = None
+    film_grain: FilmGrain | None = None
 
     @model_validator(mode="after")
     def _some_padding(self) -> "OutpaintParams":

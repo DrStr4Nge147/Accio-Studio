@@ -315,3 +315,44 @@ def test_klein_templates_are_not_mutated_by_builds():
     before = load_template("klein_multiedit_gguf_3")
     krun(images=[{"file": "a.png"}] * 3, loras=[{"name": "a.safetensors"}])
     assert load_template("klein_multiedit_gguf_3") == before
+
+
+# --------------------------------------------------------------------------- film grain (every Edit mode)
+
+GRAIN_CASES = [
+    (dict(mode="multiedit", prompt="x", images=[{"file": "a.png"}]), "45"),
+    (dict(mode="multiedit", prompt="x", images=[{"file": "a.png"}], unet_name=KLEIN), "200"),
+    (dict(mode="inpaint", prompt="x", image="a.png"), "64"),
+    (dict(mode="outpaint", image="a.png", pad_left=64), "78"),
+]
+
+
+@pytest.mark.parametrize("kw,save", GRAIN_CASES)
+def test_film_grain_sits_between_the_image_and_its_save_node(kw, save):
+    off = build(mk(**kw), KCAT, seed_source=iter(range(10, 99)).__next__)
+    on = build(mk(**kw, film_grain=0.04, seed=7), KCAT, seed_source=iter(range(10, 99)).__next__)
+    assert "film_grain" not in off.prompt and set(on.prompt) - set(off.prompt) == {"film_grain"}
+    g = on.prompt["film_grain"]
+    assert g["class_type"] == "ImageAddNoise"
+    assert g["inputs"] == {"image": off.prompt[save]["inputs"]["images"], "seed": 7, "strength": 0.04}
+    assert on.prompt[save]["inputs"]["images"] == ["film_grain", 0]
+    assert on.outputs == off.outputs
+
+
+def test_film_grain_uses_the_jobs_seed_so_a_locked_seed_repeats_the_grain():
+    kw = dict(mode="inpaint", prompt="x", image="a.png", film_grain=0.1)
+    a = build(mk(**kw, seed=3), KCAT, seed_source=lambda: 1)
+    b = build(mk(**kw), KCAT, seed_source=lambda: 42)
+    assert a.prompt["film_grain"]["inputs"]["seed"] == 3
+    assert b.prompt["film_grain"]["inputs"]["seed"] == 42 == b.seeds["main"]
+
+
+@pytest.mark.parametrize("bad", [0, -0.1, 0.51])
+def test_film_grain_range_is_validated(bad):
+    with pytest.raises(ValidationError):
+        mk(mode="inpaint", prompt="x", image="a.png", film_grain=bad)
+
+
+def test_create_has_no_film_grain():
+    with pytest.raises(ValidationError):
+        mk(mode="create", variant="standard", prompt="x", film_grain=0.04)

@@ -16,7 +16,7 @@ const noWs = {
 const state = () => useEdit.getState();
 beforeEach(() => {
   for (const m of ["multiedit", "inpaint", "outpaint"] as const) state().reset(m);
-  state().patch({ mode: "multiedit", model: undefined, modelPresets: {}, prompts: { multiedit: "", inpaint: "", outpaint: "" } });
+  state().patch({ mode: "multiedit", model: undefined, modelPresets: {}, grain: { on: false, strength: 0.04 }, prompts: { multiedit: "", inpaint: "", outpaint: "" } });
 });
 
 describe("editBlocker", () => {
@@ -303,5 +303,30 @@ describe("Flux2 Klein model", () => {
     reuseEditSettings({ id: "j", mode: "multiedit", params: { mode: "multiedit", prompt: "p", unet_name: KLEIN, sampler: { steps: 4, cfg: 2 } }, seeds: { main: 1 } } as unknown as Job, def);
     expect(state().model).toBe(KLEIN);
     expect(state().sampler.multiedit).toEqual({ cfg: 2 });
+  });
+});
+
+describe("Film grain", () => {
+  it("is sent by every Edit mode only when on", () => {
+    expect(multiParams(state(), [slot()])).not.toHaveProperty("film_grain");
+    expect(inpaintParams(state(), "m.png", src)).not.toHaveProperty("film_grain");
+    state().setGrain({ on: true, strength: 0.08 });
+    expect(multiParams(state(), [slot()]).film_grain).toBe(0.08);
+    expect(inpaintParams(state(), "m.png", src).film_grain).toBe(0.08);
+    expect(outpaintParams(state(), src, "o.png", { l: 8, t: 0, r: 0, b: 0 }, "p").film_grain).toBe(0.08);
+  });
+
+  it("is sent with a Klein model too", () => {
+    state().patch({ model: "flux-2-klein-9b-Q8_0.gguf" });
+    state().setGrain({ on: true });
+    expect(multiParams(state(), [slot()]).film_grain).toBe(0.04);
+  });
+
+  it("reuse restores it, or turns it off when the job had none", () => {
+    reuseEditSettings({ id: "j", mode: "inpaint", params: { mode: "inpaint", prompt: "p", film_grain: 0.1 }, seeds: { main: 1 } } as never, null);
+    expect(state().grain).toEqual({ on: true, strength: 0.1 });
+    reuseEditSettings({ id: "j", mode: "inpaint", params: { mode: "inpaint", prompt: "p" }, seeds: { main: 1 } } as never, null);
+    expect(state().grain.on).toBe(false);
+    expect(state().grain.strength).toBe(0.1);
   });
 });

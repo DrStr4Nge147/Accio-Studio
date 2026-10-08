@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { SamplerDefaults } from "../../api/types";
 import type { LoraSel } from "../../components/LoraList";
 import type { LoraMode } from "../../lib/loras";
+import { GRAIN_DEFAULT } from "./grain";
 import { isKleinModel } from "./klein";
 
 export type EditMode = "multiedit" | "inpaint" | "outpaint";
@@ -51,8 +52,15 @@ export interface OutpaintState {
   loraStrength?: number;
 }
 
+export interface GrainState {
+  on: boolean;
+  strength: number;
+}
+
 export interface EditSettings {
   mode: EditMode;
+  /** film grain added to the saved result, same for every Edit mode */
+  grain: GrainState;
   /** diffusion model for every Edit mode; undefined = the workflow's own */
   model?: string;
   /** sampler settings saved per model name, restored when that model is chosen again */
@@ -75,6 +83,7 @@ interface EditActions {
   setModel: (model: string | undefined) => void;
   /** remember the current sampler settings (all modes) for the chosen model */
   saveModelPreset: () => void;
+  setGrain: (p: Partial<GrainState>) => void;
   setMulti: (p: Partial<MultiState>) => void;
   /** Manual size on turns Pixel Drift Fix off (the user can turn it back on); off restores what was switched off */
   setManualSize: (on: boolean) => void;
@@ -106,6 +115,7 @@ export const initialOutpaint = (): OutpaintState => ({ fillMode: "color", fillCo
 
 const initial = (): EditSettings => ({
   mode: "multiedit",
+  grain: { on: false, strength: GRAIN_DEFAULT },
   modelPresets: {},
   prompts: { multiedit: "", inpaint: "", outpaint: "" },
   enhancer: { multiedit: true, inpaint: true },
@@ -133,6 +143,7 @@ export const useEdit = create<EditSettings & EditActions>()(
         }),
       saveModelPreset: () =>
         set((s) => (s.model ? { modelPresets: { ...s.modelPresets, [s.model]: structuredClone(s.sampler) } } : {})),
+      setGrain: (p) => set((s) => ({ grain: { ...s.grain, ...p } })),
       setMulti: (p) => set((s) => ({ multi: { ...s.multi, ...p } })),
       setManualSize: (on) =>
         set((s) => {
@@ -167,6 +178,7 @@ export const useEdit = create<EditSettings & EditActions>()(
       version: 1,
       partialize: (s) => ({
         mode: s.mode,
+        grain: s.grain,
         model: s.model,
         modelPresets: s.modelPresets,
         prompts: s.prompts,
