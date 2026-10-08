@@ -16,7 +16,7 @@ const noWs = {
 const state = () => useEdit.getState();
 beforeEach(() => {
   for (const m of ["multiedit", "inpaint", "outpaint"] as const) state().reset(m);
-  state().patch({ mode: "multiedit", prompts: { multiedit: "", inpaint: "", outpaint: "" } });
+  state().patch({ mode: "multiedit", model: undefined, prompts: { multiedit: "", inpaint: "", outpaint: "" } });
 });
 
 describe("editBlocker", () => {
@@ -209,5 +209,22 @@ describe("Manual size and Pixel Drift Fix", () => {
     state().setManualSize(true);
     reuseEditSettings({ id: "j", mode: "multiedit", params: { mode: "multiedit", prompt: "p", pixel_drift_fix: true }, seeds: { main: 1 } } as never, null);
     expect(state().multi).toMatchObject({ pixelDrift: true, driftAuto: false });
+  });
+});
+
+describe("Edit model choice", () => {
+  it("sends unet_name only when a model is chosen, in every mode", () => {
+    expect(multiParams(state(), [slot()])).not.toHaveProperty("unet_name");
+    state().patch({ model: "Qwen-Other.safetensors" });
+    expect(multiParams(state(), [slot()]).unet_name).toBe("Qwen-Other.safetensors");
+    expect(inpaintParams(state(), "m.png", src).unet_name).toBe("Qwen-Other.safetensors");
+    expect(outpaintParams(state(), src, "o.png", { l: 8, t: 0, r: 0, b: 0 }, "p").unet_name).toBe("Qwen-Other.safetensors");
+  });
+
+  it("reuse restores the job's model, or the default when it had none", () => {
+    reuseEditSettings({ id: "j", mode: "inpaint", params: { mode: "inpaint", prompt: "p", unet_name: "Qwen-Other.safetensors" }, seeds: { main: 1 } } as never, null);
+    expect(state().model).toBe("Qwen-Other.safetensors");
+    reuseEditSettings({ id: "j", mode: "inpaint", params: { mode: "inpaint", prompt: "p" }, seeds: { main: 1 } } as never, null);
+    expect(state().model).toBeUndefined();
   });
 });

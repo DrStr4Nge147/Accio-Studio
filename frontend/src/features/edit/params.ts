@@ -52,6 +52,7 @@ function common(s: EditSettings, mode: EditMode): Record<string, unknown> {
   const p: Record<string, unknown> = {};
   const sampler = samplerOpt(s, mode);
   if (sampler) p.sampler = sampler;
+  if (s.model) p.unet_name = s.model;
   if (s.lockSeed[mode] && s.seeds[mode] !== null) p.seed = s.seeds[mode];
   if (s.loras[mode].length) p.loras = s.loras[mode].map((l) => ({ name: l.name, strength: l.strength, on: l.on }));
   return p;
@@ -154,7 +155,7 @@ export function reuseEditSettings(job: Job, def: import("../../api/types").EditD
   const mode = p.mode as EditMode;
   if (mode !== "multiedit" && mode !== "inpaint" && mode !== "outpaint") return;
   const st = useEdit.getState();
-  st.patch({ mode });
+  st.patch({ mode, model: p.unet_name ?? undefined });
   st.setPrompt(mode, p.prompt ?? "");
   st.setSampler(mode, diffSampler(p.sampler, def?.[mode].sampler));
   st.setLoras(

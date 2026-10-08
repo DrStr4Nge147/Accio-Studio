@@ -33,6 +33,7 @@ OUTPAINT_DEFAULT_PROMPT = (
 UPLOAD_SUBFOLDER = "accio"  # inpaint / outpaint uploads
 MEDIA_SUBFOLDER = "minimax_h3"  # multi-edit uploads (spec 5.2)
 LORA_ADD_MARKER = "➕ Add Lora"
+UNET_CLASS = "UNETLoader"
 REF_MEGAPIXEL_NODES = ["298:302", "298:306", "298:310", "298:314", "298:318", "298:322", "298:326", "298:330"]
 VARIANCE_RESERVED = {"conditioning", "seed", "presets_buttons"}
 
@@ -46,6 +47,7 @@ class Catalog:
     """Live option lists from ComfyUI. None = not available (offline tests): membership checks are skipped."""
 
     loras: set[str] | None = None
+    unets: set[str] | None = None  # diffusion models, only fetched when a job asks for one
     samplers: set[str] | None = None
     schedulers: set[str] | None = None
     variance_spec: dict[str, Any] | None = None  # RBG_Smart_Seed_Variance input name -> object_info spec
@@ -144,6 +146,17 @@ def _apply_sampler(prompt: dict, node: str, opts: SamplerOpts | None, cat: Catal
             _set(prompt, node, key, val)
 
 
+def _apply_unet(prompt: dict, name: str | None, cat: Catalog) -> None:
+    """Point the template's diffusion-model loader at another installed model (Qwen Edit modes only)."""
+    if name is None:
+        return
+    _choice(name, cat.unets, "model")
+    loaders = [n for n in prompt.values() if n["class_type"] == UNET_CLASS]
+    if len(loaders) != 1:
+        raise BuildError("template drift: expected exactly one diffusion model loader")
+    loaders[0]["inputs"]["unet_name"] = name
+
+
 def _inject_loras(prompt: dict, node: str, entries: list[LoraEntry], cat: Catalog) -> None:
     """Add `lora_N` entries to an rgthree Power Lora Loader, just before its add-lora marker."""
     if not entries:
@@ -238,6 +251,10 @@ def create_defaults() -> dict[str, Any]:
     }
 
 
+def _unet_of(prompt: dict[str, Any]) -> str:
+    return next(n["inputs"]["unet_name"] for n in prompt.values() if n["class_type"] == UNET_CLASS)
+
+
 def edit_defaults() -> dict[str, Any]:
     """Workflow default values of the Edit patch points (single source of truth for the UI)."""
     me = load_template("qwen_multiedit__resize1")
@@ -251,6 +268,7 @@ def edit_defaults() -> dict[str, Any]:
     crop_keys = ("context_factor", "blend_pixels", "output_multiple", "mask_grow", "mask_blur", "context_pixels", "target_megapixels")
     pad = op["71"]["inputs"]
     return {
+        "unet_name": _unet_of(me),
         "multiedit": {
             "sampler": sampler(me, "36"),
             "base_megapixels": me["16"]["inputs"]["megapixels"],
@@ -379,6 +397,7 @@ def _build_multiedit(p: MultiEditParams, cat: Catalog, seeds_src: Callable[[], i
     _lora_slot(pr, "24", "lora_1", on=p.head_swap)
     _lora_slot(pr, "24", "lora_2", on=p.body_swap)
     _inject_loras(pr, "24", p.loras, cat)
+    _apply_unet(pr, p.unet_name, cat)
     _set(pr, "45", "filename_prefix", f"{prefix}/edit")
     warnings = []
     if p.manual_size and p.pixel_drift_fix:
@@ -404,6 +423,7 @@ def _build_inpaint(p: InpaintParams, cat: Catalog, seeds_src: Callable[[], int],
     _lora_slot(pr, "213", "lora_1", on=p.remover)
     _lora_slot(pr, "213", "lora_2", on=p.mover)
     _inject_loras(pr, "213", p.loras, cat)
+    _apply_unet(pr, p.unet_name, cat)
     _set(pr, "64", "filename_prefix", f"{prefix}/inpaint")
     return Built(pr, "qwen_inpaint", {"main": seed}, {"64": "final"}, "215", "inpaint", "Edit · Inpaint")
 
@@ -427,6 +447,7 @@ def _build_outpaint(p: OutpaintParams, cat: Catalog, seeds_src: Callable[[], int
     _set(pr, "259:258", "seam", p.seam)
     _lora_slot(pr, "252", "lora_1", on=p.outpaint_lora_on, strength=p.outpaint_lora_strength)
     _inject_loras(pr, "252", p.loras, cat)
+    _apply_unet(pr, p.unet_name, cat)
     _set(pr, "78", "filename_prefix", f"{prefix}/outpaint")
     return Built(pr, "qwen_outpaint", {"main": seed}, {"78": "final"}, None, "outpaint", "Edit · Outpaint")
 

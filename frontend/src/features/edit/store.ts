@@ -52,6 +52,8 @@ export interface OutpaintState {
 
 export interface EditSettings {
   mode: EditMode;
+  /** diffusion model for every Edit mode; undefined = the workflow's own */
+  model?: string;
   prompts: Record<EditMode, string>;
   enhancer: { multiedit: boolean; inpaint: boolean };
   multi: MultiState;
@@ -148,6 +150,7 @@ export const useEdit = create<EditSettings & EditActions>()(
       version: 1,
       partialize: (s) => ({
         mode: s.mode,
+        model: s.model,
         prompts: s.prompts,
         enhancer: s.enhancer,
         multi: s.multi,

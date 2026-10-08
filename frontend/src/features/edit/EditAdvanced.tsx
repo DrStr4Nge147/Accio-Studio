@@ -39,6 +39,30 @@ function SeedField({ mode }: { mode: EditMode }) {
   );
 }
 
+/** Which Qwen diffusion model the Edit modes run. The default is the workflow's own (a 6-step turbo build). */
+function ModelField({ def }: { def: string }) {
+  const models = useServer((s) => s.catalog?.edit_models) ?? [];
+  const model = useEdit((s) => s.model);
+  const patch = useEdit((s) => s.patch);
+  if (!models.length && !model) return null;
+  const missing = model && !models.includes(model);
+  const list = models.filter((m) => m !== def);
+  return (
+    <Field label="Model" tip={T.model}>
+      <select value={model ?? ""} onChange={(e) => patch({ model: e.target.value || undefined })} className={inputCls}>
+        <option value="">Default · {def}</option>
+        {missing && <option value={model}>{model} (not installed)</option>}
+        {list.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
+      {model && <p className="mt-1.5 text-[12px] text-text-3">The default settings suit the default turbo model. A different model may need other sampler steps and CFG.</p>}
+    </Field>
+  );
+}
+
 function MultiFields({ def }: { def: EditDefaults["multiedit"] }) {
   const m = useEdit((s) => s.multi);
   const set = useEdit((s) => s.setMulti);
@@ -201,6 +225,7 @@ export function EditAdvanced({ withPadding }: { withPadding?: boolean }) {
         </div>
       )}
       <SeedField mode={mode} />
+      {def && <ModelField def={def.unet_name} />}
       <SamplerFields title="Sampler" def={def?.[mode].sampler} value={sampler} onChange={(v) => setSampler(mode, v)} />
       {def && mode === "multiedit" && <MultiFields def={def.multiedit} />}
       {def && mode === "inpaint" && <InpaintFields def={def.inpaint} />}

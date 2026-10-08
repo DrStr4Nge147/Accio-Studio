@@ -180,7 +180,7 @@ async def cached(request: Request, key: str, ttl: float, fetch):
     return value
 
 
-async def make_catalog(request: Request, need_loras: bool = True) -> engine.Catalog:
+async def make_catalog(request: Request, need_loras: bool = True, need_unets: bool = False) -> engine.Catalog:
     comfy: ComfyClient = request.app.state.comfy
 
     async def ksampler():
@@ -192,8 +192,9 @@ async def make_catalog(request: Request, need_loras: bool = True) -> engine.Cata
     ks = await cached(request, "ksampler", 300, ksampler)
     var = await cached(request, "variance", 300, variance)
     loras = set(await comfy.models("loras")) if need_loras else None  # fresh each time (spec 6.6)
+    unets = set(await comfy.models("diffusion_models")) if need_unets else None
     return engine.Catalog(
-        loras=loras, samplers=set(ks["sampler_name"][0]), schedulers=set(ks["scheduler"][0]), variance_spec=var
+        loras=loras, unets=unets, samplers=set(ks["sampler_name"][0]), schedulers=set(ks["scheduler"][0]), variance_spec=var
     )
 
 
@@ -250,9 +251,10 @@ async def _object_info_keys(comfy: ComfyClient) -> set[str]:
 
 @app.get("/api/catalog")
 async def catalog(request: Request):
-    cat = await make_catalog(request)
+    cat = await make_catalog(request, need_unets=True)
     return {
         "loras": sorted(cat.loras or []),
+        "edit_models": sorted(n for n in cat.unets or [] if "qwen" in n.lower()),
         "samplers": sorted(cat.samplers or []),
         "schedulers": sorted(cat.schedulers or []),
         "variance": cat.variance_spec,
@@ -263,14 +265,22 @@ async def catalog(request: Request):
 @app.post("/api/build")
 async def dry_run(req: JobRequest, request: Request):
     """Build the prompt without queueing it (inspection / structural comparison)."""
-    cat = await make_catalog(request, need_loras=bool(getattr(req.params, "loras", None)))
+    cat = await make_catalog(
+        request,
+        need_loras=bool(getattr(req.params, "loras", None)),
+        need_unets=bool(getattr(req.params, "unet_name", None)),
+    )
     built = engine.build(req.params, cat, output_prefix=request.app.state.settings["output_prefix"])
     return {"template": built.template, "seeds": built.seeds, "warnings": built.warnings, "prompt": built.prompt}
 
 
 @app.post("/api/jobs", status_code=201)
 async def create_job(req: JobRequest, request: Request):
-    cat = await make_catalog(request, need_loras=bool(getattr(req.params, "loras", None)))
+    cat = await make_catalog(
+        request,
+        need_loras=bool(getattr(req.params, "loras", None)),
+        need_unets=bool(getattr(req.params, "unet_name", None)),
+    )
     built = engine.build(req.params, cat, output_prefix=request.app.state.settings["output_prefix"])
     return await request.app.state.jobs.submit(built, req.params.model_dump(mode="json"))
 

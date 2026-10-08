@@ -56,6 +56,8 @@ export interface SamplerDefaults {
 export type InputSpec = [string | string[], Record<string, any>?];
 
 export interface EditDefaults {
+  /** diffusion model the Edit workflows ship with */
+  unet_name: string;
   multiedit: {
     sampler: SamplerDefaults;
     base_megapixels: number;
@@ -84,6 +86,8 @@ export interface EditDefaults {
 
 export interface Catalog {
   loras: string[];
+  /** installed Qwen diffusion models the Edit modes can switch to */
+  edit_models: string[];
   samplers: string[];
   schedulers: string[];
   variance: Record<string, InputSpec>;

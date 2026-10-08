@@ -11,6 +11,7 @@ from schemas import JobRequest
 
 CAT = Catalog(
     loras={"a.safetensors", "krea2/b.safetensors", "qwen/c.safetensors"},
+    unets={"Qwen-Image-Other.safetensors"},
     samplers={"euler", "er_sde"},
     schedulers={"simple", "karras"},
     variance_spec={"fine_tune_variance": ["INT", {"min": 0, "max": 100}], "fade_curve": [["Instant", "Linear"], {}]},
@@ -188,3 +189,28 @@ def test_inpaint_source_is_display_only():
     assert "orig.png" not in json.dumps(b.prompt)
     with pytest.raises(ValidationError):
         mk(mode="inpaint", prompt="x", image="m.png", source="../orig.png")
+
+
+def _unet(b):
+    return [n["inputs"]["unet_name"] for n in b.prompt.values() if n["class_type"] == "UNETLoader"]
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        dict(mode="multiedit", prompt="x", images=[{"file": "a.png"}]),
+        dict(mode="inpaint", prompt="x", image="a.png"),
+        dict(mode="outpaint", image="a.png", pad_left=64),
+    ],
+)
+def test_qwen_model_override(kw):
+    default = _unet(run(**kw))
+    assert len(default) == 1 and default != ["Qwen-Image-Other.safetensors"]
+    assert _unet(run(**kw, unet_name="Qwen-Image-Other.safetensors")) == ["Qwen-Image-Other.safetensors"]
+    with pytest.raises(BuildError):
+        run(**kw, unet_name="not_installed.safetensors")
+
+
+def test_create_has_no_model_override():
+    with pytest.raises(ValidationError):
+        mk(mode="create", variant="standard", prompt="x", unet_name="Qwen-Image-Other.safetensors")

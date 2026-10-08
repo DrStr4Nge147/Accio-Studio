@@ -14,6 +14,8 @@ Filename = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]
 Dim = Annotated[int, Field(ge=64, le=8192, multiple_of=8)]
 # Display-only: pixel size the UI should reserve for the result (Edit jobs have no width/height inputs). Never reaches a node.
 SizeHint = Annotated[list[Annotated[int, Field(ge=1, le=32768)]], Field(min_length=2, max_length=2)]
+# Qwen Edit only: a diffusion model file name from ComfyUI's list (checked against it in engine.py). None = the template's model.
+UnetName = Annotated[str, StringConstraints(min_length=1, max_length=300)]
 
 
 class Strict(BaseModel):
@@ -94,6 +96,7 @@ class MultiEditParams(Strict):
     sampler: SamplerOpts | None = None
     size_hint: SizeHint | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
+    unet_name: UnetName | None = None
 
 
 class InpaintParams(Strict):
@@ -119,6 +122,7 @@ class InpaintParams(Strict):
     source: Filename | None = None
     size_hint: SizeHint | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
+    unet_name: UnetName | None = None
 
 
 class OutpaintParams(Strict):
@@ -143,6 +147,7 @@ class OutpaintParams(Strict):
     sampler: SamplerOpts | None = None
     size_hint: SizeHint | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
+    unet_name: UnetName | None = None
 
     @model_validator(mode="after")
     def _some_padding(self) -> "OutpaintParams":

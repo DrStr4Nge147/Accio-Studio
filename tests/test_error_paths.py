@@ -35,7 +35,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(main, "DATA_DIR", tmp_path)
     monkeypatch.setattr(main, "THUMBS_DIR", tmp_path / "thumbs")
 
-    async def no_catalog(request, need_loras=True):  # list checks are not what these tests are about
+    async def no_catalog(request, need_loras=True, need_unets=False):  # list checks are not what these tests are about
         return engine.Catalog()
 
     monkeypatch.setattr(main, "make_catalog", no_catalog)
