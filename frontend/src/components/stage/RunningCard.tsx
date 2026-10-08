@@ -46,26 +46,21 @@ function Ripples() {
 }
 
 /**
- * Outpaint while it runs: the original on its padded canvas, with a light sweep over the new (gray) area only, so you see
- * what is being filled in. Strips instead of one mask so each pad gets its own sweep and nothing sweeps over the photo.
+ * Outpaint while it runs: the original on its padded canvas, with ONE light sweep across the whole canvas that is cut out
+ * wherever the photo sits, so the glow reads as a single band passing over the new area and nothing sweeps over the photo.
  */
 function PaddedPreview({ job, before, w, h }: { job: Job; before: string; w: number; h: number }) {
   const p = job.params;
-  const [l, t, r, b] = [p.pad_left ?? 0, p.pad_top ?? 0, p.pad_right ?? 0, p.pad_bottom ?? 0];
-  const pct = (v: number, of: number) => `${(v / of) * 100}%`;
-  const mid = { top: pct(t, h), height: pct(h - t - b, h) };
-  const strips: Record<string, string | number>[] = [
-    { left: 0, top: 0, width: "100%", height: pct(t, h) },
-    { left: 0, bottom: 0, width: "100%", height: pct(b, h) },
-    { left: 0, width: pct(l, w), ...mid },
-    { right: 0, width: pct(r, w), ...mid },
-  ];
+  const x1 = ((p.pad_left ?? 0) / w) * 100;
+  const x2 = 100 - ((p.pad_right ?? 0) / w) * 100;
+  const y1 = ((p.pad_top ?? 0) / h) * 100;
+  const y2 = 100 - ((p.pad_bottom ?? 0) / h) * 100;
+  // Even-odd: the outer frame minus the photo's rectangle.
+  const clipPath = `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1}% ${y1}%, ${x1}% ${y2}%, ${x2}% ${y2}%, ${x2}% ${y1}%, ${x1}% ${y1}%)`;
   return (
     <>
       <img src={before} alt="" draggable={false} className="absolute inset-0 h-full w-full object-contain" />
-      {strips.map((st, i) => (
-        <div key={i} className="shimmer shimmer-pad absolute overflow-hidden" style={st} aria-hidden />
-      ))}
+      <div className="shimmer shimmer-pad absolute inset-0 overflow-hidden" style={{ clipPath }} aria-hidden />
     </>
   );
 }
