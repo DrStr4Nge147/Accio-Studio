@@ -69,7 +69,7 @@
       "size": 13492686496,
       "required": true,
       "used_by": "Create",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/krea2_turbo_int8_convrot.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/krea2_turbo_int8_convrot.safetensors?download=true"
     },
     {
       "file": "qwen3vl_4b_fp8_scaled.safetensors",
@@ -77,7 +77,7 @@
       "size": 5242467968,
       "required": true,
       "used_by": "Create",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/qwen3vl_4b_fp8_scaled.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/qwen3vl_4b_fp8_scaled.safetensors?download=true"
     },
     {
       "file": "qwen_image_vae.safetensors",
@@ -85,7 +85,7 @@
       "size": 253806246,
       "required": true,
       "used_by": "Create",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/qwen_image_vae.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/qwen_image_vae.safetensors?download=true"
     },
     {
       "file": "krea2_turbo_lora_rank_64_bf16.safetensors",
@@ -93,7 +93,7 @@
       "size": 469423778,
       "required": true,
       "used_by": "Create (Detailed)",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/krea2_turbo_lora_rank_64_bf16.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/krea2_turbo_lora_rank_64_bf16.safetensors?download=true"
     },
     {
       "file": "Qwen-Image-2.1-viggle-turbo-v0.3-6step-int8_convrot.safetensors",
@@ -101,7 +101,7 @@
       "size": 7256783064,
       "required": true,
       "used_by": "Edit",
-      "url": "https://huggingface.co/Viggle/Qwen-Image-2.1-viggle-turbo/resolve/main/Qwen-Image-2.1-viggle-turbo-v0.3-6step-int8_convrot.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/Qwen-Image-2.1-viggle-turbo-v0.3-6step-int8_convrot.safetensors?download=true"
     },
     {
       "file": "qwen3vl_8b_int8_convrot.safetensors",
@@ -109,7 +109,7 @@
       "size": 9350798360,
       "required": true,
       "used_by": "Edit, Prompt Enhancer",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/qwen3vl_8b_int8_convrot.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/qwen3vl_8b_int8_convrot.safetensors?download=true"
     },
     {
       "file": "texture_fix_vae_for_qwen_image_2.1_bf16.safetensors",
@@ -117,7 +117,7 @@
       "size": 675509688,
       "required": true,
       "used_by": "Edit",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/texture_fix_vae_for_qwen_image_2.1_bf16.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/texture_fix_vae_for_qwen_image_2.1_bf16.safetensors?download=true"
     },
     {
       "file": "qwen-image-2.1-outpaint-v2.safetensors",
@@ -125,7 +125,7 @@
       "size": 159436576,
       "required": true,
       "used_by": "Outpaint",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/qwen-image-2.1-outpaint-v2.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/qwen-image-2.1-outpaint-v2.safetensors?download=true"
     },
     {
       "file": "bfs_head_v1.1_qwen_2.1.safetensors",
@@ -133,7 +133,7 @@
       "size": 260096144,
       "required": false,
       "used_by": "Head Swap preset",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/bfs_head_v1.1_qwen_2.1.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/bfs_head_v1.1_qwen_2.1.safetensors?download=true"
     },
     {
       "file": "bfs_body_swap_v1.0_qwen_2.1.safetensors",
@@ -141,7 +141,7 @@
       "size": 209753576,
       "required": false,
       "used_by": "Body Swap preset",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/bfs_body_swap_v1.0_qwen_2.1.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/bfs_body_swap_v1.0_qwen_2.1.safetensors?download=true"
     },
     {
       "file": "Qwen-Image-2.1-Object-Remover-Bbox-turbo-4000.safetensors",
@@ -149,7 +149,7 @@
       "size": 83943952,
       "required": false,
       "used_by": "Remove Object preset",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/Qwen-Image-2.1-Object-Remover-Bbox-turbo-4000.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/Qwen-Image-2.1-Object-Remover-Bbox-turbo-4000.safetensors?download=true"
     },
     {
       "file": "Qwen-Image-2.1-Object-Mover-Bbox-turbo-4000.safetensors",
@@ -157,7 +157,7 @@
       "size": 83944008,
       "required": false,
       "used_by": "Move Object preset",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/Qwen-Image-2.1-Object-Mover-Bbox-turbo-4000.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/Qwen-Image-2.1-Object-Mover-Bbox-turbo-4000.safetensors?download=true"
     },
     {
       "file": "flux-2-klein-9b-Q8_0.gguf",
@@ -166,7 +166,7 @@
       "required": false,
       "group": "klein",
       "used_by": "Edit (Klein 9B)",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/flux-2-klein-9b-Q8_0.gguf?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/flux-2-klein-9b-Q8_0.gguf?download=true"
     },
     {
       "file": "Qwen3-8B-abliterated-q8_0.gguf",
@@ -175,7 +175,7 @@
       "required": false,
       "group": "klein",
       "used_by": "Edit (Klein 9B)",
-      "url": "https://huggingface.co/NicRaf/z-fusion/resolve/main/text_encoders/Qwen3-8B-abliterated-q8_0.gguf?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/Qwen3-8B-abliterated-q8_0.gguf?download=true"
     },
     {
       "file": "flux2-vae.safetensors",
@@ -184,7 +184,7 @@
       "required": false,
       "group": "klein",
       "used_by": "Edit (Klein 9B)",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/flux2-vae.safetensors?download=true"
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/flux2-vae.safetensors?download=true"
     }
   ],
   "notes": "Pins match the reference ComfyUI install (2026-10-07): git packs by `git rev-parse HEAD`; registry packs by matching the installed files byte-for-byte to the commit (LF-normalised) in the upstream repo."
