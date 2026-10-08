@@ -19,6 +19,9 @@ from history import History
 log = logging.getLogger("accio.jobs")
 
 PREVIEW_MIN_INTERVAL = 0.1  # <= 10 preview frames/s towards the UI
+# ComfyUI announces "execution_success" before it writes the job into its history, so the entry can lag a moment.
+HISTORY_TRIES = 30
+HISTORY_DELAY = 0.5
 
 
 def friendly_execution_error(data: dict[str, Any]) -> str:
@@ -38,6 +41,7 @@ class JobManager:
         self.clients: set[WebSocket] = set()
         self.live: dict[str, dict[str, Any]] = {}  # job id -> transient state (node, step, queue position)
         self._built: dict[str, Built] = {}  # job id -> build info (outputs map) for active jobs
+        self._completing: set[str] = set()  # jobs whose history is being fetched (success and "executing: null" both ask)
         self._task: asyncio.Task | None = None
         self._last_preview = 0.0
 
@@ -189,12 +193,32 @@ class JobManager:
         n = built.prompt.get(node) if built else None
         return n["class_type"] if n else None
 
+    async def _fetch_history(self, prompt_id: str) -> dict[str, Any] | None:
+        for attempt in range(HISTORY_TRIES):
+            try:
+                hist = (await self.comfy.history(prompt_id)).get(prompt_id)
+            except ComfyError:
+                hist = None
+            if hist:
+                return hist
+            if attempt < HISTORY_TRIES - 1:
+                await asyncio.sleep(HISTORY_DELAY)
+        return None
+
     async def _complete(self, jid: str) -> None:
-        job = self.history.get(jid)
+        if jid in self._completing:
+            return
+        self._completing.add(jid)
         try:
-            hist = (await self.comfy.history(job["prompt_id"])).get(job["prompt_id"])
-        except ComfyError:
-            hist = None
+            await self._complete_now(jid)
+        finally:
+            self._completing.discard(jid)
+
+    async def _complete_now(self, jid: str) -> None:
+        job = self.history.get(jid)
+        if job["status"] not in ("queued", "running"):
+            return  # already settled by the other completion signal
+        hist = await self._fetch_history(job["prompt_id"])
         if not hist:
             self._finish(jid, "error", error="The job finished but its result couldn't be read from the backend.")
         elif hist.get("status", {}).get("status_str") == "error":

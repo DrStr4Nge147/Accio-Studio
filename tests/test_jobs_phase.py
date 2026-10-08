@@ -41,3 +41,67 @@ def test_unknown_node_or_recovered_job_has_no_class():
     m = manager({})
     asyncio.run(m._on_event({"type": "executing", "data": {"prompt_id": "p1", "node": "99"}}))
     assert m.live["j1"]["class"] is None
+
+
+def test_complete_waits_for_a_history_entry_that_lags_behind_execution_success(monkeypatch):
+    """ComfyUI sends execution_success before it writes the history entry: the job must still end up done."""
+    import jobs
+
+    monkeypatch.setattr(jobs, "HISTORY_DELAY", 0)
+    calls = {"n": 0}
+
+    class Comfy:
+        async def history(self, pid):
+            calls["n"] += 1
+            if calls["n"] < 3:
+                return {}
+            return {pid: {"status": {"status_str": "success"}, "outputs": {"200": {"images": [{"filename": "a.png", "subfolder": "s", "type": "output"}]}}}}
+
+    class Hist(FakeHistory):
+        def get(self, jid):
+            return self.job
+
+        def finish(self, jid, status, **fields):
+            self.job.update(status=status, **fields)
+
+    m = JobManager(comfy=Comfy(), history=Hist())  # type: ignore[arg-type]
+    m._built["j1"] = Built({}, "t", {}, {"200": "final"}, None, "multiedit")
+
+    async def no_broadcast(_jid):
+        pass
+
+    m._broadcast_job = no_broadcast  # type: ignore[method-assign]
+
+    async def both_signals():  # execution_success and "executing: null" arrive back to back
+        await asyncio.gather(m._complete("j1"), m._complete("j1"))
+
+    asyncio.run(both_signals())
+    assert m.history.job["status"] == "done" and calls["n"] == 3
+    assert m.history.job["outputs"] == [{"node": "200", "role": "final", "filename": "a.png", "subfolder": "s", "type": "output"}]
+
+
+def test_complete_gives_up_with_a_friendly_error_when_history_never_appears(monkeypatch):
+    import jobs
+
+    monkeypatch.setattr(jobs, "HISTORY_DELAY", 0)
+    monkeypatch.setattr(jobs, "HISTORY_TRIES", 3)
+
+    class Comfy:
+        async def history(self, pid):
+            return {}
+
+    class Hist(FakeHistory):
+        def get(self, jid):
+            return self.job
+
+        def finish(self, jid, status, **fields):
+            self.job.update(status=status, **fields)
+
+    m = JobManager(comfy=Comfy(), history=Hist())  # type: ignore[arg-type]
+
+    async def no_broadcast(_jid):
+        pass
+
+    m._broadcast_job = no_broadcast  # type: ignore[method-assign]
+    asyncio.run(m._complete("j1"))
+    assert m.history.job["status"] == "error" and "couldn't be read" in m.history.job["error"]
