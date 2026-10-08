@@ -143,7 +143,7 @@
   },
   "268:247": {
     "inputs": {
-      "unet_name": "Qwen-Image-2.1-viggle-turbo-v0.2.1-6step-int8_convrot.safetensors",
+      "unet_name": "Qwen-Image-2.1-viggle-turbo-v0.3-6step-int8_convrot.safetensors",
       "weight_dtype": "default"
     },
     "class_type": "UNETLoader",

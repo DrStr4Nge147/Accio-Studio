@@ -57,7 +57,7 @@ Krea prompt builders (`TEXT/IMAGE/COMBO PROMPT BUILDER`), Krea image-to-image, K
 | `qwen3vl_4b_fp8_scaled.safetensors` | text_encoders | Create |
 | `qwen_image_vae.safetensors` | vae | Create |
 | `krea2_turbo_lora_rank_64_bf16.safetensors` | loras | Detailed (both passes, 0.2) |
-| `Qwen-Image-2.1-viggle-turbo-v0.2.1-6step-int8_convrot.safetensors` | diffusion_models | Edit |
+| `Qwen-Image-2.1-viggle-turbo-v0.3-6step-int8_convrot.safetensors` | diffusion_models | Edit |
 | `qwen3vl_8b_int8_convrot.safetensors` | text_encoders | Edit + Prompt Enhancer |
 | `texture_fix_vae_for_qwen_image_2.1_bf16.safetensors` | vae | Edit |
 | `qwen-image-2.1-outpaint-v2.safetensors` | loras | Outpaint |

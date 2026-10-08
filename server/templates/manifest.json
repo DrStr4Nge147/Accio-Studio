@@ -91,12 +91,12 @@
       "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/krea2_turbo_lora_rank_64_bf16.safetensors?download=true"
     },
     {
-      "file": "Qwen-Image-2.1-viggle-turbo-v0.2.1-6step-int8_convrot.safetensors",
+      "file": "Qwen-Image-2.1-viggle-turbo-v0.3-6step-int8_convrot.safetensors",
       "folder": "diffusion_models",
       "size": 7256783064,
       "required": true,
       "used_by": "Edit",
-      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/Qwen-Image-2.1-viggle-turbo-v0.2.1-6step-int8_convrot.safetensors?download=true"
+      "url": "https://huggingface.co/Viggle/Qwen-Image-2.1-viggle-turbo/resolve/main/Qwen-Image-2.1-viggle-turbo-v0.3-6step-int8_convrot.safetensors?download=true"
     },
     {
       "file": "qwen3vl_8b_int8_convrot.safetensors",
