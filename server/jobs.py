@@ -41,6 +41,7 @@ class JobManager:
         self.clients: set[WebSocket] = set()
         self.live: dict[str, dict[str, Any]] = {}  # job id -> transient state (node, step, queue position)
         self._built: dict[str, Built] = {}  # job id -> build info (outputs map) for active jobs
+        self._executed: dict[str, dict[str, list[dict[str, Any]]]] = {}  # job id -> node id -> images ComfyUI announced as it saved them
         self._completing: set[str] = set()  # jobs whose history is being fetched (success and "executing: null" both ask)
         self._task: asyncio.Task | None = None
         self._last_preview = 0.0
@@ -176,6 +177,11 @@ class JobManager:
             live.pop("max", None)
         elif kind == "progress":
             live.update(node=data.get("node", live.get("node")), step=data.get("value"), max=data.get("max"))
+        elif kind == "executed":
+            imgs = (data.get("output") or {}).get("images")
+            if imgs:
+                self._executed.setdefault(jid, {})[str(data.get("node"))] = imgs
+            return
         elif kind == "execution_success":
             await self._complete(jid)
             return
@@ -219,7 +225,13 @@ class JobManager:
         if job["status"] not in ("queued", "running"):
             return  # already settled by the other completion signal
         hist = await self._fetch_history(job["prompt_id"])
-        if not hist:
+        saved = self._saved_outputs(jid)
+        if not hist and saved:
+            # No history entry, but ComfyUI told us about the saved images while it ran: that is the result.
+            log.warning("job %s: history entry missing after %s tries; using the images announced while it ran", jid, HISTORY_TRIES)
+            self._finish(jid, "done", outputs=saved, prompt_used=None)
+        elif not hist:
+            log.warning("job %s: finished but no history entry and no announced images (prompt %s)", jid, job["prompt_id"])
             self._finish(jid, "error", error="The job finished but its result couldn't be read from the backend.")
         elif hist.get("status", {}).get("status_str") == "error":
             self._finish(jid, "error", error="The backend hit an error while running this job.")
@@ -237,10 +249,20 @@ class JobManager:
             self._finish(jid, "done", outputs=files, prompt_used=used)
         await self._broadcast_job(jid)
 
+    def _saved_outputs(self, jid: str) -> list[dict[str, Any]]:
+        built, got = self._built.get(jid), self._executed.get(jid, {})
+        files = []
+        for node, role in (built.outputs.items() if built else []):
+            for img in got.get(node, []):
+                if all(k in img for k in ("filename", "subfolder", "type")):
+                    files.append({"node": node, "role": role, **{k: img[k] for k in ("filename", "subfolder", "type")}})
+        return files
+
     def _finish(self, jid: str, status: str, **fields: Any) -> None:
         self.history.finish(jid, status, **fields)
         self.live.pop(jid, None)
         self._built.pop(jid, None)
+        self._executed.pop(jid, None)
 
     # ------------------------------------------------------------------ queue position / recovery
 
