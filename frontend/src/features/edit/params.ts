@@ -18,7 +18,6 @@ export function editBlocker(
 ): string | null {
   const mode = s.mode;
   const klein = isKleinModel(s.model);
-  if (klein && mode !== "multiedit") return "Klein models only do Multi-edit. Set the model back to the default for Inpaint and Outpaint.";
   if (mode === "multiedit") {
     const { slots } = ws;
     if (klein && slots.length > KLEIN_MAX_IMAGES) return `Klein takes up to ${KLEIN_MAX_IMAGES} images. Remove ${slots.length - KLEIN_MAX_IMAGES}.`;
@@ -52,15 +51,19 @@ export function editBlocker(
 
 const samplerOpt = (s: EditSettings, mode: EditMode) => nonEmpty(s.sampler[mode]);
 
+/** The model a mode runs: Klein is Multi-edit only, so Inpaint and Outpaint use the default even while Klein is chosen. */
+export const modelFor = (s: EditSettings, mode: EditMode): string | undefined => (isKleinModel(s.model) && mode !== "multiedit" ? undefined : s.model);
+
 function common(s: EditSettings, mode: EditMode): Record<string, unknown> {
   const p: Record<string, unknown> = {};
+  const model = modelFor(s, mode);
   let sampler = samplerOpt(s, mode);
-  if (sampler && isKleinModel(s.model)) {
+  if (sampler && isKleinModel(model)) {
     const { steps, cfg, sampler_name } = sampler; // Klein has no scheduler or denoise
     sampler = nonEmpty(Object.fromEntries(Object.entries({ steps, cfg, sampler_name }).filter(([, v]) => v !== undefined)));
   }
   if (sampler) p.sampler = sampler;
-  if (s.model) p.unet_name = s.model;
+  if (model) p.unet_name = model;
   if (s.lockSeed[mode] && s.seeds[mode] !== null) p.seed = s.seeds[mode];
   if (s.loras[mode].length) p.loras = s.loras[mode].map((l) => ({ name: l.name, strength: l.strength, on: l.on }));
   return p;

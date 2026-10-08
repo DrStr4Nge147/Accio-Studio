@@ -70,9 +70,12 @@ function SavePreset() {
 
 /** Which diffusion model the Edit modes run: a Qwen model (the default is the workflow's own 6-step turbo build) or Flux2 Klein (Multi-edit only). */
 function ModelField({ def }: { def: string }) {
-  const models = useServer((s) => s.catalog?.edit_models) ?? [];
-  const model = useEdit((s) => s.model);
+  const mode = useEdit((s) => s.mode);
+  const chosen = useEdit((s) => s.model);
   const setModel = useEdit((s) => s.setModel);
+  const multi = mode === "multiedit";
+  const models = (useServer((s) => s.catalog?.edit_models) ?? []).filter((m) => multi || !isKleinModel(m));
+  const model = multi || !isKleinModel(chosen) ? chosen : undefined; // a chosen Klein model is kept for Multi-edit
   if (!models.length && !model) return null;
   const missing = model && !models.includes(model);
   const list = models.filter((m) => m !== def);
@@ -87,7 +90,7 @@ function ModelField({ def }: { def: string }) {
           </option>
         ))}
       </select>
-      {model && isKleinModel(model) && <p className="mt-1.5 text-[12px] text-text-3">Klein does Multi-edit only, with up to {KLEIN_MAX_IMAGES} images. It has no Prompt enhancer, Pixel Drift Fix or head/body swap. Set the model back to the default for Inpaint and Outpaint.</p>}
+      {model && isKleinModel(model) && <p className="mt-1.5 text-[12px] text-text-3">Klein does Multi-edit only, with up to {KLEIN_MAX_IMAGES} images. It has no Prompt enhancer, Pixel Drift Fix or head/body swap. Inpaint and Outpaint always use the default model.</p>}
       {model && !isKleinModel(model) && <p className="mt-1.5 text-[12px] text-text-3">The default settings suit the default turbo model. A different model may need other sampler steps and CFG.</p>}
     </Field>
   );

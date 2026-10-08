@@ -256,15 +256,20 @@ describe("Flux2 Klein model", () => {
   const KLEIN = "flux-2-klein-9b-Q8_0.gguf";
   const slots = (n: number) => Array.from({ length: n }, (_, i) => slot({ id: String(i) }));
 
-  it("only Multi-edit works, with up to 3 images", () => {
+  it("takes up to 3 images", () => {
     state().patch({ model: KLEIN });
     state().setPrompt("multiedit", "x");
     expect(editBlocker(state(), { ...noWs, slots: slots(3) })).toBeNull();
     expect(editBlocker(state(), { ...noWs, slots: slots(4) })).toMatch(/up to 3 images/);
-    state().patch({ mode: "inpaint" });
-    expect(editBlocker(state(), noWs)).toMatch(/only do Multi-edit/);
-    state().patch({ mode: "outpaint" });
-    expect(editBlocker(state(), noWs)).toMatch(/only do Multi-edit/);
+  });
+
+  it("Inpaint and Outpaint ignore a chosen Klein model, Multi-edit keeps it", () => {
+    state().patch({ model: KLEIN });
+    expect(multiParams(state(), [slot()]).unet_name).toBe(KLEIN);
+    expect(inpaintParams(state(), "m.png", src)).not.toHaveProperty("unet_name");
+    expect(outpaintParams(state(), src, "o.png", { l: 8, t: 0, r: 0, b: 0 }, "p")).not.toHaveProperty("unet_name");
+    state().patch({ model: "Qwen-Other.safetensors" });
+    expect(inpaintParams(state(), "m.png", src).unet_name).toBe("Qwen-Other.safetensors");
   });
 
   it("a leftover head/body preset does not block or reach the server", () => {
