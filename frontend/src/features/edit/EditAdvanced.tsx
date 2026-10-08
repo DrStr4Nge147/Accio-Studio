@@ -6,6 +6,7 @@ import { Field, Label, Slider, Toggle, inputCls } from "../../components/ui/cont
 import { useServer } from "../../store/health";
 import { SamplerFields } from "../create/SamplerFields";
 import { SeedInput, randomSeed } from "../create/SeedFields";
+import { isKleinModel, KLEIN_MAX_IMAGES } from "./klein";
 import { PaddingFields } from "./PaddingFields";
 import { EDIT_TIPS as T } from "./tips";
 import { useEdit, type CropKey, type EditMode, type FillMode, type Seam } from "./store";
@@ -67,7 +68,7 @@ function SavePreset() {
   );
 }
 
-/** Which Qwen diffusion model the Edit modes run. The default is the workflow's own (a 6-step turbo build). */
+/** Which diffusion model the Edit modes run: a Qwen model (the default is the workflow's own 6-step turbo build) or Flux2 Klein (Multi-edit only). */
 function ModelField({ def }: { def: string }) {
   const models = useServer((s) => s.catalog?.edit_models) ?? [];
   const model = useEdit((s) => s.model);
@@ -86,12 +87,13 @@ function ModelField({ def }: { def: string }) {
           </option>
         ))}
       </select>
-      {model && <p className="mt-1.5 text-[12px] text-text-3">The default settings suit the default turbo model. A different model may need other sampler steps and CFG.</p>}
+      {model && isKleinModel(model) && <p className="mt-1.5 text-[12px] text-text-3">Klein does Multi-edit only, with up to {KLEIN_MAX_IMAGES} images. It has no Prompt enhancer, Pixel Drift Fix or head/body swap. Set the model back to the default for Inpaint and Outpaint.</p>}
+      {model && !isKleinModel(model) && <p className="mt-1.5 text-[12px] text-text-3">The default settings suit the default turbo model. A different model may need other sampler steps and CFG.</p>}
     </Field>
   );
 }
 
-function MultiFields({ def }: { def: EditDefaults["multiedit"] }) {
+function MultiFields({ def, klein }: { def: EditDefaults["multiedit"]; klein: boolean }) {
   const m = useEdit((s) => s.multi);
   const set = useEdit((s) => s.setMulti);
   const setManual = useEdit((s) => s.setManualSize);
@@ -110,7 +112,7 @@ function MultiFields({ def }: { def: EditDefaults["multiedit"] }) {
                 <input type="number" inputMode="numeric" step={8} min={64} max={8192} value={m.manualH} onChange={(e) => set({ manualH: Number(e.target.value) })} className={`${inputCls} font-mono`} />
               </Field>
             </div>
-            {m.pixelDrift ? (
+            {klein ? null : m.pixelDrift ? (
               <p className="mt-1.5 text-[12px] text-text-3">Pixel Drift Fix is on: it realigns the result to image 1 and returns it at image 1's size, which undoes this manual size. Turn it off to keep the size.</p>
             ) : (
               <p className="mt-1.5 text-[12px] text-text-3">{m.driftAuto ? "Pixel Drift Fix was turned off because it would resize the result back to image 1's size. You can turn it back on." : "Pixel Drift Fix is off."}</p>
@@ -118,8 +120,8 @@ function MultiFields({ def }: { def: EditDefaults["multiedit"] }) {
           </>
         )}
       </div>
-      {!m.keepOriginal && <Tuned label="Image 1 size" tip={T.baseMp} value={m.baseMp} def={def.base_megapixels} min={0.25} max={4} step={0.05} format={(v) => `${v.toFixed(2)} MP`} onChange={(baseMp) => set({ baseMp })} />}
-      {Array.from({ length: Math.max(0, Math.min(count, 9) - 1) }, (_, i) => (
+      {(klein || !m.keepOriginal) && <Tuned label="Image 1 size" tip={T.baseMp} value={m.baseMp} def={def.base_megapixels} min={0.25} max={4} step={0.05} format={(v) => `${v.toFixed(2)} MP`} onChange={(baseMp) => set({ baseMp })} />}
+      {Array.from({ length: Math.max(0, Math.min(count, klein ? KLEIN_MAX_IMAGES : 9) - 1) }, (_, i) => (
         <Tuned
           key={i}
           label={`Image ${i + 2} size`}
@@ -230,6 +232,8 @@ export function EditAdvanced({ withPadding }: { withPadding?: boolean }) {
   const multi = useEdit((s) => s.multi);
   const setMulti = useEdit((s) => s.setMulti);
   const setPixelDrift = useEdit((s) => s.setPixelDrift);
+  const klein = isKleinModel(useEdit((s) => s.model));
+  const multiDef = def && klein ? { ...def.multiedit, base_megapixels: def.klein.base_megapixels, ref_megapixels: def.klein.ref_megapixels } : def?.multiedit;
 
   return (
     <div className="space-y-4 pb-2">
@@ -241,7 +245,7 @@ export function EditAdvanced({ withPadding }: { withPadding?: boolean }) {
           </div>
         </div>
       )}
-      {withPadding && mode !== "outpaint" && (
+      {withPadding && mode !== "outpaint" && !(klein && mode === "multiedit") && (
         <div>
           <Toggle on={enhancer} onChange={(on) => patch({ enhancer: { ...enhancerAll, [mode]: on } })} label="Prompt enhancer" sub={T.enhancer} />
           {mode === "multiedit" && (
@@ -254,8 +258,8 @@ export function EditAdvanced({ withPadding }: { withPadding?: boolean }) {
       )}
       <SeedField mode={mode} />
       {def && <ModelField def={def.unet_name} />}
-      <SamplerFields title="Sampler" def={def?.[mode].sampler} value={sampler} onChange={(v) => setSampler(mode, v)} action={<SavePreset />} />
-      {def && mode === "multiedit" && <MultiFields def={def.multiedit} />}
+      <SamplerFields title="Sampler" def={klein && mode === "multiedit" ? def?.klein.sampler : def?.[mode].sampler} value={sampler} onChange={(v) => setSampler(mode, v)} action={<SavePreset />} />
+      {multiDef && mode === "multiedit" && <MultiFields def={multiDef} klein={klein} />}
       {def && mode === "inpaint" && <InpaintFields def={def.inpaint} />}
       {def && mode === "outpaint" && <OutpaintFields def={def.outpaint} />}
       <LoraList mode="edit" loras={loras} loraLastMode={loraLastMode} onChange={(l) => setLoras(mode, l)} />

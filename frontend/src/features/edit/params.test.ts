@@ -251,3 +251,52 @@ describe("per-model sampler preset", () => {
     expect(state().sampler.inpaint).toEqual({ steps: 9 });
   });
 });
+
+describe("Flux2 Klein model", () => {
+  const KLEIN = "flux-2-klein-9b-Q8_0.gguf";
+  const slots = (n: number) => Array.from({ length: n }, (_, i) => slot({ id: String(i) }));
+
+  it("only Multi-edit works, with up to 3 images", () => {
+    state().patch({ model: KLEIN });
+    state().setPrompt("multiedit", "x");
+    expect(editBlocker(state(), { ...noWs, slots: slots(3) })).toBeNull();
+    expect(editBlocker(state(), { ...noWs, slots: slots(4) })).toMatch(/up to 3 images/);
+    state().patch({ mode: "inpaint" });
+    expect(editBlocker(state(), noWs)).toMatch(/only do Multi-edit/);
+    state().patch({ mode: "outpaint" });
+    expect(editBlocker(state(), noWs)).toMatch(/only do Multi-edit/);
+  });
+
+  it("a leftover head/body preset does not block or reach the server", () => {
+    state().patch({ model: KLEIN });
+    state().setPrompt("multiedit", "x");
+    state().setMulti({ preset: "head", keepOriginal: true });
+    expect(editBlocker(state(), { ...noWs, slots: [slot()] })).toBeNull();
+    expect(multiParams(state(), [slot()])).toMatchObject({ head_swap: false, body_swap: false, keep_original_resolution: false });
+  });
+
+  it("sends only steps, CFG and sampler name", () => {
+    state().patch({ model: KLEIN });
+    state().setSampler("multiedit", { steps: 6, cfg: 1.5, sampler_name: "euler", scheduler: "karras", denoise: 0.5 });
+    expect(multiParams(state(), [slot()]).sampler).toEqual({ steps: 6, cfg: 1.5, sampler_name: "euler" });
+  });
+
+  it("switching between Qwen and Klein drops the sampler overrides made for the other family", () => {
+    state().setSampler("multiedit", { steps: 12 });
+    state().setModel(KLEIN);
+    expect(state().sampler.multiedit).toEqual({});
+    state().setSampler("multiedit", { steps: 8 });
+    state().setModel("Qwen-Other.safetensors");
+    expect(state().sampler.multiedit).toEqual({});
+    state().setSampler("multiedit", { steps: 9 });
+    state().setModel(undefined);
+    expect(state().sampler.multiedit).toEqual({ steps: 9 });
+  });
+
+  it("reuse compares the sampler against the Klein defaults", () => {
+    const def = { klein: { sampler: { steps: 4, cfg: 1, sampler_name: "euler" } }, multiedit: { sampler: { steps: 6, cfg: 1, sampler_name: "euler", scheduler: "simple", denoise: 1 } } } as unknown as EditDefaults;
+    reuseEditSettings({ id: "j", mode: "multiedit", params: { mode: "multiedit", prompt: "p", unet_name: KLEIN, sampler: { steps: 4, cfg: 2 } }, seeds: { main: 1 } } as unknown as Job, def);
+    expect(state().model).toBe(KLEIN);
+    expect(state().sampler.multiedit).toEqual({ cfg: 2 });
+  });
+});

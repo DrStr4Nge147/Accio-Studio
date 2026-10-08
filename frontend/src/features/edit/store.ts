@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { SamplerDefaults } from "../../api/types";
 import type { LoraSel } from "../../components/LoraList";
 import type { LoraMode } from "../../lib/loras";
+import { isKleinModel } from "./klein";
 
 export type EditMode = "multiedit" | "inpaint" | "outpaint";
 export type Seam = "classic" | "blend in";
@@ -126,7 +127,9 @@ export const useEdit = create<EditSettings & EditActions>()(
       setModel: (model) =>
         set((s) => {
           const preset = model ? s.modelPresets[model] : undefined;
-          return preset ? { model, sampler: structuredClone(preset) } : { model };
+          if (preset) return { model, sampler: structuredClone(preset) };
+          // Klein and Qwen have different sampler defaults: overrides made against one make no sense on the other.
+          return isKleinModel(model) !== isKleinModel(s.model) ? { model, sampler: perMode(() => ({})) } : { model };
         }),
       saveModelPreset: () =>
         set((s) => (s.model ? { modelPresets: { ...s.modelPresets, [s.model]: structuredClone(s.sampler) } } : {})),

@@ -55,6 +55,11 @@
       "repo": "RamonGuthrie/ComfyUI-RBG-SmartSeedVariance",
       "commit": "00fe680709fc7a0b943994dc91c99bbd20e64d7b",
       "registry_version": "2.2.1"
+    },
+    {
+      "name": "ComfyUI-GGUF",
+      "repo": "city96/ComfyUI-GGUF",
+      "commit": "6ea2651e7df66d7585f6ffee804b20e92fb38b8a"
     }
   ],
   "models": [
@@ -153,6 +158,33 @@
       "required": false,
       "used_by": "Move Object preset",
       "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/Qwen-Image-2.1-Object-Mover-Bbox-turbo-4000.safetensors?download=true"
+    },
+    {
+      "file": "flux-2-klein-9b-Q8_0.gguf",
+      "folder": "diffusion_models",
+      "size": 9978304800,
+      "required": false,
+      "group": "klein",
+      "used_by": "Edit (Klein 9B)",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/flux-2-klein-9b-Q8_0.gguf?download=true"
+    },
+    {
+      "file": "Qwen3-8B-abliterated-q8_0.gguf",
+      "folder": "text_encoders",
+      "size": 8709518304,
+      "required": false,
+      "group": "klein",
+      "used_by": "Edit (Klein 9B)",
+      "url": "https://huggingface.co/NicRaf/z-fusion/resolve/main/text_encoders/Qwen3-8B-abliterated-q8_0.gguf?download=true"
+    },
+    {
+      "file": "flux2-vae.safetensors",
+      "folder": "vae",
+      "size": 336213556,
+      "required": false,
+      "group": "klein",
+      "used_by": "Edit (Klein 9B)",
+      "url": "https://huggingface.co/Aitrepreneur/FLX/resolve/main/flux2-vae.safetensors?download=true"
     }
   ],
   "notes": "Pins match the reference ComfyUI install (2026-10-07): git packs by `git rev-parse HEAD`; registry packs by matching the installed files byte-for-byte to the commit (LF-normalised) in the upstream repo."

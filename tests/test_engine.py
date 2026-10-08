@@ -214,3 +214,104 @@ def test_qwen_model_override(kw):
 def test_create_has_no_model_override():
     with pytest.raises(ValidationError):
         mk(mode="create", variant="standard", prompt="x", unet_name="Qwen-Image-Other.safetensors")
+
+
+# --------------------------------------------------------------------------- Flux2 Klein (Multi-edit)
+
+KLEIN = "flux-2-klein-9b-Q8_0.gguf"
+KCAT = Catalog(
+    loras={"a.safetensors", "krea2/b.safetensors", "qwen/c.safetensors"},
+    unets={KLEIN, "Qwen-Image-Other.safetensors"},
+    samplers={"euler", "er_sde"},
+    schedulers={"simple"},
+)
+
+
+def krun(**kw):
+    kw.setdefault("mode", "multiedit")
+    kw.setdefault("prompt", "make it night")
+    kw.setdefault("unet_name", KLEIN)
+    return build(mk(**kw), KCAT, seed_source=iter(range(10, 99)).__next__)
+
+
+@pytest.mark.parametrize("n", [1, 2, 3])
+def test_klein_picks_the_template_by_image_count_and_patches_values(n):
+    b = krun(images=[{"file": f"i{k}.png"} for k in range(n)], seed=5)
+    assert b.template == f"klein_multiedit_gguf_{n}" and b.mode == "multiedit"
+    assert b.prompt["107"]["inputs"]["unet_name"] == KLEIN
+    assert b.prompt["111"]["inputs"]["text"] == "make it night"
+    assert b.prompt["106"]["inputs"]["noise_seed"] == 5 and b.seeds == {"main": 5}
+    loads = [v["inputs"]["image"] for v in b.prompt.values() if v["class_type"] == "LoadImage"]
+    assert loads == [f"minimax_h3/i{k}.png [input]" for k in range(n)]
+    assert b.outputs == {"200": "final"} and b.prompt["200"]["inputs"]["filename_prefix"] == "AccioStudio/edit"
+    assert not [v for v in b.prompt.values() if v["class_type"] == "PreviewImage"]
+
+
+def test_klein_rejects_too_many_images_and_loras():
+    with pytest.raises(BuildError):
+        krun(images=[{"file": "a.png"}] * 4)
+    with pytest.raises(BuildError):
+        krun(images=[{"file": "a.png"}], loras=[{"name": "a.safetensors"}] * 7)
+
+
+def test_klein_model_must_be_installed():
+    with pytest.raises(BuildError):
+        krun(images=[{"file": "a.png"}], unet_name="flux-2-klein-9b-Q4_K_S.gguf")
+
+
+def test_klein_loras_fill_the_chain_and_unused_loaders_are_dropped():
+    b = krun(images=[{"file": "a.png"}], loras=[{"name": "a.safetensors", "strength": 0.5}, {"name": "qwen/c.safetensors", "on": False}, {"name": "krea2/b.safetensors"}])
+    assert b.prompt["120"]["inputs"] == {"lora_name": "a.safetensors", "strength_model": 0.5, "model": ["107", 0]}
+    assert b.prompt["121"]["inputs"]["lora_name"] == "krea2/b.safetensors" and b.prompt["121"]["inputs"]["model"] == ["120", 0]
+    assert not {"122", "123", "124", "125"} & set(b.prompt)
+    assert b.prompt["117"]["inputs"]["model"] == ["121", 0]
+    none = krun(images=[{"file": "a.png"}])
+    assert not {"120", "121", "122", "123", "124", "125"} & set(none.prompt)
+    assert none.prompt["117"]["inputs"]["model"] == ["107", 0]
+    with pytest.raises(BuildError):
+        krun(images=[{"file": "a.png"}], loras=[{"name": "nope.safetensors"}])
+
+
+def test_klein_sampler_manual_size_and_megapixels():
+    b = krun(
+        images=[{"file": "a.png"}, {"file": "b.png"}],
+        sampler={"steps": 8, "cfg": 1.5, "sampler_name": "er_sde"},
+        manual_size=True, manual_width=832, manual_height=1216, manual_batch=2,
+        base_megapixels=2, ref_megapixels=[0.5],
+    )
+    assert b.prompt["118"]["inputs"]["steps"] == 8 and b.prompt["117"]["inputs"]["cfg"] == 1.5
+    assert b.prompt["103"]["inputs"]["sampler_name"] == "er_sde"
+    for node in ("112", "118"):
+        assert (b.prompt[node]["inputs"]["width"], b.prompt[node]["inputs"]["height"]) == (832, 1216)
+    assert b.prompt["112"]["inputs"]["batch_size"] == 2
+    assert b.prompt["109"]["inputs"]["megapixels"] == 2 and b.prompt["115"]["inputs"]["megapixels"] == 0.5
+    with pytest.raises(BuildError):
+        krun(images=[{"file": "a.png"}], sampler={"sampler_name": "nope"})
+
+
+def test_klein_warns_about_qwen_only_options():
+    b = krun(images=[{"file": "a.png"}], keep_original_resolution=True, head_swap=True)
+    assert len(b.warnings) == 1 and "Keep original resolution" in b.warnings[0] and "Head swap" in b.warnings[0]
+    assert krun(images=[{"file": "a.png"}]).warnings == []
+
+
+def test_klein_only_multiedit():
+    for kw in (dict(mode="inpaint", image="a.png"), dict(mode="outpaint", image="a.png", pad_left=64)):
+        with pytest.raises(BuildError):
+            krun(**kw)
+
+
+def test_klein_defaults_come_from_the_template():
+    from engine import edit_defaults
+
+    k = edit_defaults()["klein"]
+    assert k["unet_name"] == KLEIN and k["sampler"] == {"steps": 4, "cfg": 1, "sampler_name": "euler"}
+    assert k["max_images"] == 3 and k["max_loras"] == 6 and k["base_megapixels"] == 1 and len(k["ref_megapixels"]) == 2
+
+
+def test_klein_templates_are_not_mutated_by_builds():
+    from engine import load_template
+
+    before = load_template("klein_multiedit_gguf_3")
+    krun(images=[{"file": "a.png"}] * 3, loras=[{"name": "a.safetensors"}])
+    assert load_template("klein_multiedit_gguf_3") == before

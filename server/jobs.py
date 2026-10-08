@@ -270,6 +270,8 @@ def _built_stub(job: dict[str, Any]) -> Built:
         outs, used = {"183": "final", "160": "first_pass"}, None
     elif t.startswith("qwen_multiedit"):
         outs, used = {"45": "final"}, "280"
+    elif t.startswith("klein_multiedit"):
+        outs, used = {"200": "final"}, None
     elif t == "qwen_inpaint":
         outs, used = {"64": "final"}, "215"
     else:

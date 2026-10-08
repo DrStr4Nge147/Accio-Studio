@@ -254,7 +254,7 @@ async def catalog(request: Request):
     cat = await make_catalog(request, need_unets=True)
     return {
         "loras": sorted(cat.loras or []),
-        "edit_models": sorted(n for n in cat.unets or [] if "qwen" in n.lower()),
+        "edit_models": sorted(n for n in cat.unets or [] if "qwen" in n.lower() or engine.is_klein(n)),
         "samplers": sorted(cat.samplers or []),
         "schedulers": sorted(cat.schedulers or []),
         "variance": cat.variance_spec,

@@ -4,6 +4,7 @@ import { useUi } from "../../store/ui";
 import { selectEditMode, togglePreset } from "./actions";
 import { OptionsChip } from "../create/CreateControls";
 import { EditAdvanced } from "./EditAdvanced";
+import { isKleinModel } from "./klein";
 import { PaddingFields } from "./PaddingFields";
 import { INPAINT_PRESETS, MULTI_PRESETS, PRESETS, type PresetId } from "./presets";
 import { EDIT_MODES, useEdit, type EditMode, type FillMode } from "./store";
@@ -24,7 +25,7 @@ export function EditModeSwitch({ stretch }: { stretch?: boolean }) {
   return stretch ? <div className="[&>div]:flex [&>div]:w-full [&_button]:flex-1 [&_button]:px-2">{seg}</div> : seg;
 }
 
-const presetsFor = (mode: EditMode): PresetId[] => (mode === "multiedit" ? MULTI_PRESETS : mode === "inpaint" ? INPAINT_PRESETS : []);
+const presetsFor = (mode: EditMode, klein = false): PresetId[] => (mode === "multiedit" ? (klein ? [] : MULTI_PRESETS) : mode === "inpaint" ? INPAINT_PRESETS : []);
 const activePreset = (mode: EditMode, multi: PresetId | null, inpaint: PresetId | null) => (mode === "multiedit" ? multi : mode === "inpaint" ? inpaint : null);
 
 /** Mobile main controls: one scrolling row of chips with Options pinned at the end; everything else is in the Advanced sheet. */
@@ -32,9 +33,10 @@ export function EditChips() {
   const s = useEdit();
   const mode = s.mode;
   const active = activePreset(mode, s.multi.preset, s.inpaint.preset);
+  const klein = isKleinModel(s.model);
   return (
     <ChipRow end={<OptionsChip />}>
-      {presetsFor(mode).map((id) => (
+      {presetsFor(mode, klein).map((id) => (
         <Chip key={id} on={active === id} onClick={() => togglePreset(id)} tip={PRESETS[id].tip}>
           {PRESETS[id].label}
         </Chip>
@@ -62,13 +64,14 @@ export function EditToggles() {
   const mode = s.mode;
   const open = useUi((u) => u.advancedInline);
   const active = activePreset(mode, s.multi.preset, s.inpaint.preset);
+  const klein = isKleinModel(s.model);
   return (
     <div className="space-y-3">
-      {presetsFor(mode).length > 0 && (
+      {presetsFor(mode, klein).length > 0 && (
         <div>
           <Label>Presets</Label>
           <div className="mt-1 flex flex-wrap gap-1.5">
-            {presetsFor(mode).map((id) => (
+            {presetsFor(mode, klein).map((id) => (
               <Chip key={id} on={active === id} onClick={() => togglePreset(id)} tip={PRESETS[id].tip}>
                 {PRESETS[id].label}
               </Chip>
@@ -76,6 +79,7 @@ export function EditToggles() {
           </div>
         </div>
       )}
+      {!(klein && mode === "multiedit") && (
       <div>
         {mode !== "outpaint" && <Toggle on={s.enhancer[mode]} onChange={(v) => s.patch({ enhancer: { ...s.enhancer, [mode]: v } })} label="Prompt enhancer" tip={T.enhancer} />}
         {mode === "multiedit" && (
@@ -85,6 +89,7 @@ export function EditToggles() {
           </>
         )}
       </div>
+      )}
       {mode === "outpaint" && (
         <div>
           <Label>Padding (pixels)</Label>

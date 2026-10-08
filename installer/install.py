@@ -7,6 +7,7 @@ install is the optional models folder (extra_model_paths.yaml, read-only use).
 Options:
   --models-from PATH      reuse models from an existing ComfyUI (its folder or its models folder)
   --optional-loras yes|no|ask   preset LoRAs (Head/Body swap, Remove/Move object); default ask (no when non-interactive)
+  --klein yes|no|ask            Flux2 Klein 9B GGUF models for Edit (~19 GB, separate from the LoRAs); default ask (no when non-interactive)
   --yes                   never prompt; GPU warnings are accepted, other questions take their defaults
   --skip-models           install ComfyUI + nodes only
   --portable-node         force the portable Node download even if npm exists (testing)
@@ -267,12 +268,12 @@ def locate_existing(models_from: Path | None, m: dict) -> Path | None:
     return None
 
 
-def install_models(manifest: dict, models_from: Path | None, optional: bool, interactive: bool) -> list[str]:
+def install_models(manifest: dict, models_from: Path | None, optional: bool, interactive: bool, groups: frozenset[str] = frozenset()) -> list[str]:
     dest_root = COMFY / "models"
     todo, rows = [], []
     for m in manifest["models"]:
-        if not m["required"] and not optional:
-            continue
+        if not m["required"] and (m["group"] not in groups if "group" in m else not optional):
+            continue  # optional models: a "group" is its own opt-in, the rest follow --optional-loras
         dest = dest_root / m["folder"] / m["file"]
         ext = locate_existing(models_from, m)
         if ext:
@@ -375,6 +376,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--models-from")
     ap.add_argument("--optional-loras", choices=["yes", "no", "ask"], default="ask")
+    ap.add_argument("--klein", choices=["yes", "no", "ask"], default="ask")
     ap.add_argument("--yes", action="store_true")
     ap.add_argument("--skip-models", action="store_true")
     ap.add_argument("--portable-node", action="store_true")
@@ -432,10 +434,16 @@ def main() -> int:
         optional = args.optional_loras == "yes" or (
             args.optional_loras == "ask" and interactive and ask("  Also install the 4 optional preset LoRAs (Head/Body swap, Remove/Move object, ~0.6 GB)? [y/N]: ", "n").lower() == "y"
         )
+        groups = frozenset(
+            {"klein"} if args.klein == "yes" or (
+                args.klein == "ask" and interactive and ask("  Also install Flux2 Klein 9B for Edit (GGUF, ~19 GB, needs the ComfyUI-GGUF pack)? [y/N]: ", "n").lower() == "y"
+            ) else ()
+        )
+
         def models_step():
             if models_from:
                 write_extra_model_paths(models_from)
-            failed = install_models(manifest, models_from, optional, interactive)
+            failed = install_models(manifest, models_from, optional, interactive, groups)
             if failed:
                 raise RuntimeError("these models failed to download or verify: " + ", ".join(failed))
         run_step("Models", models_step)

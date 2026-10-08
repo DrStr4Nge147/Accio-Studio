@@ -124,8 +124,8 @@ def _build(req: dict) -> Built:
     return build(params, Catalog(), seed_source=seed_source, output_prefix=PREFIX)
 
 
-def test_there_are_exactly_20_templates():
-    assert len(template_files()) == 20
+def test_there_are_exactly_23_templates():
+    assert len(template_files()) == 23
 
 
 @pytest.mark.parametrize("name,base,full,expected", CASES)

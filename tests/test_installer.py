@@ -102,12 +102,12 @@ def test_manifest_pins_and_models():
     m = core.load_manifest()
     assert m["comfyui"]["version"] == "0.38.0" and m["comfyui"]["tag"] == "v0.38.0"
     names = {n["name"] for n in m["nodes"]}
-    assert len(names) == 8
+    assert len(names) == 9
     for n in m["nodes"]:
         assert re.fullmatch(r"[0-9a-f]{40}", n["commit"]), n["name"]
     assert {n["name"] for n in m["nodes"] if "registry_version" in n} == {"ComfyUI-Krea2T-Enhancer", "ComfyUI-RBG-SmartSeedVariance"}
     required = [x for x in m["models"] if x["required"]]
-    assert len(required) == 8 and len(m["models"]) == 12
+    assert len(required) == 8 and len(m["models"]) == 15
     assert 36e9 < sum(x["size"] for x in required) < 38e9  # "~37 GB required"
     assert all(x["url"].startswith("https://huggingface.co/") for x in m["models"])
 
@@ -155,3 +155,12 @@ def test_no_hard_coded_user_paths_in_shipped_files():
         text = p.read_text("utf-8", errors="ignore")
         hits += [f"{p.relative_to(ROOT)}: {n}" for n in needles if n in text]
     assert not hits, hits
+
+
+def test_verify_gguf_checks_magic_and_manifest_size(tmp_path):
+    f = tmp_path / "m.gguf"
+    f.write_bytes(b"GGUF" + b"\0" * 60)
+    assert core.verify_safetensors(f, 64) == (True, "ok")
+    assert core.verify_safetensors(f, 65)[0] is False
+    f.write_bytes(b"NOPE" + b"\0" * 60)
+    assert core.verify_safetensors(f, 64)[0] is False

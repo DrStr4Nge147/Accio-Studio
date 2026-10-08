@@ -55,9 +55,20 @@ export interface SamplerDefaults {
 /** Spec of one ComfyUI input as returned by /object_info: [kind-or-options, opts?]. */
 export type InputSpec = [string | string[], Record<string, any>?];
 
+/** Sampler settings with optional scheduler / denoise (Flux2 Klein has neither). */
+export type SamplerFieldsDef = Pick<SamplerDefaults, "steps" | "cfg" | "sampler_name"> & Partial<Pick<SamplerDefaults, "scheduler" | "denoise">>;
+
 export interface EditDefaults {
   /** diffusion model the Edit workflows ship with */
   unet_name: string;
+  klein: {
+    unet_name: string;
+    sampler: SamplerFieldsDef;
+    base_megapixels: number;
+    ref_megapixels: number[];
+    max_images: number;
+    max_loras: number;
+  };
   multiedit: {
     sampler: SamplerDefaults;
     base_megapixels: number;
@@ -86,7 +97,7 @@ export interface EditDefaults {
 
 export interface Catalog {
   loras: string[];
-  /** installed Qwen diffusion models the Edit modes can switch to */
+  /** installed Qwen and Flux2 Klein (GGUF) diffusion models the Edit modes can switch to */
   edit_models: string[];
   samplers: string[];
   schedulers: string[];

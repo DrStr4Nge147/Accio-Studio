@@ -1,4 +1,5 @@
 import type { Job, SamplerDefaults } from "../../api/types";
+import { isKleinModel, KLEIN_MAX_IMAGES } from "./klein";
 import { BOX_RULE } from "./presets";
 import { useEdit, type CropKey, type EditMode, type EditSettings } from "./store";
 import type { Op } from "./maskOps";
@@ -16,12 +17,15 @@ export function editBlocker(
   ws: { slots: Slot[]; inpaint: { src: Source | null; ops: Op[] }; outpaint: { src: Source | null; pads: Pads; upload: { status: string } } },
 ): string | null {
   const mode = s.mode;
+  const klein = isKleinModel(s.model);
+  if (klein && mode !== "multiedit") return "Klein models only do Multi-edit. Set the model back to the default for Inpaint and Outpaint.";
   if (mode === "multiedit") {
     const { slots } = ws;
+    if (klein && slots.length > KLEIN_MAX_IMAGES) return `Klein takes up to ${KLEIN_MAX_IMAGES} images. Remove ${slots.length - KLEIN_MAX_IMAGES}.`;
     if (!slots.length) return "Add at least one image.";
     if (slots.some((x) => x.status === "error")) return "One image failed to upload. Remove it or add it again.";
     if (slots.some((x) => x.status === "uploading")) return "Uploading images…";
-    if (s.multi.preset && slots.length < 2) return "Head and body swap need a second image: the head or body to use.";
+    if (!klein && s.multi.preset && slots.length < 2) return "Head and body swap need a second image: the head or body to use.";
     if (s.multi.manualSize && (!isMultiple8(s.multi.manualW) || !isMultiple8(s.multi.manualH))) return "Output width and height must be multiples of 8, from 64 to 8192.";
     if (!s.prompts.multiedit.trim()) return "Describe the edit first.";
     return null;
@@ -50,7 +54,11 @@ const samplerOpt = (s: EditSettings, mode: EditMode) => nonEmpty(s.sampler[mode]
 
 function common(s: EditSettings, mode: EditMode): Record<string, unknown> {
   const p: Record<string, unknown> = {};
-  const sampler = samplerOpt(s, mode);
+  let sampler = samplerOpt(s, mode);
+  if (sampler && isKleinModel(s.model)) {
+    const { steps, cfg, sampler_name } = sampler; // Klein has no scheduler or denoise
+    sampler = nonEmpty(Object.fromEntries(Object.entries({ steps, cfg, sampler_name }).filter(([, v]) => v !== undefined)));
+  }
   if (sampler) p.sampler = sampler;
   if (s.model) p.unet_name = s.model;
   if (s.lockSeed[mode] && s.seeds[mode] !== null) p.seed = s.seeds[mode];
@@ -64,28 +72,29 @@ function multiSizeHint(s: EditSettings, first: Slot | undefined, baseMp: number)
   const m = s.multi;
   if (m.manualSize) return [m.manualW, m.manualH];
   if (!first?.w || !first.h) return undefined;
-  if (m.keepOriginal) return [first.w, first.h];
+  if (m.keepOriginal && !isKleinModel(s.model)) return [first.w, first.h];
   const k = Math.sqrt((m.baseMp ?? baseMp) * MP / (first.w * first.h));
   return [Math.max(1, Math.round(first.w * k)), Math.max(1, Math.round(first.h * k))];
 }
 
 export function multiParams(s: EditSettings, slots: Slot[], baseMp = 1): Record<string, unknown> {
   const m = s.multi;
+  const klein = isKleinModel(s.model);
   const p: Record<string, unknown> = {
     mode: "multiedit",
     prompt: s.prompts.multiedit.trim(),
     images: slots.map((x) => ({ file: x.file, name: x.name.slice(0, 200) })),
     prompt_enhancer: s.enhancer.multiedit,
-    keep_original_resolution: m.keepOriginal,
+    keep_original_resolution: m.keepOriginal && !klein,
     pixel_drift_fix: m.pixelDrift,
     manual_size: m.manualSize,
     manual_width: m.manualW,
     manual_height: m.manualH,
-    head_swap: m.preset === "head",
-    body_swap: m.preset === "body",
+    head_swap: !klein && m.preset === "head",
+    body_swap: !klein && m.preset === "body",
     ...common(s, "multiedit"),
   };
-  if (!m.keepOriginal && m.baseMp !== undefined) p.base_megapixels = m.baseMp;
+  if ((klein || !m.keepOriginal) && m.baseMp !== undefined) p.base_megapixels = m.baseMp;
   const refs = Object.keys(m.refMp).map(Number);
   if (refs.length) {
     const top = Math.max(...refs);
@@ -157,7 +166,8 @@ export function reuseEditSettings(job: Job, def: import("../../api/types").EditD
   const st = useEdit.getState();
   st.patch({ mode, model: p.unet_name ?? undefined });
   st.setPrompt(mode, p.prompt ?? "");
-  st.setSampler(mode, diffSampler(p.sampler, def?.[mode].sampler));
+  const klein = isKleinModel(p.unet_name ?? undefined);
+  st.setSampler(mode, diffSampler(p.sampler, klein && def ? (def.klein.sampler as SamplerDefaults) : def?.[mode].sampler));
   st.setLoras(
     mode,
     ((p.loras ?? []) as { name: string; strength?: number; on?: boolean }[]).map((l) => ({ name: String(l.name), strength: l.strength ?? 1, on: l.on ?? true, target: "both" as const })),

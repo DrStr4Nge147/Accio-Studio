@@ -1,6 +1,6 @@
 /** Hover / focus explanations for the Edit controls (shown by the app tooltip). */
 export const EDIT_TIPS = {
-  model: "The Qwen model that does the editing, for every Edit mode. Only Qwen models found in the backend's models folder are listed.",
+  model: "The model that does the editing. Qwen models work in every Edit mode; Flux2 Klein (GGUF) does Multi-edit only. Only models found in the backend's models folder are listed.",
   enhancer: "Rewrites your prompt into a clearer instruction before editing. The rewritten text is shown under the result. If the rewrite fails, your own prompt is used.",
   keepOriginal: "Keep image 1 at its own resolution. Off scales it to about 1 megapixel first, which is faster and what the model is tuned for.",
   pixelDrift: "Corrects the slight shift that edit models can add, so unchanged parts stay aligned with the original.",

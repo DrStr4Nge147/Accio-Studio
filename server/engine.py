@@ -34,6 +34,9 @@ UPLOAD_SUBFOLDER = "accio"  # inpaint / outpaint uploads
 MEDIA_SUBFOLDER = "minimax_h3"  # multi-edit uploads (spec 5.2)
 LORA_ADD_MARKER = "➕ Add Lora"
 UNET_CLASS = "UNETLoader"
+KLEIN_MAX_IMAGES = 3
+KLEIN_IMAGE_NODES = [("76", "109"), ("81", "115"), ("102", "116")]  # (LoadImage, ImageScaleToTotalPixels) per input image
+KLEIN_LORA_NODES = ["120", "121", "122", "123", "124", "125"]  # model-only LoRA loaders, chained in this order
 REF_MEGAPIXEL_NODES = ["298:302", "298:306", "298:310", "298:314", "298:318", "298:322", "298:326", "298:330"]
 VARIANCE_RESERVED = {"conditioning", "seed", "presets_buttons"}
 
@@ -146,10 +149,17 @@ def _apply_sampler(prompt: dict, node: str, opts: SamplerOpts | None, cat: Catal
             _set(prompt, node, key, val)
 
 
+def is_klein(name: str | None) -> bool:
+    """Flux2 Klein edit models (GGUF) run on their own templates; everything else is a Qwen Edit model."""
+    return bool(name) and "klein" in name.lower() and name.lower().endswith(".gguf")
+
+
 def _apply_unet(prompt: dict, name: str | None, cat: Catalog) -> None:
     """Point the template's diffusion-model loader at another installed model (Qwen Edit modes only)."""
     if name is None:
         return
+    if is_klein(name):
+        raise BuildError("Klein models support Multi-edit only")
     _choice(name, cat.unets, "model")
     loaders = [n for n in prompt.values() if n["class_type"] == UNET_CLASS]
     if len(loaders) != 1:
@@ -251,6 +261,22 @@ def create_defaults() -> dict[str, Any]:
     }
 
 
+def _klein_defaults() -> dict[str, Any]:
+    pr = load_template("klein_multiedit_gguf_3")
+    return {
+        "unet_name": pr["107"]["inputs"]["unet_name"],
+        "sampler": {
+            "steps": pr["118"]["inputs"]["steps"],
+            "cfg": pr["117"]["inputs"]["cfg"],
+            "sampler_name": pr["103"]["inputs"]["sampler_name"],
+        },
+        "base_megapixels": pr["109"]["inputs"]["megapixels"],
+        "ref_megapixels": [pr[n]["inputs"]["megapixels"] for _, n in KLEIN_IMAGE_NODES[1:]],
+        "max_images": KLEIN_MAX_IMAGES,
+        "max_loras": len(KLEIN_LORA_NODES),
+    }
+
+
 def _unet_of(prompt: dict[str, Any]) -> str:
     return next(n["inputs"]["unet_name"] for n in prompt.values() if n["class_type"] == UNET_CLASS)
 
@@ -269,6 +295,7 @@ def edit_defaults() -> dict[str, Any]:
     pad = op["71"]["inputs"]
     return {
         "unet_name": _unet_of(me),
+        "klein": _klein_defaults(),
         "multiedit": {
             "sampler": sampler(me, "36"),
             "base_megapixels": me["16"]["inputs"]["megapixels"],
@@ -375,7 +402,61 @@ def _media_state(images) -> str:
     return json.dumps(items, separators=(",", ":"), ensure_ascii=False)
 
 
+def _build_klein_multiedit(p: MultiEditParams, cat: Catalog, seeds_src: Callable[[], int], prefix: str) -> Built:
+    """Flux2 Klein edit: 1-3 reference images, own sampler (steps / CFG / sampler only). Only values are patched, plus
+    dropping the LoRA loaders nobody uses (the template's placeholders name a file that does not exist)."""
+    n = len(p.images)
+    if n > KLEIN_MAX_IMAGES:
+        raise BuildError(f"Klein edits take up to {KLEIN_MAX_IMAGES} images")
+    if len(p.loras) > len(KLEIN_LORA_NODES):
+        raise BuildError(f"Klein edits take up to {len(KLEIN_LORA_NODES)} LoRAs")
+    name = f"klein_multiedit_gguf_{n}"
+    pr = strip_output_only(load_template(name))
+    _choice(p.unet_name, cat.unets, "model")
+    _set(pr, "107", "unet_name", p.unet_name)
+    _set(pr, "111", "text", p.prompt)
+    for (load, scale), img in zip(KLEIN_IMAGE_NODES, p.images):
+        _set(pr, load, "image", f"{MEDIA_SUBFOLDER}/{img.file} [input]")
+    seed = _seed(p.seed, seeds_src)
+    _set(pr, "106", "noise_seed", seed)
+    if p.sampler is not None:
+        if p.sampler.sampler_name is not None:
+            _choice(p.sampler.sampler_name, cat.samplers, "sampler")
+        for node, key, val in (("118", "steps", p.sampler.steps), ("117", "cfg", p.sampler.cfg), ("103", "sampler_name", p.sampler.sampler_name)):
+            if val is not None:
+                _set(pr, node, key, val)
+    if p.manual_size:
+        for node in ("112", "118"):
+            _set(pr, node, "width", p.manual_width)
+            _set(pr, node, "height", p.manual_height)
+        _set(pr, "112", "batch_size", p.manual_batch)
+    if p.base_megapixels is not None:
+        _set(pr, "109", "megapixels", p.base_megapixels)
+    for (_, scale), mp in zip(KLEIN_IMAGE_NODES[1:n], p.ref_megapixels):
+        if mp is not None:
+            _set(pr, scale, "megapixels", mp)
+    active = [e for e in p.loras if e.on]
+    if active and cat.loras is None:
+        raise BuildError("LoRA list unavailable")
+    for node, e in zip(KLEIN_LORA_NODES, active):
+        _choice(e.name, cat.loras, "LoRA")
+        _set(pr, node, "lora_name", e.name)
+        _set(pr, node, "strength_model", e.strength)
+    used = KLEIN_LORA_NODES[: len(active)]
+    for node in KLEIN_LORA_NODES[len(used):]:
+        del pr[node]
+    _set(pr, "117", "model", [used[-1] if used else "107", 0])
+    _set(pr, "200", "filename_prefix", f"{prefix}/edit")
+    warnings = []
+    ignored = [label for label, on in (("Keep original resolution", p.keep_original_resolution), ("Head swap", p.head_swap), ("Body swap", p.body_swap)) if on]
+    if ignored:
+        warnings.append(f"Not available with Klein, ignored: {', '.join(ignored)}.")
+    return Built(pr, name, {"main": seed}, {"200": "final"}, None, "multiedit", "Edit · Multi-Edit (Klein)", warnings)
+
+
 def _build_multiedit(p: MultiEditParams, cat: Catalog, seeds_src: Callable[[], int], prefix: str) -> Built:
+    if is_klein(p.unet_name):
+        return _build_klein_multiedit(p, cat, seeds_src, prefix)
     name = f"qwen_multiedit__resize{0 if p.keep_original_resolution else 1}"
     pr = strip_output_only(load_template(name))
     _set(pr, "279", "value", p.prompt)

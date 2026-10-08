@@ -25,7 +25,19 @@ def load_manifest() -> dict[str, Any]:
 def verify_safetensors(path: Path, expected_size: int | None = None) -> tuple[bool, str]:
     """A safetensors file is complete when size == 8 + header_len + max(data_offsets end).
 
-    Catches truncated downloads (this check found two truncated LoRAs during the audit)."""
+    Catches truncated downloads (this check found two truncated LoRAs during the audit).
+    A GGUF file has no offset table: it must start with the GGUF magic and match the manifest size."""
+    if path.suffix.lower() == ".gguf":
+        try:
+            size = path.stat().st_size
+            with path.open("rb") as f:
+                if f.read(4) != b"GGUF":
+                    return False, "not a GGUF file"
+        except OSError as e:
+            return False, f"unreadable ({type(e).__name__})"
+        if expected_size is not None and size != expected_size:
+            return False, f"size {size} != manifest {expected_size}"
+        return True, "ok"
     try:
         size = path.stat().st_size
         with path.open("rb") as f:

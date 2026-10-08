@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { SamplerDefaults } from "../../api/types";
+import type { SamplerDefaults, SamplerFieldsDef } from "../../api/types";
 import { Field, Slider, inputCls } from "../../components/ui/controls";
 import { useServer } from "../../store/health";
 import { TIPS } from "./tips";
@@ -17,7 +17,7 @@ export function SamplerFields({
   title: string;
   /** extra control shown in the header, after Reset */
   action?: ReactNode;
-  def: SamplerDefaults | undefined;
+  def: SamplerFieldsDef | undefined;
   value: Opts;
   onChange: (v: Opts) => void;
 }) {
@@ -26,11 +26,11 @@ export function SamplerFields({
   const cur = { ...def, ...value };
   const set = <K extends keyof SamplerDefaults>(k: K, v: SamplerDefaults[K]) => {
     const next: Opts = { ...value, [k]: v };
-    if (v === def[k]) delete next[k];
+    if (v === (def as Partial<SamplerDefaults>)[k]) delete next[k];
     onChange(next);
   };
   const samplers = catalog?.samplers ?? [def.sampler_name];
-  const schedulers = catalog?.schedulers ?? [def.scheduler];
+  const schedulers = catalog?.schedulers ?? (def.scheduler ? [def.scheduler] : []);
   const changed = Object.keys(value).length > 0;
 
   return (
@@ -75,15 +75,17 @@ export function SamplerFields({
             ))}
           </select>
         </Field>
-        <Field label="Scheduler" tip={TIPS.scheduler}>
-          <select value={cur.scheduler} onChange={(e) => set("scheduler", e.target.value)} className={inputCls}>
-            {schedulers.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </Field>
+        {def.scheduler !== undefined && (
+          <Field label="Scheduler" tip={TIPS.scheduler}>
+            <select value={cur.scheduler} onChange={(e) => set("scheduler", e.target.value)} className={inputCls}>
+              {schedulers.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </Field>
+        )}
       </div>
-      <Slider tip={TIPS.denoise} label="Denoise" min={0} max={1} step={0.01} value={cur.denoise} onChange={(v) => set("denoise", v)} />
+      {def.denoise !== undefined && <Slider tip={TIPS.denoise} label="Denoise" min={0} max={1} step={0.01} value={cur.denoise ?? def.denoise} onChange={(v) => set("denoise", v)} />}
     </fieldset>
   );
 }

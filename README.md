@@ -30,11 +30,13 @@ changes. Everything lives in this folder, so deleting the folder uninstalls it.
 
 1. Unzip `AccioStudio-<version>.zip` somewhere with plenty of space, for example `D:\AccioStudio`. Avoid `C:\Program Files`.
 2. Double-click **`Install.bat`** and wait. It is safe to close it and run it again later: it resumes and skips finished steps.
-   It downloads the tools, the engine (ComfyUI 0.38.0), 8 pinned custom-node packs and the models, and checks every model
+   It downloads the tools, the engine (ComfyUI 0.38.0), 9 pinned custom-node packs and the models, and checks every model
    file is complete.
 3. When it asks "Use models from an existing ComfyUI folder?", press Enter to download everything, or give the path of
    a ComfyUI folder that already has the models (it is only **read**, never changed, and nothing is copied). It also asks whether to
-   download the four optional preset LoRAs (head swap, body swap, remove object, move object).
+   download the four optional preset LoRAs (head swap, body swap, remove object, move object), and separately whether to
+   download Flux2 Klein 9B (about 19 GB), a second Edit model that does Multi-edit with up to 3 images. Once installed, pick it
+   in Edit > Advanced > Model.
 
 ## Daily use
 
