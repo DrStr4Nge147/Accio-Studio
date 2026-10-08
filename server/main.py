@@ -192,7 +192,13 @@ async def make_catalog(request: Request, need_loras: bool = True, need_unets: bo
     ks = await cached(request, "ksampler", 300, ksampler)
     var = await cached(request, "variance", 300, variance)
     loras = set(await comfy.models("loras")) if need_loras else None  # fresh each time (spec 6.6)
-    unets = set(await comfy.models("diffusion_models")) if need_unets else None
+    unets = None
+    if need_unets:
+        unets = set(await comfy.models("diffusion_models"))
+        try:
+            unets |= set(await comfy.models("unet_gguf"))  # ComfyUI-GGUF lists .gguf files under its own folder name
+        except ComfyError:
+            pass  # pack not loaded: no GGUF models to offer
     return engine.Catalog(
         loras=loras, unets=unets, samplers=set(ks["sampler_name"][0]), schedulers=set(ks["scheduler"][0]), variance_spec=var
     )
