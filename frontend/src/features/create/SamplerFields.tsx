@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { SamplerDefaults } from "../../api/types";
 import { Field, Slider, inputCls } from "../../components/ui/controls";
 import { useServer } from "../../store/health";
@@ -11,8 +12,11 @@ export function SamplerFields({
   def,
   value,
   onChange,
+  action,
 }: {
   title: string;
+  /** extra control shown in the header, after Reset */
+  action?: ReactNode;
   def: SamplerDefaults | undefined;
   value: Opts;
   onChange: (v: Opts) => void;
@@ -38,6 +42,7 @@ export function SamplerFields({
             Reset
           </button>
         )}
+        {action}
       </legend>
       <div className="grid grid-cols-2 gap-2">
         <Field label="Steps" tip={TIPS.steps}>

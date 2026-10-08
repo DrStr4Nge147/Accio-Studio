@@ -54,6 +54,8 @@ export interface EditSettings {
   mode: EditMode;
   /** diffusion model for every Edit mode; undefined = the workflow's own */
   model?: string;
+  /** sampler settings saved per model name, restored when that model is chosen again */
+  modelPresets: Record<string, Record<EditMode, Partial<SamplerDefaults>>>;
   prompts: Record<EditMode, string>;
   enhancer: { multiedit: boolean; inpaint: boolean };
   multi: MultiState;
@@ -68,6 +70,10 @@ export interface EditSettings {
 
 interface EditActions {
   patch: (p: Partial<EditSettings>) => void;
+  /** choose the model; a preset saved for it puts its sampler settings back */
+  setModel: (model: string | undefined) => void;
+  /** remember the current sampler settings (all modes) for the chosen model */
+  saveModelPreset: () => void;
   setMulti: (p: Partial<MultiState>) => void;
   /** Manual size on turns Pixel Drift Fix off (the user can turn it back on); off restores what was switched off */
   setManualSize: (on: boolean) => void;
@@ -99,6 +105,7 @@ export const initialOutpaint = (): OutpaintState => ({ fillMode: "color", fillCo
 
 const initial = (): EditSettings => ({
   mode: "multiedit",
+  modelPresets: {},
   prompts: { multiedit: "", inpaint: "", outpaint: "" },
   enhancer: { multiedit: true, inpaint: true },
   multi: initialMulti(),
@@ -116,6 +123,13 @@ export const useEdit = create<EditSettings & EditActions>()(
     (set) => ({
       ...initial(),
       patch: (p) => set(p),
+      setModel: (model) =>
+        set((s) => {
+          const preset = model ? s.modelPresets[model] : undefined;
+          return preset ? { model, sampler: structuredClone(preset) } : { model };
+        }),
+      saveModelPreset: () =>
+        set((s) => (s.model ? { modelPresets: { ...s.modelPresets, [s.model]: structuredClone(s.sampler) } } : {})),
       setMulti: (p) => set((s) => ({ multi: { ...s.multi, ...p } })),
       setManualSize: (on) =>
         set((s) => {
@@ -151,6 +165,7 @@ export const useEdit = create<EditSettings & EditActions>()(
       partialize: (s) => ({
         mode: s.mode,
         model: s.model,
+        modelPresets: s.modelPresets,
         prompts: s.prompts,
         enhancer: s.enhancer,
         multi: s.multi,

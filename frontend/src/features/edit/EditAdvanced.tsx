@@ -1,4 +1,5 @@
-import { RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, RotateCcw } from "lucide-react";
 import type { EditDefaults } from "../../api/types";
 import { LoraList } from "../../components/LoraList";
 import { Field, Label, Slider, Toggle, inputCls } from "../../components/ui/controls";
@@ -39,17 +40,44 @@ function SeedField({ mode }: { mode: EditMode }) {
   );
 }
 
+/** Saves the sampler settings for the chosen model; shown only for a non-default model. */
+function SavePreset() {
+  const model = useEdit((s) => s.model);
+  const has = useEdit((s) => !!(s.model && s.modelPresets[s.model]));
+  const save = useEdit((s) => s.saveModelPreset);
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (!done) return;
+    const t = setTimeout(() => setDone(false), 2000);
+    return () => clearTimeout(t);
+  }, [done]);
+  if (!model) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        save();
+        setDone(true);
+      }}
+      className="hover-wash flex h-7 items-center gap-1 rounded-full px-2 text-[12px] font-normal text-gold-text"
+    >
+      {done && <Check size={13} strokeWidth={1.7} />}
+      {done ? "Saved" : has ? "Update for this model" : "Save for this model"}
+    </button>
+  );
+}
+
 /** Which Qwen diffusion model the Edit modes run. The default is the workflow's own (a 6-step turbo build). */
 function ModelField({ def }: { def: string }) {
   const models = useServer((s) => s.catalog?.edit_models) ?? [];
   const model = useEdit((s) => s.model);
-  const patch = useEdit((s) => s.patch);
+  const setModel = useEdit((s) => s.setModel);
   if (!models.length && !model) return null;
   const missing = model && !models.includes(model);
   const list = models.filter((m) => m !== def);
   return (
     <Field label="Model" tip={T.model}>
-      <select value={model ?? ""} onChange={(e) => patch({ model: e.target.value || undefined })} className={inputCls}>
+      <select value={model ?? ""} onChange={(e) => setModel(e.target.value || undefined)} className={inputCls}>
         <option value="">Default · {def}</option>
         {missing && <option value={model}>{model} (not installed)</option>}
         {list.map((m) => (
@@ -226,7 +254,7 @@ export function EditAdvanced({ withPadding }: { withPadding?: boolean }) {
       )}
       <SeedField mode={mode} />
       {def && <ModelField def={def.unet_name} />}
-      <SamplerFields title="Sampler" def={def?.[mode].sampler} value={sampler} onChange={(v) => setSampler(mode, v)} />
+      <SamplerFields title="Sampler" def={def?.[mode].sampler} value={sampler} onChange={(v) => setSampler(mode, v)} action={<SavePreset />} />
       {def && mode === "multiedit" && <MultiFields def={def.multiedit} />}
       {def && mode === "inpaint" && <InpaintFields def={def.inpaint} />}
       {def && mode === "outpaint" && <OutpaintFields def={def.outpaint} />}

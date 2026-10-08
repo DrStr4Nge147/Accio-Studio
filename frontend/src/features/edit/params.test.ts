@@ -16,7 +16,7 @@ const noWs = {
 const state = () => useEdit.getState();
 beforeEach(() => {
   for (const m of ["multiedit", "inpaint", "outpaint"] as const) state().reset(m);
-  state().patch({ mode: "multiedit", model: undefined, prompts: { multiedit: "", inpaint: "", outpaint: "" } });
+  state().patch({ mode: "multiedit", model: undefined, modelPresets: {}, prompts: { multiedit: "", inpaint: "", outpaint: "" } });
 });
 
 describe("editBlocker", () => {
@@ -226,5 +226,28 @@ describe("Edit model choice", () => {
     expect(state().model).toBe("Qwen-Other.safetensors");
     reuseEditSettings({ id: "j", mode: "inpaint", params: { mode: "inpaint", prompt: "p" }, seeds: { main: 1 } } as never, null);
     expect(state().model).toBeUndefined();
+  });
+});
+
+describe("per-model sampler preset", () => {
+  it("saves the sampler settings of every mode for the chosen model and restores them on choosing it again", () => {
+    state().setModel("Qwen-Other.safetensors");
+    state().setSampler("inpaint", { steps: 30, cfg: 4 });
+    state().setSampler("multiedit", { steps: 20 });
+    state().saveModelPreset();
+    state().setSampler("inpaint", { steps: 6 });
+    state().setModel(undefined);
+    expect(state().sampler.inpaint).toEqual({ steps: 6 });
+    state().setModel("Qwen-Other.safetensors");
+    expect(state().sampler.inpaint).toEqual({ steps: 30, cfg: 4 });
+    expect(state().sampler.multiedit).toEqual({ steps: 20 });
+  });
+
+  it("choosing a model without a preset keeps the current sampler, and saving needs a chosen model", () => {
+    state().saveModelPreset();
+    expect(state().modelPresets).toEqual({});
+    state().setSampler("inpaint", { steps: 9 });
+    state().setModel("Qwen-New.safetensors");
+    expect(state().sampler.inpaint).toEqual({ steps: 9 });
   });
 });
