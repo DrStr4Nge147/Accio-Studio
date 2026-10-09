@@ -1,6 +1,6 @@
 """Accio Studio server. One origin, one port (default 7862): REST + WebSocket API and the built frontend.
 
-Login is required for the API (auth.py). The server listens on loopback unless `lan_access` is set in settings.json
+Login is required for the API (auth.py) except from a browser on this PC at localhost. The server listens on loopback unless `lan_access` is set in settings.json
 or `--host 0.0.0.0` is passed (Run_Accio.bat option 4).
 """
 from __future__ import annotations
@@ -534,7 +534,13 @@ def main() -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
     app.state.tunnel_mode, app.state.host, app.state.port = args.tunnel, host, port
     tunnels.state["mode"] = args.tunnel
-    print(f"\n  Accio Studio on  http://127.0.0.1:{port}   (login required)")
+    if args.tunnel != "local":
+        login_note = "login required"
+    elif host == "0.0.0.0":
+        login_note = "no login on this PC; other devices need the password"
+    else:
+        login_note = "no login needed on this PC"
+    print(f"\n  Accio Studio on  http://127.0.0.1:{port}   ({login_note})")
     if host == "0.0.0.0":
         lan = f"http://{lan_ip()}:{port}"
         print(f"  LAN address      {lan}")

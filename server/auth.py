@@ -3,6 +3,8 @@
 - No default password: the first run forces a setup screen. Over a tunnel or the LAN, setup also needs the one-time code
   printed in this server's console, so a stranger who finds the URL first cannot claim the app. A browser on this PC
   talking to localhost directly does not need the code.
+- A browser on this PC talking to localhost directly needs no login at all (authapi.local_trusted). Tunnels (cloudflare,
+  zrok, tailscale) and the same-network address always require the password.
 - The password is hashed with scrypt (random salt) and stored in settings.json under `_auth`.
 - A login creates a random session token; only its SHA-256 is stored (data/sessions.json) with an expiry. Logout and a
   password change delete sessions. The token travels in an httpOnly, SameSite=Lax cookie (Secure over https).

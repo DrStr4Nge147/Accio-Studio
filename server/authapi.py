@@ -28,6 +28,12 @@ def _json_error(status: int, code: str, message: str) -> bytes:
     return json.dumps({"error": {"code": code, "message": message}}).encode()
 
 
+def local_trusted(app, scope: dict) -> bool:
+    """This PC's own browser on localhost needs no login. Never while a tunnel runs (it may rewrite Host and hide who is
+    calling); the same-network address and every other device still sign in because their peer is not loopback."""
+    return getattr(app.state, "tunnel_mode", "local") == "local" and authlib.is_local_direct(scope)
+
+
 class GuardMiddleware:
     """Pure ASGI so it covers WebSockets too. Rejects unauthenticated and cross-origin requests before any route runs."""
 
@@ -42,7 +48,7 @@ class GuardMiddleware:
         denial: tuple[int, str, str] | None = None
         if unsafe and path.startswith("/api/") and not authlib.same_origin(scope):
             denial = (403, "origin", "This request came from another site.")
-        elif guarded(path):
+        elif guarded(path) and not local_trusted(scope["app"], scope):
             auth: Auth = scope["app"].state.auth
             if not auth.configured:
                 denial = (401, "setup_required", "Set a password first.")
@@ -101,7 +107,7 @@ def _auth(request: Request) -> Auth:
 
 def _local_setup_ok(request: Request) -> bool:
     """No setup code from this PC's own browser, except while a tunnel is up: a tunnel may rewrite Host and hide who is calling."""
-    return getattr(request.app.state, "tunnel_mode", "local") == "local" and authlib.is_local_direct(request.scope)
+    return local_trusted(request.app, request.scope)
 
 
 def _error(e: AuthError) -> JSONResponse:
@@ -124,7 +130,7 @@ async def status(request: Request):
     return JSONResponse(
         {
             "configured": configured,
-            "authenticated": configured and auth.valid(authlib.cookie_token(request.scope)),
+            "authenticated": _local_setup_ok(request) or (configured and auth.valid(authlib.cookie_token(request.scope))),
             # Setting the first password from this PC's own browser needs no code; from anywhere else it does.
             "setup_code_needed": not configured and not _local_setup_ok(request),
         },

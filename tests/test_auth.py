@@ -165,6 +165,36 @@ def test_setup_always_needs_the_code_while_a_tunnel_runs(tmp_path, monkeypatch):
         main.app.state.tunnel_mode = "local"
 
 
+def test_localhost_needs_no_login_but_other_routes_in_do(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "SETTINGS_FILE", tmp_path / "settings.json")
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(main, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(main, "THUMBS_DIR", tmp_path / "thumbs")
+    with TestClient(main.app, base_url="http://localhost:7862", client=("127.0.0.1", 50000)) as c:
+        assert c.get("/api/auth/status").json()["authenticated"] is True
+        assert c.get("/api/queue").status_code in (200, 503)  # past the guard, no cookie
+        # A proxy header means it did not come straight from this PC.
+        assert c.get("/api/queue", headers={"x-forwarded-for": "1.2.3.4"}).status_code == 401
+    # Same-network device: loopback is not its peer address.
+    with TestClient(main.app, base_url="http://localhost:7862", client=("192.168.1.20", 50000)) as c:
+        assert c.get("/api/queue").status_code == 401
+        assert c.get("/api/auth/status").json()["authenticated"] is False
+
+
+def test_localhost_still_needs_login_while_a_tunnel_runs(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "SETTINGS_FILE", tmp_path / "settings.json")
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(main, "DATA_DIR", tmp_path)
+    for mode in ("cloudflare", "zrok", "tailscale"):
+        monkeypatch.setattr(main.app.state, "tunnel_mode", mode, raising=False)
+        try:
+            with TestClient(main.app, base_url="http://localhost:7862", client=("127.0.0.1", 50000)) as c:
+                assert c.get("/api/queue").status_code == 401, mode
+                assert c.get("/api/auth/status").json()["authenticated"] is False, mode
+        finally:
+            main.app.state.tunnel_mode = "local"
+
+
 def test_password_is_stored_hashed_and_nothing_leaks(client, tmp_path):
     setup_and_login(client)
     text = (tmp_path / "settings.json").read_text(encoding="utf-8")
