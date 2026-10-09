@@ -44,4 +44,4 @@ def start_update() -> None:
     if not bat.is_file():
         raise FileNotFoundError("Update.bat is missing")
     flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    subprocess.Popen(["cmd.exe", "/c", str(bat), "--yes"], cwd=ROOT, creationflags=flags, close_fds=True)  # noqa: S603
+    subprocess.Popen(["cmd.exe", "/c", ".\\Update.bat", "--yes"], cwd=ROOT, creationflags=flags, close_fds=True)  # noqa: S603

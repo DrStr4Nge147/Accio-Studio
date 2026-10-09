@@ -117,3 +117,19 @@ def test_the_update_endpoints_need_a_login():
     client.cookies.clear()
     assert client.get("/api/update").status_code == 401
     assert client.post("/api/update/apply").status_code == 401
+
+
+def test_the_updater_is_started_in_its_own_console_with_an_explicit_path(tmp_path, monkeypatch):
+    (tmp_path / "Update.bat").write_text("@echo off")
+    monkeypatch.setattr(updates, "ROOT", tmp_path)
+    seen = {}
+    monkeypatch.setattr(updates.subprocess, "Popen", lambda cmd, **kw: seen.update(cmd=cmd, **kw))
+    updates.start_update()
+    assert seen["cmd"] == ["cmd.exe", "/c", ".\\Update.bat", "--yes"] and seen["cwd"] == tmp_path
+    assert seen["creationflags"] & getattr(updates.subprocess, "CREATE_NEW_CONSOLE", 0)  # a visible window the user can read
+
+
+def test_a_missing_updater_file_is_reported(tmp_path, monkeypatch):
+    monkeypatch.setattr(updates, "ROOT", tmp_path)
+    with pytest.raises(FileNotFoundError):
+        updates.start_update()
