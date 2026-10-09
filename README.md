@@ -19,7 +19,7 @@ It ships with its own portable copy of ComfyUI as the engine. You never open Com
 | | |
 |---|---|
 | OS | Windows 10 or 11, 64-bit |
-| GPU | **Nvidia**, RTX 20-series or newer recommended (the int8 models were tested on an RTX 2060 6 GB; it is slow there, about 3 to 4 minutes per Create job). Other GPUs: the installer warns and lets you continue, untested. |
+| GPU | **Nvidia**, RTX 20-series or newer recommended (the int8 models were tested on an RTX 2060 6 GB; it is slow there, about 3 to 4 minutes per Create job). Other GPUs: the installer warns and lets you continue, untested. Nvidia driver **580 or newer** for the default engine; with an older driver (525 or newer) the installer picks the CUDA 12.6 engine by itself, and RTX 50 series cards need 580+. |
 | Disk | about **45 GB** free (37 GB of models, 5 GB for the engine, the rest for results) |
 | Internet | for the install (models come from Hugging Face). Not needed afterwards unless you use a tunnel. |
 
@@ -106,7 +106,8 @@ Create it next to `Run_Accio.bat`. Unknown keys are ignored.
 
 | Problem | What to do |
 |---|---|
-| "The backend did not answer within 3 minutes" | open `data\logs\comfyui.log`; update the Nvidia driver; run `Install.bat` again |
+| "The backend did not answer within 3 minutes" | open `data\logs\comfyui.log`; update the Nvidia driver (580 or newer); run `Install.bat` again |
+| `Install.bat` says the Nvidia driver is too old | update the driver from nvidia.com/drivers, then run `Install.bat` again |
 | Settings shows missing models or nodes | run `Install.bat` again, it downloads and verifies what is missing |
 | `Install.bat` says the folder path is too long | move the whole folder closer to the drive root, e.g. `C:\AccioStudio`, and run it again |
 | "The Python environment does not start" | the folder was moved or renamed; run `Install.bat`, it rebuilds the environment |

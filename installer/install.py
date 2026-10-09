@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from core import ROOT, curl_download, extract_zip, fmt_size, free_space, install_path_problem, load_manifest, verify_safetensors  # noqa: E402
+from core import ROOT, curl_download, extract_zip, fmt_size, free_space, install_path_problem, load_manifest, sha256_of, verify_safetensors  # noqa: E402
 
 BIN = ROOT / "bin"
 DATA = ROOT / "data"
@@ -80,7 +80,12 @@ def save_state(state: dict) -> None:
 
 
 def remote_size(url: str) -> int | None:
-    out = subprocess.run(["curl.exe", "-sIL", "--ssl-no-revoke", "-m", "60", url], capture_output=True, text=True).stdout
+    """Size of the file at `url`, or None when it cannot be reached (any final HTTP status but 200, e.g. a mirror without the file)."""
+    out = subprocess.run(
+        ["curl.exe", "-sIL", "--ssl-no-revoke", "-m", "60", "-w", "\nFINAL_HTTP_STATUS:%{http_code}\n", url], capture_output=True, text=True
+    ).stdout
+    if "FINAL_HTTP_STATUS:200" not in out:
+        return None
     sizes = [int(m.group(1)) for m in re.finditer(r"(?im)^content-length:\s*(\d+)", out)]
     return sizes[-1] if sizes and sizes[-1] > 0 else None
 
@@ -132,13 +137,47 @@ def detect_gpu() -> dict:
     return gpu
 
 
+# Oldest Nvidia driver each portable build works with (NVIDIA's CUDA toolkit release notes, "minor version compatibility"):
+# the default build ships CUDA 13 (driver 580 or newer), the _cu126 build CUDA 12.x (driver 525 or newer).
+MIN_DRIVER = {"nvidia": 580, "nvidia_cu126": 525}
+DRIVER_HELP = "Update the Nvidia driver (nvidia.com/drivers, or GeForce Experience), then run Install.bat again."
+
+
+def driver_major(gpu: dict) -> int | None:
+    try:
+        return int(str(gpu.get("driver", "")).split(".")[0])
+    except ValueError:
+        return None
+
+
+def build_for_driver(build: str, gpu: dict) -> str:
+    """Make sure the Nvidia build can run on the installed driver. A driver too old for the CUDA 13 build but fine for the
+    CUDA 12.6 build gets that one; RTX 50 series cards (compute 12.0) need CUDA 12.8 or newer, so for them only an update helps."""
+    drv, need = driver_major(gpu), MIN_DRIVER.get(build)
+    if drv is None or need is None or drv >= need:
+        return build
+    compute = float(gpu.get("compute") or 0)
+    if build == "nvidia" and compute < 12.0 and drv >= MIN_DRIVER["nvidia_cu126"]:
+        say(f"  [!] Your Nvidia driver ({gpu['driver']}) is older than the {need} the newest engine needs, so the CUDA 12.6 engine is installed\n"
+            "      instead. It works with this driver. Update the driver and reinstall later if you want the newest engine.")
+        return "nvidia_cu126"
+    floor = MIN_DRIVER["nvidia_cu126"] if build == "nvidia" and compute < 12.0 else need
+    raise RuntimeError(f"Your Nvidia driver ({gpu['driver']}) is too old for this graphics card: it needs {floor} or newer. {DRIVER_HELP}")
+
+
+def warn_if_driver_too_old(build: str, gpu: dict) -> None:
+    drv, need = driver_major(gpu), MIN_DRIVER.get(build)
+    if drv is not None and need is not None and drv < need:
+        say(f"  [!] The installed engine needs Nvidia driver {need} or newer, but this PC has {gpu['driver']}. {DRIVER_HELP}")
+
+
 def choose_build(gpu: dict, interactive: bool) -> tuple[str, str]:
     """Returns (comfy build name, launch flags)."""
     flags = ""
     if gpu["vendor"] == "nvidia" and "compute" in gpu:
         say(f"  Nvidia: {gpu['name']} / compute {gpu['compute']} / {gpu['vram_mb']} MB VRAM / driver {gpu['driver']}")
         major, minor = (int(x) for x in gpu["compute"].split("."))
-        build = "nvidia" if major * 10 + minor >= 75 else "nvidia_cu126"
+        build = build_for_driver("nvidia" if major * 10 + minor >= 75 else "nvidia_cu126", gpu)
         if gpu["vram_mb"] <= 8300:
             flags = "--disable-cuda-malloc --reserve-vram 1"
     else:
@@ -199,6 +238,36 @@ def flatten_portable(extracted: Path, home: Path, build: str) -> str:
     return flags
 
 
+def archive_ok(path: Path, spec: dict) -> bool:
+    return path.is_file() and path.stat().st_size == spec["size"] and sha256_of(path) == spec["sha256"]
+
+
+def download_comfyui(c: dict, build: str, spec: dict, archive: Path) -> None:
+    """Download the portable package, from our own mirror first and the upstream release second. Every source is checked
+    against the size and sha256 recorded in the manifest, so a wrong or truncated file is never unpacked."""
+    if free_space(COMFY_HOME) < spec["size"] * 4:  # archive + unpacked
+        raise RuntimeError(f"not enough free disk space (need about {fmt_size(spec['size'] * 4)})")
+    for key in ("mirror_url", "release_url"):
+        if not c.get(key):
+            continue
+        url = c[key].format(tag=c["tag"], build=build)
+        host = url.split("/")[2]
+        if remote_size(url) != spec["size"]:
+            say(f"  {host} does not have the expected file; trying the next source.")
+            continue
+        say(f"  downloading ComfyUI {c['version']} ({build}, {fmt_size(spec['size'])}) from {host} ...")
+        try:
+            curl_download(url, archive, expected_size=spec["size"])
+        except RuntimeError as e:
+            say(f"  [!] {e}")
+            continue
+        if sha256_of(archive) == spec["sha256"]:
+            return
+        say("  [!] the downloaded file failed its checksum; discarding it.")
+        archive.unlink(missing_ok=True)
+    raise RuntimeError("could not download ComfyUI from any source (see the messages above); check the connection and run Install.bat again")
+
+
 def install_comfyui(manifest: dict, build: str, sevenzip: Path) -> str:
     """Installs the bundled ComfyUI. Returns the AMD/Intel launch flags ("" when there are none or nothing was installed)."""
     want = manifest["comfyui"]["version"]
@@ -218,15 +287,13 @@ def install_comfyui(manifest: dict, build: str, sevenzip: Path) -> str:
             f"{COMFY_HOME} holds ComfyUI {have or 'unknown/incomplete'}, not {want}. "
             "Delete the 'comfyui' folder to reinstall (models stored there would be removed)."
         )
-    url = manifest["comfyui"]["release_url"].format(tag=manifest["comfyui"]["tag"], build=build)
+    spec = manifest["comfyui"].get("archives", {}).get(build)
+    if not spec:
+        raise RuntimeError(f"no ComfyUI package is listed for the '{build}' build")
     archive = COMFY_HOME / f"ComfyUI_windows_portable_{build}.7z"
-    size = remote_size(url)
-    if not (size and archive.is_file() and archive.stat().st_size == size):  # a finished download is only kept after its size matched
-        need = (size or 2_000_000_000) * 4  # archive + extracted
-        if free_space(COMFY_HOME) < need:
-            raise RuntimeError(f"not enough free disk space (need about {fmt_size(need)})")
-        say(f"  downloading ComfyUI {want} ({build}, {fmt_size(size) if size else 'size unknown'}) ...")
-        curl_download(url, archive, expected_size=size)
+    if not archive_ok(archive, spec):  # a finished download is only kept when its size and checksum match
+        archive.unlink(missing_ok=True)
+        download_comfyui(manifest["comfyui"], build, spec, archive)
     say("  extracting (a few minutes) ...")
     shutil.rmtree(extracted, ignore_errors=True)
     r = subprocess.run([str(sevenzip), "x", "-aoa", f"-o{extracted}", str(archive)], capture_output=True, text=True)
@@ -443,6 +510,7 @@ def main() -> int:
         build, flags = choose_build(gpu, interactive)
         if installed_comfy_version() and state.get("build"):
             build = state["build"]  # keep the build that is actually installed
+            warn_if_driver_too_old(build, gpu)
             if build in ("amd", "intel") and state.get("launch_flags"):
                 flags = state["launch_flags"]  # read from the package when it was installed; the file is gone now
         state.update(gpu=gpu, build=build, launch_flags=flags)

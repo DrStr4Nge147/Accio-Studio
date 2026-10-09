@@ -2,7 +2,14 @@
   "comfyui": {
     "version": "0.38.0",
     "tag": "v0.38.0",
-    "release_url": "https://github.com/comfyanonymous/ComfyUI/releases/download/{tag}/ComfyUI_windows_portable_{build}.7z"
+    "mirror_url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/comfyui/{tag}/ComfyUI_windows_portable_{build}.7z?download=true",
+    "release_url": "https://github.com/comfyanonymous/ComfyUI/releases/download/{tag}/ComfyUI_windows_portable_{build}.7z",
+    "archives": {
+      "nvidia": {"size": 1994326521, "sha256": "8f137eac345707fd7e42bcf8e29377415243011ca15522a86aed6c77331fbd56"},
+      "nvidia_cu126": {"size": 1886111296, "sha256": "bd3bd7e3ce0068d8bc58fe46c912c360dd510f9bcfd0c5029d4906e6e6fbc677"},
+      "amd": {"size": 1612070856, "sha256": "f346e5c187b4e1647f0ea01d9978f53de1f259878656128c3296f61a5948fd1f"},
+      "intel": {"size": 1427214780, "sha256": "4df593042aced1fb0b8dfdf033918c9e5d093f01c6fbb9c79fe2504350107de0"}
+    }
   },
   "tools": {
     "7zr": {

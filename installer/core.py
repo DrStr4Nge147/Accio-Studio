@@ -5,6 +5,7 @@ Nothing here writes outside the Accio folder it is pointed at.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -89,6 +90,14 @@ def install_path_problem(root: Path) -> str | None:
 # Without these, a connection that stalls (no bytes arriving) hangs the installer forever. With them curl gives up
 # (exit 28), and curl_download resumes the .part file.
 CURL_STALL_GUARD = ["--connect-timeout", "30", "--speed-time", "60", "--speed-limit", "1024"]
+
+
+def sha256_of(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def curl_download(url: str, dest: Path, *, expected_size: int | None = None, retries: int = 5) -> None:

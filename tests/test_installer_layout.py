@@ -101,13 +101,14 @@ def fake_comfy(tmp_path, monkeypatch):
     home.mkdir()
     monkeypatch.setattr(install, "COMFY_HOME", home)
     monkeypatch.setattr(install, "LEGACY_HOME", home / "ComfyUI_windows_portable")
-    monkeypatch.setattr(install, "remote_size", lambda url: 5)
+    seen = {"downloads": 0, "extracts": 0, "fail_extract": False, "mirror_has_it": True, "payload": b"12345", "urls": []}
+    monkeypatch.setattr(install, "remote_size", lambda url: 5 if ("mirror" not in url or seen["mirror_has_it"]) else None)
     monkeypatch.setattr(install, "free_space", lambda p: 10**12)
-    seen = {"downloads": 0, "extracts": 0, "fail_extract": False}
 
     def fake_download(url, dest, expected_size=None):
         seen["downloads"] += 1
-        dest.write_bytes(b"12345")
+        seen["urls"].append(url)
+        dest.write_bytes(seen["payload"])
 
     def fake_run(cmd, **kw):
         seen["extracts"] += 1
@@ -116,7 +117,12 @@ def fake_comfy(tmp_path, monkeypatch):
 
     monkeypatch.setattr(install, "curl_download", fake_download)
     monkeypatch.setattr(install.subprocess, "run", fake_run)
-    manifest = {"comfyui": {"version": "0.38.0", "tag": "v0.38.0", "release_url": "http://x/{tag}/{build}.7z"}}
+    sha = "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"  # sha256 of b"12345"
+    manifest = {"comfyui": {
+        "version": "0.38.0", "tag": "v0.38.0",
+        "mirror_url": "http://mirror/{tag}/{build}.7z", "release_url": "http://github/{tag}/{build}.7z",
+        "archives": {"nvidia": {"size": 5, "sha256": sha}},
+    }}
     return home, manifest, seen
 
 
@@ -171,3 +177,83 @@ def test_an_existing_nested_install_keeps_working(fake_comfy):
     assert install.comfy_base() == legacy and install.installed_comfy_version() == "0.38.0"
     assert install.install_comfyui(manifest, "nvidia", Path("7zr.exe")) == ""
     assert seen["downloads"] == 0 and (legacy / "ComfyUI").is_dir()
+
+
+def test_comfyui_comes_from_our_mirror_first(fake_comfy):
+    home, manifest, seen = fake_comfy
+    install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))
+    assert seen["urls"] == ["http://mirror/v0.38.0/nvidia.7z"]
+
+
+def test_comfyui_falls_back_to_the_upstream_release_when_the_mirror_lacks_it(fake_comfy):
+    home, manifest, seen = fake_comfy
+    seen["mirror_has_it"] = False
+    install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))
+    assert seen["urls"] == ["http://github/v0.38.0/nvidia.7z"]
+    assert (home / "ComfyUI").is_dir()
+
+
+def test_a_download_with_the_wrong_checksum_is_never_unpacked(fake_comfy):
+    home, manifest, seen = fake_comfy
+    seen["payload"] = b"12346"  # same size, different content
+    with pytest.raises(RuntimeError, match="any source"):
+        install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))
+    assert seen["urls"] == ["http://mirror/v0.38.0/nvidia.7z", "http://github/v0.38.0/nvidia.7z"]  # both sources were tried
+    assert seen["extracts"] == 0 and not (home / "ComfyUI").exists()
+    assert not (home / "ComfyUI_windows_portable_nvidia.7z").exists()
+
+
+def test_a_build_without_a_listed_package_is_a_clear_error(fake_comfy):
+    home, manifest, seen = fake_comfy
+    with pytest.raises(RuntimeError, match="no ComfyUI package"):
+        install.install_comfyui(manifest, "amd", Path("7zr.exe"))
+
+
+def test_manifest_lists_every_build_the_installer_can_choose():
+    archives = core.load_manifest()["comfyui"]["archives"]
+    assert set(archives) == {"nvidia", "nvidia_cu126", "amd", "intel"}
+    for spec in archives.values():
+        assert spec["size"] > 1e9 and len(spec["sha256"]) == 64
+    c = core.load_manifest()["comfyui"]
+    assert c["mirror_url"].startswith("https://huggingface.co/NicRaf/AccioStudio/") and "{tag}" in c["mirror_url"] and "{build}" in c["mirror_url"]
+
+
+# --------------------------------------------------------------------------- Nvidia driver vs engine build
+
+
+def nv(compute: str, driver: str) -> dict:
+    return {"vendor": "nvidia", "name": "GPU", "compute": compute, "vram_mb": 12000, "driver": driver}
+
+
+def test_a_recent_driver_keeps_the_default_build():
+    assert install.build_for_driver("nvidia", nv("8.6", "581.15")) == "nvidia"
+    assert install.build_for_driver("nvidia", nv("12.0", "580.0")) == "nvidia"
+    assert install.build_for_driver("nvidia_cu126", nv("6.1", "525.60")) == "nvidia_cu126"
+
+
+def test_an_older_driver_gets_the_cuda_126_build(capsys):
+    assert install.build_for_driver("nvidia", nv("8.6", "551.23")) == "nvidia_cu126"  # an RTX 3060 on a 2024 driver
+    assert "CUDA 12.6" in capsys.readouterr().out
+
+
+def test_a_driver_too_old_for_any_build_is_a_clear_error():
+    with pytest.raises(RuntimeError, match="525"):
+        install.build_for_driver("nvidia", nv("8.6", "470.99"))
+    with pytest.raises(RuntimeError, match="525"):
+        install.build_for_driver("nvidia_cu126", nv("6.1", "470.99"))
+
+
+def test_rtx_50_series_needs_the_new_driver_there_is_no_fallback():
+    with pytest.raises(RuntimeError, match="580"):
+        install.build_for_driver("nvidia", nv("12.0", "560.94"))
+
+
+def test_unknown_driver_or_build_is_left_alone():
+    assert install.build_for_driver("nvidia", {"vendor": "nvidia", "name": "x"}) == "nvidia"
+    assert install.build_for_driver("amd", nv("8.6", "100.0")) == "amd"
+    assert install.build_for_driver("nvidia", nv("8.6", "garbage")) == "nvidia"
+
+
+def test_choose_build_applies_the_driver_check(capsys):
+    build, flags = install.choose_build(nv("8.6", "551.23"), interactive=False)
+    assert build == "nvidia_cu126"
