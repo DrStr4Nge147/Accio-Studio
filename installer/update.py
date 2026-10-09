@@ -12,6 +12,8 @@ Options:
   --yes            do not ask before updating
   --force          reinstall the newest release even if it is not newer
   --zip FILE       update from a zip you already have (needs FILE.sha256 next to it); no network
+  --no-stop        do not stop a running Accio first (testing)
+  --no-install     do not run Install.bat afterwards (testing)
   --api-url URL    where to look for the newest release (default: manifest.json > updates.api_url, or ACCIO_UPDATE_API)
 """
 from __future__ import annotations
@@ -369,9 +371,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--zip", type=Path)
     ap.add_argument("--api-url")
+    ap.add_argument("--no-stop", action="store_true", help="do not stop a running Accio (for testing)")
+    ap.add_argument("--no-install", action="store_true", help="do not run Install.bat afterwards (for testing)")
     a = ap.parse_args(argv)
     try:
-        return update(ROOT, check=a.check, yes=a.yes, force=a.force, zip_file=a.zip, api_url=a.api_url)
+        return update(ROOT, check=a.check, yes=a.yes, force=a.force, zip_file=a.zip, api_url=a.api_url,
+                      stop=not a.no_stop, install=not a.no_install)
     except UpdateError as e:
         say(f"\n[ERROR] {e}")
         return 1
