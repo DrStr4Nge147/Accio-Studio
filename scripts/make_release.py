@@ -16,7 +16,8 @@ What a run does, in order:
   4. packages the zip and writes <zip>.sha256 next to it,
   5. with --bump or --version: sets the new version in frontend\\package.json and package-lock.json, commits it as
      "Release vX.Y.Z" and tags it vX.Y.Z. Nothing is pushed: run `git push --follow-tags` yourself.
-Without --bump/--version the current version is rebuilt as it is.
+Without --bump/--version the current version is rebuilt as it is. Started with no arguments in a console (for example
+by double-clicking make_release.bat), it shows a menu instead and asks for the kind of release.
 """
 from __future__ import annotations
 
@@ -234,6 +235,44 @@ def commit_and_tag(root: Path, version: str) -> bool:
     return True
 
 
+def ask_release_options(root: Path, ask=input) -> list[str] | None:
+    """The menu shown when the script is started without arguments in a console. Returns the equivalent command-line
+    arguments, or None when the user cancels. Bad input is retried a few times, then treated as a cancel."""
+    current = package_version(root)
+    extra: list[str] = []
+    status = git(root, "status", "--porcelain")
+    if status is not None and status.strip():
+        print("\nThere are uncommitted changes:\n" + status)
+        if ask("Build anyway? The zip will then not match any commit. [y/N]: ").strip().lower() != "y":
+            print("Commit them first, then run this again.")
+            return None
+        extra.append("--allow-dirty")
+    choices = {
+        "1": (["--bump", "patch"], bump_version(current, "patch")),
+        "2": (["--bump", "minor"], bump_version(current, "minor")),
+        "3": (["--bump", "major"], bump_version(current, "major")),
+        "4": ([], current),
+    }
+    print(f"\nAccio Studio is at version {current}. What kind of release is this?")
+    print(f"  1  Patch   -> {choices['1'][1]}   bug fixes and small changes")
+    print(f"  2  Minor   -> {choices['2'][1]}   new features")
+    print(f"  3  Major   -> {choices['3'][1]}   big or breaking changes")
+    print(f"  4  Rebuild -> {current}   the same version again, no commit or tag (for testing)")
+    print("  5  Cancel")
+    for _ in range(3):
+        pick = ask("Choose [1-5]: ").strip()
+        if pick == "5":
+            return None
+        if pick in choices:
+            args, version = choices[pick]
+            what = "runs the tests, rebuilds the frontend, packages the zip" + (", then commits and tags the new version" if args else "")
+            if ask(f"Release {version}? This {what}. Continue? [Y/n]: ").strip().lower() in ("n", "no"):
+                return None
+            return extra + args
+        print("Please type a number from 1 to 5.")
+    return None
+
+
 def main(argv: list[str] | None = None, root: Path = ROOT) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--version", help="release exactly this version (default: the version in frontend\\package.json)")
@@ -243,6 +282,11 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> None:
     ap.add_argument("--no-build", action="store_true", help="do not run `npm run build` (frontend\\dist must be newer than the sources)")
     ap.add_argument("--skip-tests", action="store_true", help="do not run the test suite first")
     ap.add_argument("--allow-dirty", action="store_true", help="package even with uncommitted changes")
+    if argv is None and len(sys.argv) == 1 and sys.stdin is not None and sys.stdin.isatty():
+        argv = ask_release_options(root)  # started by double-click or without arguments: offer the choices
+        if argv is None:
+            print("Cancelled. Nothing was changed.")
+            return
     a = ap.parse_args(argv)
     if a.version and a.bump:
         raise SystemExit("use either --version or --bump, not both")

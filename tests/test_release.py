@@ -234,3 +234,57 @@ def test_a_folder_that_is_not_a_git_repository_still_releases(tree, tmp_path, ca
     out = run_release(tree, tmp_path, "--bump", "minor")
     assert (out / "AccioStudio-2.4.0.zip").is_file() and make_release.package_version(tree) == "2.4.0"
     assert "not a git repository" in capsys.readouterr().err
+
+
+# --------------------------------------------------------------------------- the menu
+
+def answers(*given: str):
+    """A fake input() that returns the given answers in order and fails if asked more."""
+    it = iter(given)
+
+    def ask(prompt: str = "") -> str:
+        try:
+            return next(it)
+        except StopIteration:
+            raise AssertionError(f"asked again: {prompt!r}")
+
+    return ask
+
+
+@pytest.mark.parametrize("pick, expected", [("1", ["--bump", "patch"]), ("2", ["--bump", "minor"]), ("3", ["--bump", "major"]), ("4", [])])
+def test_menu_choices_map_to_arguments(repo, pick, expected):
+    assert make_release.ask_release_options(repo, ask=answers(pick, "")) == expected  # "" = accept the confirmation
+
+
+def test_menu_cancel_and_declined_confirmation_do_nothing(repo):
+    assert make_release.ask_release_options(repo, ask=answers("5")) is None
+    assert make_release.ask_release_options(repo, ask=answers("1", "n")) is None
+
+
+def test_menu_retries_bad_input_a_few_times_then_cancels(repo):
+    assert make_release.ask_release_options(repo, ask=answers("x", "9", "")) is None  # three tries, no endless loop
+    assert make_release.ask_release_options(repo, ask=answers("x", "2", "y")) == ["--bump", "minor"]
+
+
+def test_menu_shows_what_each_choice_would_produce(repo, capsys):
+    make_release.ask_release_options(repo, ask=answers("5"))
+    out = capsys.readouterr().out
+    assert "version 2.3.4" in out and "-> 2.3.5" in out and "-> 2.4.0" in out and "-> 3.0.0" in out
+
+
+def test_menu_handles_uncommitted_changes_first(repo):
+    (repo / "README.md").write_text("changed")
+    assert make_release.ask_release_options(repo, ask=answers("n")) is None
+    assert make_release.ask_release_options(repo, ask=answers("y", "4", "")) == ["--allow-dirty"]
+
+
+def test_menu_is_only_used_for_an_interactive_run_without_arguments(repo, tmp_path, monkeypatch):
+    def boom(*a, **k):
+        raise AssertionError("menu must not appear")
+
+    monkeypatch.setattr(make_release, "ask_release_options", boom)
+    monkeypatch.setattr(make_release.sys, "argv", ["make_release.py"])
+    monkeypatch.setattr(make_release.sys.stdin, "isatty", lambda: False, raising=False)  # piped or scheduled: no menu
+    run_release(repo, tmp_path)  # explicit argv anyway
+    monkeypatch.setattr(make_release.sys, "argv", ["make_release.py", "--no-build"])
+    make_release.main(["--skip-tests", "--no-build", "--out", str(outside(tmp_path, "o3"))], root=repo)
