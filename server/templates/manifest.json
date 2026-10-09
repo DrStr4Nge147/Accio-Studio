@@ -20,26 +20,35 @@
       "min_size": 500000
     }
   },
+  "nodes_mirror_url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/nodes/{name}-{commit}.zip?download=true",
   "nodes": [
     {
       "name": "rgthree-comfy",
       "repo": "rgthree/rgthree-comfy",
-      "commit": "602ae5ea451ee7ea8e1ee3beaf2c7dd9ab7d10ed"
+      "commit": "602ae5ea451ee7ea8e1ee3beaf2c7dd9ab7d10ed",
+      "size": 4105556,
+      "sha256": "b812586e6f82e6797b9cfa93636433b80f460b39faeb511915102878d95af5f7"
     },
     {
       "name": "ComfyUI-KJNodes",
       "repo": "kijai/ComfyUI-KJNodes",
-      "commit": "d3cfe21625e5170126ce06fbfcfe1d88108688c3"
+      "commit": "d3cfe21625e5170126ce06fbfcfe1d88108688c3",
+      "size": 1131840,
+      "sha256": "cf4d48541219ecf8ef693b7fc25871eae9fbb6e417449871b39753bc087a6109"
     },
     {
       "name": "ComfyUI_essentials",
       "repo": "cubiq/ComfyUI_essentials",
-      "commit": "9d9f4bedfc9f0321c19faf71855e228c93bd0dc9"
+      "commit": "9d9f4bedfc9f0321c19faf71855e228c93bd0dc9",
+      "size": 72361,
+      "sha256": "b5a6cd3cdb88abe80c9ba021ffb3f20760418d7f212a4bb139bd7defa3d59e44"
     },
     {
       "name": "ComfyUI-AusBoss",
       "repo": "ausboss/ComfyUI-AusBoss",
-      "commit": "d87c259b64b69d1e1f8005e938f8ef3512675471"
+      "commit": "d87c259b64b69d1e1f8005e938f8ef3512675471",
+      "size": 22316617,
+      "sha256": "d5dec8bfa0d5fdf53ca10edc14c19d063df58c926f86a72e363b82d7eecd2b40"
     },
     {
       "name": "ComfyUI-PixelDriftFix",
@@ -49,24 +58,32 @@
     {
       "name": "ComfyUI-Fantastic-MiniMaxH3-PromptBuilder",
       "repo": "Adudeguyman/ComfyUI-Fantastic-MiniMaxH3-PromptBuilder",
-      "commit": "01b6d8d91180c6994840e34312a65febe02cc4f5"
+      "commit": "01b6d8d91180c6994840e34312a65febe02cc4f5",
+      "size": 3819508,
+      "sha256": "bc65710da6257209dd8c751bc40fda53cff8af3973d57e05b4217396b0299bf0"
     },
     {
       "name": "ComfyUI-Krea2T-Enhancer",
       "repo": "capitan01R/ComfyUI-Krea2T-Enhancer",
       "commit": "e1f60f79e168c62b1cb1cf773dfb3ae4ee2292e2",
+      "size": 39029,
+      "sha256": "9c2532c3a07b30f1db2c71895a1e9d05ea04eb7e36752eea23022afd6850e709",
       "registry_version": "1.4.2"
     },
     {
       "name": "ComfyUI-RBG-SmartSeedVariance",
       "repo": "RamonGuthrie/ComfyUI-RBG-SmartSeedVariance",
       "commit": "00fe680709fc7a0b943994dc91c99bbd20e64d7b",
+      "size": 7559061,
+      "sha256": "6371b11ebcea767d85debe5c2243f9d5f973621d22706e068f8c4cfa71b1c46d",
       "registry_version": "2.2.1"
     },
     {
       "name": "ComfyUI-GGUF",
       "repo": "city96/ComfyUI-GGUF",
-      "commit": "6ea2651e7df66d7585f6ffee804b20e92fb38b8a"
+      "commit": "6ea2651e7df66d7585f6ffee804b20e92fb38b8a",
+      "size": 38051,
+      "sha256": "aad273a0b774684285b4496f6edff7e2293bd29d71ef89926d6861bfdf4947ac"
     }
   ],
   "models": [

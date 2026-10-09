@@ -29,6 +29,9 @@ set "ARGS=%*"
 if defined ARGS if not "!ARGS:nopause=!"=="!ARGS!" set "NOPAUSE=1"
 if defined ARGS set "ARGS=!ARGS:nopause=!"
 
+:: uv is pinned (not "latest") so an installation done next year behaves like one done today; it also decides which Python 3.12 is fetched.
+set "UV_VERSION=0.12.23"
+set "UV_SHA256=75d05de6762778c31ee183398de7dd15093fad0ed90b1f236d8205ea5ec00c90"
 set "PATH=%~dp0bin;%PATH%"
 set "UV_PYTHON_INSTALL_DIR=%~dp0bin\python"
 set "UV_PYTHON_PREFERENCE=only-managed"
@@ -36,10 +39,16 @@ set "UV_CACHE_DIR=%~dp0bin\uv-cache"
 
 :: [1/3] Portable uv
 if not exist "bin\uv.exe" (
-    echo [1/3] Downloading portable uv...
+    echo [1/3] Downloading portable uv %UV_VERSION%...
     if not exist "bin" mkdir bin
-    curl.exe -L -f --ssl-no-revoke --connect-timeout 30 --speed-time 60 --speed-limit 1024 --retry 3 --retry-delay 3 -o uv.zip "https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip"
+    curl.exe -L -f --ssl-no-revoke --connect-timeout 30 --speed-time 60 --speed-limit 1024 --retry 3 --retry-delay 3 -o uv.zip "https://github.com/astral-sh/uv/releases/download/%UV_VERSION%/uv-x86_64-pc-windows-msvc.zip"
     if !errorlevel! neq 0 goto :fail
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "if ((Get-FileHash -LiteralPath 'uv.zip' -Algorithm SHA256).Hash -ne $env:UV_SHA256.ToUpper()) { exit 1 }"
+    if !errorlevel! neq 0 (
+        echo [ERROR] The downloaded uv does not match its expected checksum. Check the connection and run Install.bat again.
+        del uv.zip
+        goto :fail
+    )
     tar -xf uv.zip
     move /Y uv.exe bin\uv.exe >nul
     if exist "uvw.exe" del uvw.exe >nul

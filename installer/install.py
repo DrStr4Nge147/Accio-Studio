@@ -320,6 +320,31 @@ def write_pip_constraints() -> Path:
     return path
 
 
+def fetch_node(manifest: dict, n: dict, zip_path: Path) -> None:
+    """Download one pinned node pack: from our mirror first (checked against the size and sha256 in the manifest), then from
+    the author's GitHub at the pinned commit. GitHub's archives are not byte-stable, so only the mirror copy has a checksum."""
+    sources = []
+    if manifest.get("nodes_mirror_url") and n.get("sha256"):
+        sources.append((manifest["nodes_mirror_url"].format(name=n["name"], commit=n["commit"]), n))
+    sources.append((f"https://github.com/{n['repo']}/archive/{n['commit']}.zip", None))
+    for url, checked in sources:
+        host = url.split("/")[2]
+        if checked and remote_size(url) != checked["size"]:
+            say(f"    {host} does not have {n['name']}; trying the next source.")
+            continue
+        try:
+            curl_download(url, zip_path, expected_size=checked["size"] if checked else None)
+        except RuntimeError as e:
+            say(f"    [!] {host}: {e}")
+            continue
+        if checked and sha256_of(zip_path) != checked["sha256"]:
+            say(f"    [!] {n['name']} from {host} failed its checksum; discarding it.")
+            zip_path.unlink(missing_ok=True)
+            continue
+        return
+    raise RuntimeError(f"could not download {n['name']} from any source")
+
+
 def install_nodes(manifest: dict) -> None:
     nodes_dir = comfy_dir() / "custom_nodes"
     constraints = write_pip_constraints()
@@ -331,7 +356,7 @@ def install_nodes(manifest: dict) -> None:
             if dest.exists():
                 shutil.rmtree(dest)  # unpinned leftovers inside the bundled install only
             zip_path = cache / f"{n['name']}-{n['commit']}.zip"
-            curl_download(f"https://github.com/{n['repo']}/archive/{n['commit']}.zip", zip_path)
+            fetch_node(manifest, n, zip_path)
             tmp = cache / f"x-{n['name']}"
             shutil.rmtree(tmp, ignore_errors=True)
             extract_zip(zip_path, tmp)
