@@ -402,6 +402,14 @@ def locate_existing(models_from: Path | None, m: dict) -> Path | None:
     return None
 
 
+def confirm_download(need: int, count: int, interactive: bool) -> bool:
+    """Ask before a large download starts. Only "n" or "no" says no; non-interactive runs (--yes) never ask."""
+    if not interactive:
+        return True
+    answer = ask(f"\n  Download {fmt_size(need)} ({count} file(s)) now? You can stop with Ctrl+C and continue later. [Y/n]: ", "y")
+    return answer.lower() not in ("n", "no")
+
+
 def install_models(manifest: dict, models_from: Path | None, optional: bool, interactive: bool, groups: frozenset[str] = frozenset()) -> list[str]:
     dest_root = comfy_dir() / "models"
     todo, rows = [], []
@@ -433,6 +441,8 @@ def install_models(manifest: dict, models_from: Path | None, optional: bool, int
         return []
     if free_space(dest_root) < need * 1.02 + 2_000_000_000:
         raise RuntimeError("not enough free disk space for the model downloads")
+    if not confirm_download(need, len(todo), interactive):
+        raise RuntimeError("download cancelled at your request. Run Install.bat again when you are ready: finished files are kept and partial ones resume.")
     failed = []
     for m, dest, _ in todo:
         say(f"\n  downloading {m['file']} ({fmt_size(m['size'])})")
@@ -562,7 +572,9 @@ def main() -> int:
     else:
         mf_raw = args.models_from or state.get("models_from") or ""
         if not mf_raw and interactive:
-            mf_raw = ask("  Use models from an existing ComfyUI folder? (path or Enter to skip): ", "")
+            required = sum(m["size"] for m in manifest["models"] if m["required"])
+            say(f"  The required models (about {fmt_size(required)}) are always installed. A few questions first.")
+            mf_raw = ask("  Already have these models in another ComfyUI? Type its folder to reuse them (read-only, nothing is copied),\n  or just press Enter to download them: ", "")
         models_from = None
         if mf_raw:
             models_from = models_dir_of(mf_raw)
@@ -574,11 +586,11 @@ def main() -> int:
                 say(f"  Using models from {models_from} (read-only).")
         state["models_from"] = str(models_from) if models_from else ""
         optional = args.optional_loras == "yes" or (
-            args.optional_loras == "ask" and interactive and ask("  Also install the 4 optional preset LoRAs (Head/Body swap, Remove/Move object, ~0.6 GB)? [y/N]: ", "n").lower() == "y"
+            args.optional_loras == "ask" and interactive and ask("  Also install the 4 optional preset LoRAs (head swap, body swap, remove object, move object; about 0.6 GB)? [y/N]: ", "n").lower() == "y"
         )
         groups = frozenset(
             {"klein"} if args.klein == "yes" or (
-                args.klein == "ask" and interactive and ask("  Also install Flux2 Klein 9B for Edit (GGUF, ~19 GB, needs the ComfyUI-GGUF pack)? [y/N]: ", "n").lower() == "y"
+                args.klein == "ask" and interactive and ask("  Also install Flux2 Klein 9B, a second Edit model for Multi-edit with up to 3 images (about 19 GB)? [y/N]: ", "n").lower() == "y"
             ) else ()
         )
 
