@@ -349,3 +349,21 @@ def test_the_installer_is_started_with_an_explicit_relative_path(tmp_path, monke
     monkeypatch.setattr(up.subprocess, "run", fake_run)
     assert up.run_installer(tmp_path) is True
     assert seen["cmd"] == ["cmd", "/c", ".\\Install.bat", "nopause"] and seen["cwd"] == tmp_path
+
+
+def test_no_published_release_is_a_plain_message(monkeypatch):
+    import urllib.error
+
+    def not_found(url, timeout=15):
+        raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(up, "_get", not_found)
+    with pytest.raises(up.UpdateError, match="no release has been published yet"):
+        up.fetch_latest("https://api/latest")
+
+    def limited(url, timeout=15):
+        raise urllib.error.HTTPError(url, 403, "rate limit exceeded", {}, None)
+
+    monkeypatch.setattr(up, "_get", limited)
+    with pytest.raises(up.UpdateError, match="try again later"):
+        up.fetch_latest("https://api/latest")

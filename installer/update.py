@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -118,7 +119,13 @@ def fetch_latest(api_url: str | None = None) -> dict:
     url = api_url or default_api_url()
     if not url:
         raise UpdateError("no update address is configured")
-    info = parse_release(json.loads(_get(url)))
+    try:
+        answer = json.loads(_get(url))
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            raise UpdateError("no release has been published yet, so there is nothing to update to") from None
+        raise UpdateError(f"GitHub answered with an error ({e.code}); try again later") from None
+    info = parse_release(answer)
     if not info["sha256"] and info["sha_url"]:  # "<hash> *<file>" next to the zip
         m = re.match(r"([0-9a-fA-F]{64})", _get(info["sha_url"]).decode("utf-8", "ignore").strip())
         info["sha256"] = m.group(1).lower() if m else None
