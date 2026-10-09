@@ -94,7 +94,7 @@ if exist ".zrok_share" (
 echo       The name must be letters and digits only, 4 to 32 characters, and unique on zrok.
 echo       Pick a NEW name, not the one used by another app.
 set "NAME="
-set /p NAME="Name for Accio [e.g. accionick]: "
+set /p NAME="Name for Accio [e.g. myaccio]: "
 if "!NAME!"=="" (
     echo [ERROR] No name entered. Nothing was reserved.
     pause

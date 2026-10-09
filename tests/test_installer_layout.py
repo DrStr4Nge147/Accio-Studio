@@ -257,3 +257,28 @@ def test_unknown_driver_or_build_is_left_alone():
 def test_choose_build_applies_the_driver_check(capsys):
     build, flags = install.choose_build(nv("8.6", "551.23"), interactive=False)
     assert build == "nvidia_cu126"
+
+
+# --------------------------------------------------------------------------- nothing outside the install folder, nothing personal shipped
+
+
+def test_python_is_installed_without_a_shim_or_a_registry_entry():
+    bat = (ROOT / "Install.bat").read_text(encoding="utf-8")
+    line = next(l for l in bat.splitlines() if l.strip().startswith("uv python install"))
+    assert "--no-bin" in line and "--no-registry" in line  # else uv writes %USERPROFILE%\.local\bin and HKCU\Software\Python
+
+
+def test_every_cache_the_installer_uses_lives_inside_the_folder():
+    bat = (ROOT / "Install.bat").read_text(encoding="utf-8")
+    assert 'UV_CACHE_DIR=%~dp0bin' in bat and 'UV_PYTHON_INSTALL_DIR=%~dp0bin' in bat and "only-managed" in bat
+    src = (ROOT / "installer" / "install.py").read_text(encoding="utf-8")
+    assert 'os.environ["PIP_CACHE_DIR"] = str(DATA / "cache" / "pip")' in src  # pip would use %LOCALAPPDATA%\pip
+
+
+def test_no_personal_strings_in_shipped_files():
+    banned = ["accionick", "z-fusion", "zfusion", "desktop-2oh5jfo", "gmail.com", "nicrafbords"]
+    shipped = [p for pat in ("*.bat", "README.md", "requirements.txt", "installer/*.py", "server/*.py", "scripts/export-templates.*")
+               for p in ROOT.glob(pat)]
+    assert shipped
+    hits = [f"{p.name}: {b}" for p in shipped for b in banned if b in p.read_text(encoding="utf-8", errors="ignore").lower()]
+    assert not hits, hits

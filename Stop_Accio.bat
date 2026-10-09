@@ -41,7 +41,7 @@ echo   - the Tailscale address Accio published ^(Tailscale itself keeps running^
 echo.
 
 :: Only processes of this folder are stopped: programs located under it, and whatever listens on its two ports as long as it
-:: is one of our main.py scripts. Z-Fusion, a separate ComfyUI or anything else on the PC is not touched.
+:: is one of our main.py scripts. Any other app, a separate ComfyUI or anything else on the PC is not touched.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$root = $env:ACCIO_ROOT.TrimEnd('\') + '\';" ^
   "$ports = @([int]$env:ACCIO_PORT); if ($env:COMFY_EXTERNAL -ne '1') { $ports += [int]$env:COMFY_PORT };" ^

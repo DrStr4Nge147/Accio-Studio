@@ -58,6 +58,7 @@ if not exist "bin\uv.exe" (
     echo [1/3] uv already present.
 )
 
+:: uv python install runs with --no-bin and --no-registry: no python shim in the user profile and no entry in the Windows registry.
 :: [2/3] Accio server environment (Python 3.12 managed by uv; separate from ComfyUI's Python)
 :: The environment points at absolute paths, so moving or renaming this folder breaks it: rebuild it then.
 if exist "env\Scripts\python.exe" (
@@ -69,7 +70,7 @@ if exist "env\Scripts\python.exe" (
 )
 if not exist "env\Scripts\python.exe" (
     echo [2/3] Creating the Python environment ^(env^)...
-    uv python install 3.12
+    uv python install 3.12 --no-bin --no-registry
     if !errorlevel! neq 0 goto :fail
     uv venv --python 3.12 env
     if !errorlevel! neq 0 goto :fail

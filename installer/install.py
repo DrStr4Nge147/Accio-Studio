@@ -530,6 +530,8 @@ def main() -> int:
     state = load_state()
     ctx: dict = {}
 
+    # pip (used for the custom-node requirements) would otherwise cache wheels in %LOCALAPPDATA%\pip, outside this folder
+    os.environ["PIP_CACHE_DIR"] = str(DATA / "cache" / "pip")
     problem = install_path_problem(ROOT)
     if problem:
         say(f"\n[ERROR] {problem}")
