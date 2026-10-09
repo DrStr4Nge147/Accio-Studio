@@ -28,7 +28,10 @@ changes. Everything lives in this folder, so deleting the folder uninstalls it.
 
 ## Install (once)
 
-1. Unzip `AccioStudio-<version>.zip` somewhere with plenty of space, for example `D:\AccioStudio`. Avoid `C:\Program Files`.
+1. Unzip `AccioStudio-<version>.zip` into a **short folder path** with plenty of space, for example `C:\AccioStudio` or `D:\AccioStudio`.
+   The path must be at most 100 characters and must not contain `!`: Windows cannot load some of the engine's files from a deeper
+   folder, so `Install.bat` stops with a clear message instead. Avoid `C:\Program Files`. **Do not move or rename the folder
+   afterwards** (if you do, run `Install.bat` again; it repairs the Python environment and keeps everything else).
 2. Double-click **`Install.bat`** and wait. It is safe to close it and run it again later: it resumes and skips finished steps.
    It downloads the tools, the engine (ComfyUI 0.38.0), 9 pinned custom-node packs and the models, and checks every model
    file is complete.
@@ -67,13 +70,13 @@ The first job after starting takes longer: the models have to load into GPU memo
 Install.bat  Run_Accio.bat  Run_Accio-zrok-only.bat  Setup_Zrok.bat  Stop_Accio.bat  Reset_Password.bat
 bin\        portable tools (uv, 7zr, Node when needed, cloudflared, zrok)
 env\        Python environment of the Accio server
-comfyui\    the engine and the models
-server\     the Accio server and its prompt templates (templates\manifest.json lists every pinned version)
+comfyui\    the engine: ComfyUI\ (with the models in ComfyUI\models\) and python_embededserver\     the Accio server and its prompt templates (templates\manifest.json lists every pinned version)
 data\       your history, thumbnails, uploads and logs (data\logs\comfyui.log is the engine's log)
 settings.json   optional settings (below). Holds your password hash once set; do not share it.
 ```
 
-Results are also saved by the engine in `comfyui\ComfyUI_windows_portable\ComfyUI\output\AccioStudio\`.
+Results are also saved by the engine in `comfyui\ComfyUI\output\AccioStudio\`.
+(Installs made by earlier builds keep working: their engine lives one level deeper, in `comfyui\ComfyUI_windows_portable\`.)
 
 ### Optional `settings.json`
 
@@ -103,6 +106,9 @@ Create it next to `Run_Accio.bat`. Unknown keys are ignored.
 |---|---|
 | "The backend did not answer within 3 minutes" | open `data\logs\comfyui.log`; update the Nvidia driver; run `Install.bat` again |
 | Settings shows missing models or nodes | run `Install.bat` again, it downloads and verifies what is missing |
+| `Install.bat` says the folder path is too long | move the whole folder closer to the drive root, e.g. `C:\AccioStudio`, and run it again |
+| "The Python environment does not start" | the folder was moved or renamed; run `Install.bat`, it rebuilds the environment |
+| The install seems stuck on a download | a connection that delivers nothing for a minute is cancelled and retried by itself. If it still fails, close the window and run `Install.bat` again: finished files are kept and partial ones resume. |
 | "The backend ran out of GPU memory" | close other GPU programs, lower the size, or use Standard instead of Detailed |
 | A job seems stuck at "Waiting for the GPU" | another job is running in the engine; the queue pane shows it |
 | Can't reach it from the phone | same Wi-Fi? choose option 4, and allow private networks if Windows Firewall asks |

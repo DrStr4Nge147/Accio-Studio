@@ -16,6 +16,13 @@ if not exist "env\Scripts\python.exe" (
     pause
     exit /b 1
 )
+env\Scripts\python.exe -c "import sys" >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] The Python environment does not start. This usually means the folder was moved or renamed after installing.
+    echo         Run Install.bat: it rebuilds the environment and keeps everything else.
+    pause
+    exit /b 1
+)
 
 for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py port`) do set "ACCIO_PORT=%%a"
 for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py comfy_port`) do set "COMFY_PORT=%%a"

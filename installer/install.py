@@ -25,16 +25,29 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from core import ROOT, curl_download, extract_zip, fmt_size, free_space, load_manifest, verify_safetensors  # noqa: E402
+from core import ROOT, curl_download, extract_zip, fmt_size, free_space, install_path_problem, load_manifest, verify_safetensors  # noqa: E402
 
 BIN = ROOT / "bin"
 DATA = ROOT / "data"
-COMFY_HOME = ROOT / "comfyui"
-PORTABLE = COMFY_HOME / "ComfyUI_windows_portable"
-COMFY = PORTABLE / "ComfyUI"
-PY = PORTABLE / "python_embeded" / "python.exe"
+COMFY_HOME = ROOT / "comfyui"  # flat layout: comfyui\ComfyUI and comfyui\python_embeded
+LEGACY_HOME = COMFY_HOME / "ComfyUI_windows_portable"  # nested layout of the first builds; still used when that is what is installed
 STATE_FILE = DATA / "install.json"
 OK, FAIL = [], []  # summary
+
+
+def comfy_base() -> Path:
+    """The folder holding the ComfyUI and python_embeded folders: comfyui, or the old nested one when only that exists."""
+    if not (COMFY_HOME / "python_embeded" / "python.exe").is_file() and (LEGACY_HOME / "python_embeded" / "python.exe").is_file():
+        return LEGACY_HOME
+    return COMFY_HOME
+
+
+def comfy_dir() -> Path:
+    return comfy_base() / "ComfyUI"
+
+
+def py() -> Path:
+    return comfy_base() / "python_embeded" / "python.exe"
 
 
 def say(msg: str = "") -> None:
@@ -147,11 +160,11 @@ def choose_build(gpu: dict, interactive: bool) -> tuple[str, str]:
     return build, flags
 
 
-def read_build_flags(build: str) -> str:
-    """AMD/Intel builds ship their own launcher; reuse its flags."""
+def read_build_flags(build: str, package: Path) -> str:
+    """AMD/Intel builds ship their own launcher in the extracted package; reuse its flags."""
     for name in ("run_amd_gpu.bat", "run_intel_gpu.bat"):
         if (build == "intel") == ("intel" in name):
-            bat = PORTABLE / name
+            bat = package / name
             if bat.is_file():
                 m = re.search(r"main\.py\s+(.*)", bat.read_text(encoding="utf-8", errors="replace"))
                 if m:
@@ -162,48 +175,77 @@ def read_build_flags(build: str) -> str:
 # --------------------------------------------------------------------------- 3. ComfyUI
 
 def installed_comfy_version() -> str | None:
-    f = COMFY / "comfyui_version.py"
+    f = comfy_dir() / "comfyui_version.py"
     if not f.is_file():
         return None
     m = re.search(r'__version__\s*=\s*"([^"]+)"', f.read_text(encoding="utf-8"))
     return m.group(1) if m else None
 
 
-def install_comfyui(manifest: dict, build: str, sevenzip: Path) -> None:
+def flatten_portable(extracted: Path, home: Path, build: str) -> str:
+    """Move the ComfyUI and python_embeded folders out of the extracted portable package into `home`, drop everything else in it
+    (update scripts, run_*.bat, README, the advanced folder) and the extraction folder. Returns the launch flags the AMD/Intel
+    package carries in its run_*.bat ("" otherwise): they are read here, before that file is deleted."""
+    tops = [p for p in extracted.iterdir() if p.is_dir() and (p / "python_embeded").is_dir() and (p / "ComfyUI").is_dir()]
+    if len(tops) != 1:
+        raise RuntimeError("unexpected ComfyUI archive layout")
+    package = tops[0]
+    flags = read_build_flags(build, package)
+    for name in ("python_embeded", "ComfyUI"):  # ComfyUI last: its version file is what marks the install as finished
+        if (home / name).exists():
+            raise RuntimeError(f"{home / name} already exists")
+        shutil.move(str(package / name), str(home / name))
+    shutil.rmtree(extracted, ignore_errors=True)
+    return flags
+
+
+def install_comfyui(manifest: dict, build: str, sevenzip: Path) -> str:
+    """Installs the bundled ComfyUI. Returns the AMD/Intel launch flags ("" when there are none or nothing was installed)."""
     want = manifest["comfyui"]["version"]
     have = installed_comfy_version()
-    if have == want and PY.is_file():
+    extracted = COMFY_HOME / "_extract"
+    if have == want and py().is_file():
         say(f"  ComfyUI {have} already installed.")
-        return
-    if PORTABLE.exists():
+        shutil.rmtree(extracted, ignore_errors=True)  # left behind if an earlier run stopped right at the end
+        return ""
+    existing = [p for p in (COMFY_HOME / "ComfyUI", COMFY_HOME / "python_embeded", LEGACY_HOME) if p.exists()]
+    if existing and extracted.exists():
+        # An earlier run stopped while unpacking or moving. Nothing of value is in there yet (models come later): start clean.
+        for p in existing:
+            shutil.rmtree(p, ignore_errors=True)
+    elif existing:
         raise RuntimeError(
-            f"{PORTABLE} exists but is ComfyUI {have or 'unknown/incomplete'}, not {want}. "
+            f"{COMFY_HOME} holds ComfyUI {have or 'unknown/incomplete'}, not {want}. "
             "Delete the 'comfyui' folder to reinstall (models stored there would be removed)."
         )
     url = manifest["comfyui"]["release_url"].format(tag=manifest["comfyui"]["tag"], build=build)
     archive = COMFY_HOME / f"ComfyUI_windows_portable_{build}.7z"
     size = remote_size(url)
-    need = (size or 2_000_000_000) * 4  # archive + extracted
-    if free_space(COMFY_HOME) < need:
-        raise RuntimeError(f"not enough free disk space (need about {fmt_size(need)})")
-    say(f"  downloading ComfyUI {want} ({build}, {fmt_size(size) if size else 'size unknown'}) ...")
-    curl_download(url, archive, expected_size=size)
+    if not (size and archive.is_file() and archive.stat().st_size == size):  # a finished download is only kept after its size matched
+        need = (size or 2_000_000_000) * 4  # archive + extracted
+        if free_space(COMFY_HOME) < need:
+            raise RuntimeError(f"not enough free disk space (need about {fmt_size(need)})")
+        say(f"  downloading ComfyUI {want} ({build}, {fmt_size(size) if size else 'size unknown'}) ...")
+        curl_download(url, archive, expected_size=size)
     say("  extracting (a few minutes) ...")
-    r = subprocess.run([str(sevenzip), "x", "-aoa", f"-o{COMFY_HOME}", str(archive)], capture_output=True, text=True)
-    if r.returncode != 0 or not PY.is_file():
+    shutil.rmtree(extracted, ignore_errors=True)
+    r = subprocess.run([str(sevenzip), "x", "-aoa", f"-o{extracted}", str(archive)], capture_output=True, text=True)
+    if r.returncode != 0:
         raise RuntimeError(f"extraction failed: {(r.stdout + r.stderr)[-300:]}")
-    archive.unlink()
+    flags = flatten_portable(extracted, COMFY_HOME, build)
+    archive.unlink(missing_ok=True)
     got = installed_comfy_version()
-    if got != want:
+    if got != want or not py().is_file():
         raise RuntimeError(f"installed ComfyUI reports version {got}, expected {want}")
     say(f"  ComfyUI {got} installed.")
+    return flags
 
 
 # --------------------------------------------------------------------------- 4. custom nodes
 
 def write_pip_constraints() -> Path:
     """Keep the portable build's torch stack fixed while node requirements install."""
-    out = subprocess.run([str(PY), "-m", "pip", "list", "--format=freeze"], capture_output=True, text=True).stdout
+    out = subprocess.run([str(py()), "-m", "pip", "list", "--format=freeze"], capture_output=True, text=True).stdout
     keep = [l for l in out.splitlines() if re.match(r"(?i)(torch|torchvision|torchaudio)==", l)]
     path = DATA / "pip-constraints.txt"
     DATA.mkdir(exist_ok=True)
@@ -212,7 +254,7 @@ def write_pip_constraints() -> Path:
 
 
 def install_nodes(manifest: dict) -> None:
-    nodes_dir = COMFY / "custom_nodes"
+    nodes_dir = comfy_dir() / "custom_nodes"
     constraints = write_pip_constraints()
     cache = DATA / "cache"
     for n in manifest["nodes"]:
@@ -238,7 +280,7 @@ def install_nodes(manifest: dict) -> None:
         req, req_ok = dest / "requirements.txt", dest / ".accio_reqs_ok"
         if req.is_file() and not req_ok.is_file():
             say(f"    installing requirements for {n['name']} ...")
-            r = subprocess.run([str(PY), "-m", "pip", "install", "--no-input", "--no-warn-script-location", "-c", str(constraints), "-r", str(req)])
+            r = subprocess.run([str(py()), "-m", "pip", "install", "--no-input", "--no-warn-script-location", "-c", str(constraints), "-r", str(req)])
             if r.returncode != 0:
                 raise RuntimeError(f"pip install failed for {n['name']}")
             req_ok.write_text("ok\n", encoding="utf-8")
@@ -269,7 +311,7 @@ def locate_existing(models_from: Path | None, m: dict) -> Path | None:
 
 
 def install_models(manifest: dict, models_from: Path | None, optional: bool, interactive: bool, groups: frozenset[str] = frozenset()) -> list[str]:
-    dest_root = COMFY / "models"
+    dest_root = comfy_dir() / "models"
     todo, rows = [], []
     for m in manifest["models"]:
         if not m["required"] and (m["group"] not in groups if "group" in m else not optional):
@@ -323,7 +365,7 @@ def write_extra_model_paths(models_from: Path) -> None:
     for folder in ("diffusion_models", "text_encoders", "vae", "loras"):
         if (models_from / folder).is_dir():
             lines.append(f"    {folder}: {(models_from / folder).as_posix()}/")
-    (COMFY / "extra_model_paths.yaml").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (comfy_dir() / "extra_model_paths.yaml").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 # --------------------------------------------------------------------------- 7. frontend
@@ -341,7 +383,7 @@ def ensure_frontend(force_portable_node: bool) -> None:
         node_dir = BIN / "node"
         if not (node_dir / "npm.cmd").is_file():
             say("  no Node.js found; downloading portable Node LTS into bin\\node ...")
-            idx = subprocess.run(["curl.exe", "-sL", "--ssl-no-revoke", "https://nodejs.org/dist/index.json"], capture_output=True, text=True).stdout
+            idx = subprocess.run(["curl.exe", "-sL", "--ssl-no-revoke", "-m", "60", "https://nodejs.org/dist/index.json"], capture_output=True, text=True).stdout
             ver = next(x["version"] for x in json.loads(idx) if x["lts"])
             zip_path = DATA / "cache" / f"node-{ver}.zip"
             curl_download(f"https://nodejs.org/dist/{ver}/node-{ver}-win-x64.zip", zip_path)
@@ -386,6 +428,11 @@ def main() -> int:
     state = load_state()
     ctx: dict = {}
 
+    problem = install_path_problem(ROOT)
+    if problem:
+        say(f"\n[ERROR] {problem}")
+        return 1
+
     step("Portable tools")
     if not run_step("7zr", lambda: ctx.update(sz=ensure_7zr(manifest))):
         return finish(state)
@@ -396,16 +443,18 @@ def main() -> int:
         build, flags = choose_build(gpu, interactive)
         if installed_comfy_version() and state.get("build"):
             build = state["build"]  # keep the build that is actually installed
+            if build in ("amd", "intel") and state.get("launch_flags"):
+                flags = state["launch_flags"]  # read from the package when it was installed; the file is gone now
         state.update(gpu=gpu, build=build, launch_flags=flags)
         ctx["build"] = build
     if not run_step("GPU detection", gpu_step):
         return finish(state)
 
     step(f"ComfyUI {manifest['comfyui']['version']} (bundled, portable)")
-    if not run_step("ComfyUI", lambda: install_comfyui(manifest, ctx["build"], ctx["sz"])):
+    if not run_step("ComfyUI", lambda: ctx.update(package_flags=install_comfyui(manifest, ctx["build"], ctx["sz"]))):
         return finish(state)
-    if state["build"] in ("amd", "intel") and not state.get("launch_flags"):
-        state["launch_flags"] = read_build_flags(state["build"])
+    if ctx["package_flags"] and state["build"] in ("amd", "intel"):
+        state["launch_flags"] = ctx["package_flags"]
     state["comfyui_version"] = installed_comfy_version()
     save_state(state)
 
@@ -426,7 +475,7 @@ def main() -> int:
             models_from = models_dir_of(mf_raw)
             if not models_from:
                 say(f"  [!] No models folder found at {mf_raw}; models will be downloaded instead.")
-            elif models_from.resolve() == (COMFY / "models").resolve():
+            elif models_from.resolve() == (comfy_dir() / "models").resolve():
                 models_from = None
             else:
                 say(f"  Using models from {models_from} (read-only).")

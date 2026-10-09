@@ -1,6 +1,6 @@
 """Settings loader. Values come from ROOT/settings.json (git-ignored) over built-in defaults.
 
-The ComfyUI backend is the bundled portable install (comfyui/ComfyUI_windows_portable) on 127.0.0.1:8189.
+The ComfyUI backend is the bundled portable install (comfyui/ComfyUI and comfyui/python_embeded) on 127.0.0.1:8189.
 `external_comfy_url` (advanced) points Accio at some other ComfyUI instead; then the bundled one is not started.
 """
 from __future__ import annotations
@@ -16,12 +16,13 @@ MANIFEST_FILE = TEMPLATES_DIR / "manifest.json"
 DATA_DIR = ROOT / "data"
 INSTALL_STATE_FILE = DATA_DIR / "install.json"
 FRONTEND_DIST = ROOT / "frontend" / "dist"
-BUNDLED_COMFY_DIR = ROOT / "comfyui" / "ComfyUI_windows_portable"
+BUNDLED_COMFY_DIR = ROOT / "comfyui"
+LEGACY_COMFY_DIR = BUNDLED_COMFY_DIR / "ComfyUI_windows_portable"  # nested layout of the first builds
 
 DEFAULTS: dict[str, Any] = {
     "comfy_port": 8189,
     "external_comfy_url": "",  # advanced: use this ComfyUI instead of the bundled one
-    "comfy_dir": "",  # advanced: override the bundled ComfyUI folder ("" = comfyui\ComfyUI_windows_portable)
+    "comfy_dir": "",  # advanced: override the bundled ComfyUI folder ("" = the bundled comfyui\ folder)
     "port": 7862,
     # Loopback by default. Set true (or pick "same network" in Run_Accio.bat) to listen on the LAN; login protects it.
     "lan_access": False,
@@ -71,8 +72,15 @@ def comfy_url(settings: dict[str, Any]) -> str:
     return ext or f"http://127.0.0.1:{int(settings['comfy_port'])}"
 
 
+def bundled_comfy_dir() -> Path:
+    """The folder holding the ComfyUI and python_embeded folders: comfyui, or the old nested one when only that is installed."""
+    if not (BUNDLED_COMFY_DIR / "python_embeded" / "python.exe").is_file() and (LEGACY_COMFY_DIR / "python_embeded" / "python.exe").is_file():
+        return LEGACY_COMFY_DIR
+    return BUNDLED_COMFY_DIR
+
+
 def comfy_dir(settings: dict[str, Any]) -> Path:
-    return Path(settings["comfy_dir"]) if settings["comfy_dir"] else BUNDLED_COMFY_DIR
+    return Path(settings["comfy_dir"]) if settings["comfy_dir"] else bundled_comfy_dir()
 
 
 def install_state() -> dict[str, Any]:

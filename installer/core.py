@@ -6,6 +6,7 @@ Nothing here writes outside the Accio folder it is pointed at.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import struct
 import subprocess
@@ -59,7 +60,36 @@ def verify_safetensors(path: Path, expected_size: int | None = None) -> tuple[bo
     return True, "ok"
 
 
+# --------------------------------------------------------------------------- install location
+
+# Windows loads DLLs through paths limited to 260 characters, and the deepest ones inside the bundled ComfyUI are about
+# 110 characters below comfyui\. A fresh install in a very deep folder failed with "WinError 206: The filename or
+# extension is too long" while torch loaded. Install.bat applies the same limit before it downloads anything.
+MAX_ROOT_PATH_LEN = 100
+
+
+def install_path_problem(root: Path) -> str | None:
+    """A message when `root` cannot hold an install, else None. ACCIO_SKIP_PATH_CHECK=1 turns the check off."""
+    if os.environ.get("ACCIO_SKIP_PATH_CHECK") == "1":
+        return None
+    text = str(root)
+    if "!" in text:
+        return f"The folder path contains '!' ({text}). Windows batch files cannot handle that. Move the folder to a path without it, e.g. C:\\AccioStudio."
+    if len(text) > MAX_ROOT_PATH_LEN:
+        return (
+            f"This folder path is too long ({len(text)} characters, the limit is {MAX_ROOT_PATH_LEN}):\n  {text}\n"
+            "Windows cannot load some of the engine's files from a path that deep. Move the whole folder closer to the "
+            "drive root, e.g. C:\\AccioStudio, then run Install.bat again."
+        )
+    return None
+
+
 # --------------------------------------------------------------------------- downloading
+
+# Without these, a connection that stalls (no bytes arriving) hangs the installer forever. With them curl gives up
+# (exit 28), and curl_download resumes the .part file.
+CURL_STALL_GUARD = ["--connect-timeout", "30", "--speed-time", "60", "--speed-limit", "1024"]
+
 
 def curl_download(url: str, dest: Path, *, expected_size: int | None = None, retries: int = 5) -> None:
     """Resumable download: <dest>.part is continued with `-C -`, then renamed. Raises RuntimeError on failure."""
@@ -67,7 +97,7 @@ def curl_download(url: str, dest: Path, *, expected_size: int | None = None, ret
     part = dest.with_name(dest.name + ".part")
     for attempt in range(1, retries + 1):
         rc = subprocess.run(
-            ["curl.exe", "-L", "-f", "-C", "-", "--retry", "3", "--retry-delay", "3", "--ssl-no-revoke", "-o", str(part), url]
+            ["curl.exe", "-L", "-f", "-C", "-", "--retry", "3", "--retry-delay", "3", "--ssl-no-revoke", *CURL_STALL_GUARD, "-o", str(part), url]
         ).returncode
         if rc == 0:
             break

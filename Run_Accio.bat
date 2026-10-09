@@ -27,6 +27,13 @@ if not exist "env\Scripts\python.exe" (
     pause
     exit /b 1
 )
+env\Scripts\python.exe -c "import sys" >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] The Python environment does not start. This usually means the folder was moved or renamed after installing.
+    echo         Run Install.bat: it rebuilds the environment and keeps everything else.
+    pause
+    exit /b 1
+)
 
 :: Settings (settings.json is optional): bundled ComfyUI folder, port, flags saved by the installer
 for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py comfy_url`) do set "COMFY_URL=%%a"

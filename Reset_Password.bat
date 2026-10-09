@@ -9,6 +9,13 @@ if not exist "env\Scripts\python.exe" (
     pause
     exit /b 1
 )
+env\Scripts\python.exe -c "import sys" >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] The Python environment does not start. This usually means the folder was moved or renamed after installing.
+    echo         Run Install.bat: it rebuilds the environment and keeps everything else.
+    pause
+    exit /b 1
+)
 echo.
 echo This removes the Accio password and signs every device out.
 echo The next time you open Accio it asks you to set a new password.

@@ -1,9 +1,18 @@
 @echo off
 chcp 65001 >nul
-setlocal enabledelayedexpansion
 title Accio Studio Installer
 
 cd /d "%~dp0"
+
+:: Refuse a folder the install cannot work in before anything is downloaded. This runs before delayed expansion is switched
+:: on because a "!" in the path would be eaten by it. The length limit is MAX_ROOT_PATH_LEN in installer\core.py (a test keeps both equal).
+if "%ACCIO_SKIP_PATH_CHECK%"=="1" goto :path_ok
+set "ACCIO_DIR=%~dp0"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=$env:ACCIO_DIR.TrimEnd('\'); if ($p.Contains('!')) { exit 13 }; if ($p.Length -gt 100) { exit 12 }; exit 0"
+if "%ERRORLEVEL%"=="13" goto :bad_char
+if "%ERRORLEVEL%"=="12" goto :too_long
+:path_ok
+setlocal enabledelayedexpansion
 
 echo.
 echo ==========================================
@@ -29,7 +38,7 @@ set "UV_CACHE_DIR=%~dp0bin\uv-cache"
 if not exist "bin\uv.exe" (
     echo [1/3] Downloading portable uv...
     if not exist "bin" mkdir bin
-    curl.exe -L -f --ssl-no-revoke -o uv.zip "https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip"
+    curl.exe -L -f --ssl-no-revoke --connect-timeout 30 --speed-time 60 --speed-limit 1024 --retry 3 --retry-delay 3 -o uv.zip "https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip"
     if !errorlevel! neq 0 goto :fail
     tar -xf uv.zip
     move /Y uv.exe bin\uv.exe >nul
@@ -41,6 +50,14 @@ if not exist "bin\uv.exe" (
 )
 
 :: [2/3] Accio server environment (Python 3.12 managed by uv; separate from ComfyUI's Python)
+:: The environment points at absolute paths, so moving or renaming this folder breaks it: rebuild it then.
+if exist "env\Scripts\python.exe" (
+    env\Scripts\python.exe -c "import sys" >nul 2>&1
+    if !errorlevel! neq 0 (
+        echo [2/3] The Python environment does not start ^(this folder was probably moved or renamed^). Rebuilding it...
+        rmdir /s /q env
+    )
+)
 if not exist "env\Scripts\python.exe" (
     echo [2/3] Creating the Python environment ^(env^)...
     uv python install 3.12
@@ -65,6 +82,27 @@ echo ==========================================
 if not defined NOPAUSE pause
 endlocal
 exit /b 0
+
+:too_long
+echo.
+echo [ERROR] This folder path is too long ^(more than 100 characters^):
+echo         "%~dp0"
+echo         Windows cannot load some of the engine's files from a path that deep.
+echo         Move the whole folder closer to the drive root, for example C:\AccioStudio, and run Install.bat again.
+echo.
+echo %* | find /i "nopause" >nul
+if errorlevel 1 pause
+exit /b 1
+
+:bad_char
+echo.
+echo [ERROR] This folder path contains an exclamation mark, which Windows batch files cannot handle:
+echo         "%~dp0"
+echo         Move the whole folder to a path without it, for example C:\AccioStudio, and run Install.bat again.
+echo.
+echo %* | find /i "nopause" >nul
+if errorlevel 1 pause
+exit /b 1
 
 :fail
 echo.

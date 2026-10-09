@@ -414,7 +414,7 @@ The user runs Z-Fusion by double-clicking `Run_Mobile.bat` (connection menu) or 
 `cloudflared.exe` and `zrok.exe` live in Accio's root, as in Z-Fusion. Download `cloudflared` automatically on first Cloudflare use, and `zrok` (pinned v1.1.x) in `Setup_Zrok.bat`. Add both executables, `env\`, `bin\`, `frontend\node_modules\`, `frontend\dist\`, `.zrok_share`, settings and history to `.gitignore`.
 
 ### 9.2 What `Run_Accio.bat` does, in order
-1. **ComfyUI (bundled):** check whether the bundled ComfyUI is already up (`http://127.0.0.1:8189/system_stats`). If not, start it in its own minimized window from `comfyui\ComfyUI_windows_portable\`: `python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port 8189 <GPU flags saved by the installer>` (GPU flags: `--disable-cuda-malloc --reserve-vram 1` on Nvidia cards with ≤ 8 GB VRAM, as in the user's installer). Port **8189** so it never collides with a separately run ComfyUI on 8188. Then poll `/system_stats` until it answers ("Starting ComfyUI…", timeout ≈ 3 min, clear error + log path on failure); no fixed sleeps. Advanced setting: "Use an external ComfyUI URL instead" for power users (then the bundled one is not started).
+1. **ComfyUI (bundled):** check whether the bundled ComfyUI is already up (`http://127.0.0.1:8189/system_stats`). If not, start it in its own minimized window from `comfyui\` (builds before the flat layout used `comfyui\ComfyUI_windows_portable\`; `config.bundled_comfy_dir()` still finds it): `python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port 8189 <GPU flags saved by the installer>` (GPU flags: `--disable-cuda-malloc --reserve-vram 1` on Nvidia cards with ≤ 8 GB VRAM, as in the user's installer). Port **8189** so it never collides with a separately run ComfyUI on 8188. Then poll `/system_stats` until it answers ("Starting ComfyUI…", timeout ≈ 3 min, clear error + log path on failure); no fixed sleeps. Advanced setting: "Use an external ComfyUI URL instead" for power users (then the bundled one is not started).
 2. **Self-heal:** if `env\` is missing, tell the user to run `Install.bat`. If `frontend\dist\index.html` is missing, run `npm install` + `npm run build` (same as Z-Fusion).
 3. **Start the server:** `env\Scripts\python.exe server\main.py --tunnel local|cloudflare|zrok`.
    - The server prints the local URL (`http://<LAN-IP>:7862`) and an **ASCII QR code**, using the `qrcode` package like Z-Fusion.
@@ -472,7 +472,7 @@ AccioStudio\
   Install.bat  Run_Accio.bat  Run_Accio-zrok-only.bat  Setup_Zrok.bat  Update.bat
   bin\            portable tools downloaded by Install.bat: uv, 7zr.exe, (node only if needed), cloudflared.exe, zrok.exe
   env\            Accio server venv (uv-managed Python)
-  comfyui\ComfyUI_windows_portable\   bundled ComfyUI (own python_embeded)
+  comfyui\ComfyUI\ and comfyui\python_embeded\   bundled ComfyUI (flat layout: the portable package is unpacked, ComfyUI and python_embeded moved up, the update scripts, run_*.bat, README and advanced\ discarded)
   server\  frontend\dist\  templates\ (= comfy-templates + manifest.json)
   data\           settings, history, thumbnails, logs
 ```
@@ -484,7 +484,7 @@ AccioStudio\
    - ≤ 8.3 GB VRAM → launch flags `--disable-cuda-malloc --reserve-vram 1`.
    - Non-Nvidia GPUs: warn that the int8 models were only tested on RTX 20+, and offer to continue or quit.
    - Save the choice to `data\install.json`.
-3. **Bundled ComfyUI v0.38.0** (pinned, the version the templates were exported against): download the release `.7z` from `https://github.com/comfyanonymous/ComfyUI/releases/download/v0.38.0/ComfyUI_windows_portable_<build>.7z` into `comfyui\` and extract it.
+3. **Bundled ComfyUI v0.38.0** (pinned, the version the templates were exported against): download the release `.7z` from `https://github.com/comfyanonymous/ComfyUI/releases/download/v0.38.0/ComfyUI_windows_portable_<build>.7z` into `comfyui\`, extract it to `comfyui\_extract`, move `ComfyUI\` and `python_embeded\` up into `comfyui\` and delete the rest (the AMD/Intel launch flags are read from `run_*_gpu.bat` first and saved in `data\install.json`). `Install.bat` refuses an install folder path longer than 100 characters or containing `!` (Windows cannot load torch's DLLs from a deeper folder), and downloads abort and resume when a connection stalls (`--speed-time 60 --speed-limit 1024`).
 4. **Only the custom nodes the templates need**, pinned for parity (not the reference installer's full list: no Manager, controlnet_aux, RES4LYF, WAS, Krea edit nodes, Pixaroma or PiD):
 
 | Pack | Source | Pin (installed on the user's PC, 2026-10-07) |
