@@ -4,6 +4,7 @@ import { useJobs } from "../store/jobs";
 import { AccountSection } from "../features/settings/AccountSection";
 import { ConnectionSection } from "../features/settings/ConnectionSection";
 import { InstallApp } from "../features/settings/InstallApp";
+import { UpdateSection } from "../features/settings/UpdateSection";
 import { useUi, type Theme } from "../store/ui";
 import { useIsDesktop } from "../lib/useMedia";
 import { Label, Segmented } from "./ui/controls";
@@ -45,6 +46,7 @@ export function SettingsBody({ open }: { open: boolean }) {
         </div>
         <ConnectionSection open={open} />
         <InstallApp />
+        <UpdateSection open={open} />
         <AccountSection />
         <div className="divide-y divide-line rounded-m border border-line px-3">
           <Row k="Accio server" v={unreachable ? "Unreachable" : "Running"} ok={!unreachable} />

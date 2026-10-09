@@ -26,6 +26,7 @@ DEFAULTS: dict[str, Any] = {
     "port": 7862,
     # Loopback by default. Set true (or pick "same network" in Run_Accio.bat) to listen on the LAN; login protects it.
     "lan_access": False,
+    "check_updates": True,  # ask GitHub for the newest release (Settings > Updates); false = never contact it
     "output_prefix": "AccioStudio",
     "max_upload_mb": 40,
     "session_days": 14,  # how long a login lasts

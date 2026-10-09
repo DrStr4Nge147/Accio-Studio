@@ -29,8 +29,9 @@ import engine
 import outputs
 import thumbs
 import tunnels
+import updates
 from auth import Auth
-from authapi import GuardMiddleware, router as auth_router
+from authapi import GuardMiddleware, local_trusted, router as auth_router
 from comfy import ComfyClient, ComfyError
 from config import DATA_DIR, FRONTEND_DIST, ROOT, comfy_dir, comfy_url, load_manifest, load_settings, template_files
 from history import History
@@ -372,6 +373,28 @@ async def job_image(job_id: str, index: int, request: Request, size: int | None 
 
     headers = {"Cache-Control": "private, max-age=31536000, immutable"}
     return StreamingResponse(body(), media_type=upstream.headers.get("content-type", "image/png"), headers=headers)
+
+
+@app.get("/api/update")
+async def update_status(request: Request, refresh: bool = False):
+    """Installed and newest version. `can_apply` is true only for the browser on the PC that runs Accio."""
+    info = await updates.status(request.app.state.settings, refresh=refresh)
+    return {**info, "can_apply": info["available"] and local_trusted(request.app, request.scope)}
+
+
+@app.post("/api/update/apply", status_code=202)
+async def update_apply(request: Request):
+    """Start Update.bat in its own window. It stops this server, so only the PC's own browser may ask for it."""
+    if not local_trusted(request.app, request.scope):
+        raise HTTPException(403, "Updating can only be started from the browser on the PC that runs Accio. Run Update.bat there.")
+    info = await updates.status(request.app.state.settings, refresh=True)
+    if not info["available"]:
+        raise HTTPException(409, "Accio is already up to date.")
+    try:
+        updates.start_update()
+    except OSError:
+        raise HTTPException(500, "Could not start the updater. Run Update.bat yourself.") from None
+    return {"started": True, "latest": info["latest"]}
 
 
 @app.get("/api/connection")

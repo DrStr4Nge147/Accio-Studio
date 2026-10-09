@@ -65,6 +65,23 @@ The first job after starting takes longer: the models have to load into GPU memo
 **`Stop_Accio.bat`** stops the server, the engine and any tunnel this folder started, and nothing else.
 **`Reset_Password.bat`** removes the password and signs every device out (use it if you forget it).
 
+## Updating
+
+Settings (the gear) shows the installed version and tells you when a newer release exists. To install it:
+
+- click **Update now** in Settings (only in the browser on the PC that runs Accio), or double-click **`Update.bat`**.
+
+It downloads the new release, checks its SHA-256 and refuses it if it does not match, stops Accio, keeps a backup of the old
+version in `data\backup\`, replaces only the app itself (`server\`, `installer\`, `frontend\dist\`, the `.bat` files, this README,
+the licence) and then runs `Install.bat` for anything new. Your history, password, `settings.json` and models are never touched.
+When it says Done, start Accio again with `Run_Accio.bat`. Close any other Accio window first.
+
+- `Update.bat --check` only tells you whether an update exists. `--force` reinstalls the newest release.
+- A release that also upgrades the ComfyUI engine is refused ("needs the full zip") so your models can never be put at risk.
+  Download the full zip from the Releases page and follow the notes there.
+- To go back, copy the files from `data\backup\<version>-<time>\` over the app folder.
+- To stop Accio contacting GitHub, set `"check_updates": false` in `settings.json`.
+
 ## Where things are
 
 ```
@@ -91,6 +108,7 @@ Create it next to `Run_Accio.bat`. Unknown keys are ignored.
 | `session_days` | `14` | how long a login lasts |
 | `max_upload_mb` | `40` | largest image you can upload |
 | `auto_unload_minutes` | `0` (off) | free GPU memory after this many idle minutes |
+| `check_updates` | `true` | look for a newer release on GitHub (Settings > Updates, `Update.bat`); `false` = never contact it |
 | `comfy_port` | `8189` | the bundled engine's port (it listens on this PC only) |
 | `external_comfy_url` | empty | advanced: use another ComfyUI instead of the bundled one (it is then not started) |
 
@@ -126,6 +144,16 @@ Krea 2, Qwen Image, the VAEs and every LoRA are your responsibility**: read them
 ComfyUI (GPL-3.0) and the custom-node packs are downloaded from their own repositories at pinned versions and keep their own licences.
 
 ## For developers
+
+**Publishing a release** (users update from these):
+
+1. Commit everything, then run `scripts\make_release.bat` and choose Patch / Minor / Major. It runs the tests, builds the
+   frontend, writes `release\AccioStudio-<version>.zip` and its `.sha256`, and commits and tags `vX.Y.Z`.
+2. `git push --follow-tags`.
+3. On GitHub: Releases > Draft a new release > choose the tag `vX.Y.Z` > attach **both** `AccioStudio-<version>.zip` and
+   `AccioStudio-<version>.zip.sha256` > Publish. The updater looks at the *latest published* release (not drafts or pre-releases) and
+   will not install one that has no checksum.
+4. If the release changes the ComfyUI version, say so in the notes: the updater refuses those and users must take the full zip.
 
 ```powershell
 env\Scripts\python.exe -m pytest tests -q          # backend tests (live ones need the bundled engine running)

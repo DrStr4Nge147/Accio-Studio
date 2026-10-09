@@ -528,5 +528,18 @@ A script (`scripts\make_release`) produces `AccioStudio-<version>.zip` containin
 
 It excludes `env\`, `bin\`, `comfyui\`, `node_modules\`, `data\`, `.zrok_share` and any model files. Model licenses (Krea2, Qwen, LoRAs) are the end user's responsibility; say so in the README. Never bundle model files.
 
+### 11.5b Updates
+
+`Update.bat` runs `installer\update.py`: it asks the newest GitHub release (`manifest.json` > `updates.api_url`), downloads
+`AccioStudio-X.Y.Z.zip`, verifies its SHA-256 (the release's own digest or the attached `.sha256`; no checksum = no install), unpacks it
+to `data\update\new` with every member checked (only app files, no `..`, no models or personal files), refuses a release that changes
+the ComfyUI version, stops everything that runs from the folder, backs up the replaced files to `data\backup\` (last three kept),
+swaps `server\`, `installer\`, `frontend\dist\`, `scripts\`, the top-level `.bat` files and README/LICENSE/requirements/VERSION.txt
+(folders are moved aside first, so any failure puts the old ones back), then runs `Install.bat nopause`. The `.bat` files are replaced
+last and `Update.bat` ends in one `... & exit /b` line, because cmd reads a running batch file as it goes. The server only reports
+(`GET /api/update`, cached six hours, `check_updates` can switch it off) and may start the updater for the PC's own browser
+(`POST /api/update/apply`; 403 for any other device); it never replaces files itself. The installer remembers the answers to its
+optional-model questions (`data\install.json` > `choices`) so an update does not ask them again.
+
 ### 11.6 Parity note
 Parity (§7) is now measured between the **user's existing ComfyUI** (the reference, running the workflows) and **Accio with its bundled ComfyUI** (same pinned versions, same models). If a mismatch appears, first check pins and versions (`manifest.json` versus the user's install) before anything else.

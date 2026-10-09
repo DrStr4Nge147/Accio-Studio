@@ -60,3 +60,17 @@ export interface DeleteResult {
   files_kept: number;
 }
 export const deleteJob = (id: string) => del<DeleteResult>(`/api/jobs/${id}`);
+
+export interface UpdateInfo {
+  current: string;
+  /** false when check_updates is switched off in settings.json: the server never contacts GitHub then. */
+  enabled: boolean;
+  latest: string | null;
+  available: boolean;
+  notes_url: string | null;
+  /** true only in the browser on the PC that runs Accio: that is the only place the updater may be started. */
+  can_apply: boolean;
+  error: string | null;
+}
+export const fetchUpdate = (refresh = false) => get<UpdateInfo>(`/api/update${refresh ? "?refresh=true" : ""}`);
+export const applyUpdate = () => post<{ started: true; latest: string }>("/api/update/apply");

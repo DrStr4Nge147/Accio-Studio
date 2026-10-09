@@ -402,6 +402,18 @@ def locate_existing(models_from: Path | None, m: dict) -> Path | None:
     return None
 
 
+def decide(flag: str, saved: bool | None, question: str, interactive: bool) -> tuple[bool, bool]:
+    """A yes/no from the --flag, from the answer given on an earlier run, or from the user. The second value says whether
+    it is a fresh decision worth remembering, so a re-run or an update does not ask the same question again."""
+    if flag in ("yes", "no"):
+        return flag == "yes", True
+    if saved is not None:
+        return saved, False
+    if interactive:
+        return ask(question, "n").lower() == "y", True
+    return False, False
+
+
 def confirm_download(need: int, count: int, interactive: bool) -> bool:
     """Ask before a large download starts. Only "n" or "no" says no; non-interactive runs (--yes) never ask."""
     if not interactive:
@@ -572,8 +584,10 @@ def main() -> int:
     if args.skip_models:
         say("  skipped (--skip-models)")
     else:
+        choices = state.setdefault("choices", {})
         mf_raw = args.models_from or state.get("models_from") or ""
-        if not mf_raw and interactive:
+        if not mf_raw and interactive and not choices.get("models_asked"):
+            choices["models_asked"] = True  # asked once; the answer (a folder or none) is remembered
             required = sum(m["size"] for m in manifest["models"] if m["required"])
             say(f"  The required models (about {fmt_size(required)}) are always installed. A few questions first.")
             mf_raw = ask("  Already have these models in another ComfyUI? Type its folder to reuse them (read-only, nothing is copied),\n  or just press Enter to download them: ", "")
@@ -587,14 +601,15 @@ def main() -> int:
             else:
                 say(f"  Using models from {models_from} (read-only).")
         state["models_from"] = str(models_from) if models_from else ""
-        optional = args.optional_loras == "yes" or (
-            args.optional_loras == "ask" and interactive and ask("  Also install the 4 optional preset LoRAs (head swap, body swap, remove object, move object; about 0.6 GB)? [y/N]: ", "n").lower() == "y"
-        )
-        groups = frozenset(
-            {"klein"} if args.klein == "yes" or (
-                args.klein == "ask" and interactive and ask("  Also install Flux2 Klein 9B, a second Edit model for Multi-edit with up to 3 images (about 19 GB)? [y/N]: ", "n").lower() == "y"
-            ) else ()
-        )
+        optional, fresh = decide(args.optional_loras, choices.get("optional_loras"),
+                                 "  Also install the 4 optional preset LoRAs (head swap, body swap, remove object, move object; about 0.6 GB)? [y/N]: ", interactive)
+        if fresh:
+            choices["optional_loras"] = optional
+        klein, fresh = decide(args.klein, choices.get("klein"),
+                              "  Also install Flux2 Klein 9B, a second Edit model for Multi-edit with up to 3 images (about 19 GB)? [y/N]: ", interactive)
+        if fresh:
+            choices["klein"] = klein
+        groups = frozenset({"klein"} if klein else ())
 
         def models_step():
             if models_from:

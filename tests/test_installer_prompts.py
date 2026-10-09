@@ -74,3 +74,43 @@ def test_unattended_install_downloads_without_asking(one_model, monkeypatch):
     monkeypatch.setattr(install, "ask", boom)
     assert install.install_models(manifest, None, False, interactive=False) == []
     assert calls == ["http://x/m"]
+
+
+# --------------------------------------------------------------------------- answers are remembered, so a re-run or an update does not ask again
+
+Q = "Also install X? [y/N]: "
+
+
+def asked(monkeypatch, answer: str):
+    calls = []
+    monkeypatch.setattr(install, "ask", lambda prompt, default="", **kw: calls.append(prompt) or (answer or default))
+    return calls
+
+
+@pytest.mark.parametrize("flag, expected", [("yes", True), ("no", False)])
+def test_an_explicit_flag_wins_and_is_remembered(monkeypatch, flag, expected):
+    calls = asked(monkeypatch, "y")
+    assert install.decide(flag, saved=not expected, question=Q, interactive=True) == (expected, True)
+    assert calls == []
+
+
+def test_an_earlier_answer_is_used_without_asking(monkeypatch):
+    calls = asked(monkeypatch, "n")
+    assert install.decide("ask", saved=True, question=Q, interactive=True) == (True, False)
+    assert install.decide("ask", saved=False, question=Q, interactive=True) == (False, False)
+    assert calls == []
+
+
+def test_the_first_time_the_user_is_asked_and_the_answer_is_worth_remembering(monkeypatch):
+    calls = asked(monkeypatch, "y")
+    assert install.decide("ask", saved=None, question=Q, interactive=True) == (True, True)
+    assert calls == [Q]
+    asked(monkeypatch, "")
+    assert install.decide("ask", saved=None, question=Q, interactive=True) == (False, True)  # Enter = the default, no
+
+
+def test_an_unattended_run_does_not_ask_and_does_not_overwrite_a_remembered_yes(monkeypatch):
+    calls = asked(monkeypatch, "y")
+    assert install.decide("ask", saved=None, question=Q, interactive=False) == (False, False)
+    assert install.decide("ask", saved=True, question=Q, interactive=False) == (True, False)
+    assert calls == []
