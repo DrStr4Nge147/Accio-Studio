@@ -146,7 +146,7 @@ def test_existing_models_must_verify_before_they_are_reused(tmp_path):
 def test_no_hard_coded_user_paths_in_shipped_files():
     needles = ["E:" + "\\AI_Softwares", "E:" + "/AI_Softwares", "Nick" + "-PC"]
     skip_dirs = {"env", "bin", "comfyui", "data", "node_modules", "dist", ".git", "__pycache__", ".pytest_cache", "comfy-templates"}
-    skip_files = {"APP_SPEC.md", "PROGRESS.md"}  # documentation of the reference environment
+    skip_files = {"APP_SPEC.md", "PROGRESS.md", "LOCAL_PATHS.md"}  # documentation of the reference environment
     exts = {".py", ".bat", ".json", ".ts", ".tsx", ".html", ".css", ".js", ".md", ".txt"}
     hits = []
     for p in ROOT.rglob("*"):
