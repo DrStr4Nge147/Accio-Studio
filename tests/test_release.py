@@ -110,3 +110,127 @@ def test_initial_js_budget(tree):
     (dist / "assets" / "store-b.js").write_bytes(os.urandom(60 * 1024))
     with pytest.raises(SystemExit, match="budget"):
         make_release.check_bundle_budget(tree)
+
+
+# --------------------------------------------------------------------------- version bump and the release flow
+
+import hashlib  # noqa: E402
+import os  # noqa: E402
+import subprocess  # noqa: E402
+import time  # noqa: E402
+
+
+@pytest.mark.parametrize("current, kind, expected", [
+    ("0.1.0", "patch", "0.1.1"), ("0.1.9", "patch", "0.1.10"), ("0.1.5", "minor", "0.2.0"), ("1.4.7", "major", "2.0.0"),
+])
+def test_bump_version(current, kind, expected):
+    assert make_release.bump_version(current, kind) == expected
+
+
+@pytest.mark.parametrize("bad", ["1.0", "v1.0.0", "1.0.0-beta", ""])
+def test_bump_refuses_versions_that_are_not_plain_semver(bad):
+    with pytest.raises(SystemExit, match="MAJOR.MINOR.PATCH"):
+        make_release.bump_version(bad, "patch")
+
+
+def test_write_version_changes_only_the_project_versions(tmp_path):
+    fe = tmp_path / "frontend"
+    fe.mkdir()
+    (fe / "package.json").write_text('{\n  "name": "x",\n  "version": "0.1.0",\n  "dependencies": {"react": "^19.0.0"}\n}\n', encoding="utf-8")
+    (fe / "package-lock.json").write_text(
+        '{\n  "name": "x",\n  "version": "0.1.0",\n  "packages": {\n    "": {\n      "name": "x",\n      "version": "0.1.0"\n    },\n'
+        '    "node_modules/react": {\n      "version": "19.0.0"\n    }\n  }\n}\n', encoding="utf-8")
+    assert make_release.write_version(tmp_path, "0.2.0") == ["package.json", "package-lock.json"]
+    assert json.loads((fe / "package.json").read_text())["version"] == "0.2.0"
+    lock = json.loads((fe / "package-lock.json").read_text())
+    assert lock["version"] == "0.2.0" and lock["packages"][""]["version"] == "0.2.0"
+    assert lock["packages"]["node_modules/react"]["version"] == "19.0.0"  # dependency untouched
+
+
+def sh(cwd: Path, *args: str) -> str:
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True).stdout
+
+
+@pytest.fixture
+def repo(tree):
+    """The release tree as a git repository with one commit and a fresh frontend build."""
+    sh(tree, "init", "-q")
+    sh(tree, "config", "user.name", "Test")
+    sh(tree, "config", "user.email", "test@example.invalid")
+    sh(tree, "config", "core.autocrlf", "false")
+    sh(tree, "add", "-A")
+    sh(tree, "commit", "-q", "-m", "initial")
+    index = tree / "frontend" / "dist" / "index.html"
+    os.utime(index, (time.time() + 60, time.time() + 60))  # newer than every source file
+    return tree
+
+
+def outside(tmp_path: Path, name: str = "out") -> Path:
+    """An output folder next to the repository, never inside it (it would show up as untracked)."""
+    return tmp_path.with_name(f"{tmp_path.name}-{name}")
+
+
+def run_release(repo: Path, tmp_path: Path, *extra: str) -> Path:
+    out = outside(tmp_path)
+    make_release.main(["--skip-tests", "--no-build", "--out", str(out), *extra], root=repo)
+    return out
+
+
+def test_release_without_a_bump_rebuilds_the_current_version_and_makes_no_commit(repo, tmp_path):
+    before = sh(repo, "rev-parse", "HEAD")
+    out = run_release(repo, tmp_path)
+    zip_path = out / "AccioStudio-2.3.4.zip"
+    assert zip_path.is_file()
+    assert sh(repo, "rev-parse", "HEAD") == before and sh(repo, "tag", "--list") == ""
+    with zipfile.ZipFile(zip_path) as z:
+        info = z.read("AccioStudio/VERSION.txt").decode()
+    assert info.startswith("Accio Studio 2.3.4") and sh(repo, "rev-parse", "--short", "HEAD").strip() in info
+    digest = (out / "AccioStudio-2.3.4.zip.sha256").read_text().split()[0]
+    assert digest == hashlib.sha256(zip_path.read_bytes()).hexdigest()
+
+
+def test_bump_releases_commits_and_tags_the_new_version(repo, tmp_path):
+    out = run_release(repo, tmp_path, "--bump", "patch")
+    assert (out / "AccioStudio-2.3.5.zip").is_file() and not (out / "AccioStudio-2.3.4.zip").exists()
+    assert make_release.package_version(repo) == "2.3.5"
+    assert sh(repo, "log", "-1", "--format=%s").strip() == "Release v2.3.5"
+    assert sh(repo, "tag", "--list").split() == ["v2.3.5"]
+    assert sh(repo, "status", "--porcelain").strip() == ""  # nothing left uncommitted
+    with zipfile.ZipFile(out / "AccioStudio-2.3.5.zip") as z:
+        assert z.read("AccioStudio/VERSION.txt").decode().startswith("Accio Studio 2.3.5")
+
+
+def test_an_existing_tag_blocks_a_release_of_that_version(repo, tmp_path):
+    sh(repo, "tag", "v2.3.5")  # left over from an earlier release
+    with pytest.raises(SystemExit, match="v2.3.5 already exists"):
+        run_release(repo, tmp_path, "--bump", "patch")
+    assert make_release.package_version(repo) == "2.3.4"  # nothing was changed
+
+
+def test_uncommitted_changes_are_refused_unless_allowed(repo, tmp_path):
+    (repo / "README.md").write_text("changed after the last commit")
+    with pytest.raises(SystemExit, match="uncommitted"):
+        run_release(repo, tmp_path)
+    assert not outside(tmp_path).exists()
+    out = run_release(repo, tmp_path, "--allow-dirty")
+    with zipfile.ZipFile(out / "AccioStudio-2.3.4.zip") as z:
+        assert "uncommitted" in z.read("AccioStudio/VERSION.txt").decode()
+
+
+def test_failing_tests_stop_the_release(repo, tmp_path, monkeypatch):
+    monkeypatch.setattr(make_release.subprocess, "run", lambda *a, **k: type("R", (), {"returncode": 1})())
+    with pytest.raises(SystemExit, match="tests failed"):
+        make_release.main(["--no-build", "--out", str(outside(tmp_path))], root=repo)
+    assert not outside(tmp_path).exists()
+
+
+def test_version_and_bump_together_are_refused(repo, tmp_path):
+    with pytest.raises(SystemExit, match="either"):
+        run_release(repo, tmp_path, "--version", "9.9.9", "--bump", "minor")
+
+
+def test_a_folder_that_is_not_a_git_repository_still_releases(tree, tmp_path, capsys):
+    os.utime(tree / "frontend" / "dist" / "index.html", (time.time() + 60, time.time() + 60))
+    out = run_release(tree, tmp_path, "--bump", "minor")
+    assert (out / "AccioStudio-2.4.0.zip").is_file() and make_release.package_version(tree) == "2.4.0"
+    assert "not a git repository" in capsys.readouterr().err

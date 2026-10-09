@@ -131,7 +131,8 @@ ComfyUI (GPL-3.0) and the custom-node packs are downloaded from their own reposi
 env\Scripts\python.exe -m pytest tests -q          # backend tests (live ones need the bundled engine running)
 cd frontend; npm test; npm run build               # frontend tests and production build into frontend\dist
 node scripts\check-contrast.mjs                    # design-token contrast check
-scripts\make_release.bat --build                   # builds release\AccioStudio-<version>.zip
+scripts\make_release.bat --bump patch              # tests, frontend build, release\AccioStudio-<version>.zip + .sha256, then commits and tags "Release vX.Y.Z" (nothing is pushed)
+scripts\make_release.bat                           # the same without a version bump; refuses uncommitted changes (--allow-dirty, --skip-tests, --no-build)
 env\Scripts\python.exe scripts\parity_gpu.py --help   # GPU pixel-parity runs against a reference ComfyUI
 ```
 
