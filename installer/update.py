@@ -273,7 +273,9 @@ def stop_accio(root: Path) -> None:
 
 def run_installer(root: Path) -> bool:
     """Install.bat resumes and skips what is finished: it picks up new Python packages, node packs and models the release needs."""
-    return subprocess.run(["cmd", "/c", "Install.bat", "nopause"], cwd=root).returncode == 0
+    # ".\Install.bat", not "Install.bat": with NoDefaultCurrentDirectoryInExePath=1 (a Windows hardening setting some PCs have)
+    # cmd does not look in the current folder for a bare name.
+    return subprocess.run(["cmd", "/c", ".\\Install.bat", "nopause"], cwd=root).returncode == 0
 
 
 # --------------------------------------------------------------------------- the whole update

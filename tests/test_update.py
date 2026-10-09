@@ -336,3 +336,16 @@ def test_update_bat_ends_with_one_line_that_exits_because_the_update_replaces_it
     lines = (ROOT / "Update.bat").read_text(encoding="utf-8").splitlines()
     last = [l for l in lines if l.strip()][-1]
     assert "installer\\update.py" in last and last.rstrip().endswith("exit /b")  # cmd must not read on from a file that changed
+
+
+def test_the_installer_is_started_with_an_explicit_relative_path(tmp_path, monkeypatch):
+    """With NoDefaultCurrentDirectoryInExePath=1, `cmd /c Install.bat` cannot find the file; an explicit relative path always can."""
+    seen = {}
+
+    def fake_run(cmd, **kw):
+        seen.update(cmd=cmd, cwd=kw.get("cwd"))
+        return type("R", (), {"returncode": 0})()
+
+    monkeypatch.setattr(up.subprocess, "run", fake_run)
+    assert up.run_installer(tmp_path) is True
+    assert seen["cmd"] == ["cmd", "/c", ".\\Install.bat", "nopause"] and seen["cwd"] == tmp_path
