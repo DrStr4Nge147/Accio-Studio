@@ -1,4 +1,5 @@
-"""Build AccioStudio-<version>.zip (APP_SPEC 11.5).
+"""Build AccioStudio-<version>.zip (APP_SPEC 11.5). The zip holds one folder, AccioStudio (no version in the folder name: the
+version lives in the zip name and in the app).
 
 The zip holds only what a user needs: the launcher .bat files, the server and installer code, the templates and
 manifest, the built frontend (frontend\\dist), requirements.txt, README.md and LICENSE. It never holds env\\, bin\\,
@@ -120,10 +121,10 @@ def build_release(root: Path, out_dir: Path, version: str, *, check_dist: bool =
     if not any(p.name.startswith("LICENSE") for p in files):
         print("WARNING: no LICENSE file in the project; the release has none. Add one before publishing.", file=sys.stderr)
     check_batch_files(root, files)
-    top = f"AccioStudio-{version}"
+    top = "AccioStudio"  # the folder the user ends up with; the version is only in the zip name
     check_names([f"{top}/{p.as_posix()}" for p in files])
     out_dir.mkdir(parents=True, exist_ok=True)
-    target = out_dir / f"{top}.zip"
+    target = out_dir / f"{top}-{version}.zip"
     tmp = target.with_suffix(".zip.part")
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for p in files:

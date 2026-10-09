@@ -28,7 +28,8 @@ changes. Everything lives in this folder, so deleting the folder uninstalls it.
 
 ## Install (once)
 
-1. Unzip `AccioStudio-<version>.zip` into a **short folder path** with plenty of space, for example `C:\AccioStudio` or `D:\AccioStudio`.
+1. Unzip `AccioStudio-<version>.zip` into a **short folder path** with plenty of space, for example the root of `C:\` or `D:\`.
+   The zip holds one folder, `AccioStudio`, so you end up with `C:\AccioStudio`.
    The path must be at most 100 characters and must not contain `!`: Windows cannot load some of the engine's files from a deeper
    folder, so `Install.bat` stops with a clear message instead. Avoid `C:\Program Files`. **Do not move or rename the folder
    afterwards** (if you do, run `Install.bat` again; it repairs the Python environment and keeps everything else).
@@ -70,7 +71,8 @@ The first job after starting takes longer: the models have to load into GPU memo
 Install.bat  Run_Accio.bat  Run_Accio-zrok-only.bat  Setup_Zrok.bat  Stop_Accio.bat  Reset_Password.bat
 bin\        portable tools (uv, 7zr, Node when needed, cloudflared, zrok)
 env\        Python environment of the Accio server
-comfyui\    the engine: ComfyUI\ (with the models in ComfyUI\models\) and python_embededserver\     the Accio server and its prompt templates (templates\manifest.json lists every pinned version)
+comfyui\    the engine: ComfyUI\ (with the models in ComfyUI\models\) and python_embeded\
+server\     the Accio server and its prompt templates (templates\manifest.json lists every pinned version)
 data\       your history, thumbnails, uploads and logs (data\logs\comfyui.log is the engine's log)
 settings.json   optional settings (below). Holds your password hash once set; do not share it.
 ```

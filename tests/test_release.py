@@ -53,7 +53,7 @@ def test_zip_has_only_the_allow_listed_files(tree, tmp_path):
         "server/main.py", "server/templates/manifest.json", "installer/install.py",
         "frontend/dist/index.html", "frontend/dist/assets/app.js", "scripts/export-templates.md",
     }
-    assert all(n.startswith("AccioStudio-2.3.4/") for n in names(out))
+    assert all(n.startswith("AccioStudio/") for n in names(out))  # no version in the folder name
 
 
 def test_version_comes_from_package_json(tree):
