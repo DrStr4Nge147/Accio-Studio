@@ -118,6 +118,8 @@ Create it next to `Run_Accio.bat`. Unknown keys are ignored.
 
 ## Models and licences
 
+Accio Studio itself is released under the MIT licence (see `LICENSE`). That covers this project only, not the models or the engine below.
+
 Accio Studio does **not** include any model. `Install.bat` downloads them from their public mirrors, and **the licences of
 Krea 2, Qwen Image, the VAEs and every LoRA are your responsibility**: read them before you use the results commercially.
 ComfyUI (GPL-3.0) and the custom-node packs are downloaded from their own repositories at pinned versions and keep their own licences.
