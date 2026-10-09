@@ -1,6 +1,8 @@
 import { RotateCcw } from "lucide-react";
 import { Label, Segmented, Slider, Toggle } from "../../components/ui/controls";
 import { useServer } from "../../store/health";
+import { GRAIN_MAX, GRAIN_MIN } from "../edit/grain";
+import { EDIT_TIPS } from "../edit/tips";
 import { AspectPicker } from "./AspectPicker";
 import { LoraSection } from "./LoraSection";
 import { SamplerFields } from "./SamplerFields";
@@ -104,6 +106,10 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
           onChange={(v) => s.patch({ tEnhancerStrength: v === defaults.t_enhancer_strength ? undefined : v })}
         />
       )}
+      <div>
+        <Toggle on={s.grain.on} onChange={(on) => s.patch({ grain: { ...s.grain, on } })} label="Film grain" sub="Adds grain to the finished image" tip={EDIT_TIPS.grain} />
+        {s.grain.on && <Slider label="Grain strength" tip={EDIT_TIPS.grain} min={GRAIN_MIN} max={GRAIN_MAX} step={0.005} value={s.grain.strength} format={(v) => v.toFixed(3)} onChange={(strength) => s.patch({ grain: { ...s.grain, strength } })} />}
+      </div>
       {s.seedVariance && <VarianceFields />}
       <LoraSection />
 

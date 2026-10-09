@@ -317,7 +317,7 @@ def test_klein_templates_are_not_mutated_by_builds():
     assert load_template("klein_multiedit_gguf_3") == before
 
 
-# --------------------------------------------------------------------------- film grain (every Edit mode)
+# --------------------------------------------------------------------------- film grain (every Edit mode, and Create)
 
 GRAIN_CASES = [
     (dict(mode="multiedit", prompt="x", images=[{"file": "a.png"}]), "45"),
@@ -353,6 +353,13 @@ def test_film_grain_range_is_validated(bad):
         mk(mode="inpaint", prompt="x", image="a.png", film_grain=bad)
 
 
-def test_create_has_no_film_grain():
-    with pytest.raises(ValidationError):
-        mk(mode="create", variant="standard", prompt="x", film_grain=0.04)
+@pytest.mark.parametrize("variant,save", [("standard", "12"), ("detailed", "183")])
+def test_create_film_grain_sits_before_the_final_save(variant, save):
+    kw = dict(mode="create", variant=variant, prompt="x")
+    off = build(mk(**kw), KCAT, seed_source=iter(range(10, 99)).__next__)
+    on = build(mk(**kw, film_grain=0.04), KCAT, seed_source=iter(range(10, 99)).__next__)
+    assert "film_grain" not in off.prompt and set(on.prompt) - set(off.prompt) == {"film_grain"}
+    g = on.prompt["film_grain"]
+    assert g["class_type"] == "ImageAddNoise" and g["inputs"]["image"] == off.prompt[save]["inputs"]["images"]
+    assert on.prompt[save]["inputs"]["images"] == ["film_grain", 0]
+    assert on.outputs == off.outputs

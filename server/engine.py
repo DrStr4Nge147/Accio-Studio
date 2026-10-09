@@ -366,6 +366,7 @@ def _build_create(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], p
         if tenh and p.t_enhancer_strength is not None:
             _set(pr, "146", "strength", p.t_enhancer_strength)
         _inject_loras(pr, "82", p.loras, cat)
+        _apply_grain(pr, "12", p.film_grain, seeds["main"])
         _set(pr, "12", "filename_prefix", f"{prefix}/create")
         outputs["12"] = "final"
         return Built(pr, name, seeds, outputs, None, "create", "Create · Standard")
@@ -403,6 +404,7 @@ def _build_create(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], p
         _set(pr, "215", "strength", p.t_enhancer_strength)
     for node, targets in (("180", {"both", "pass1"}), ("174", {"both", "pass2"})):
         _inject_loras(pr, node, [e for e in p.loras if e.target in targets], cat)
+    _apply_grain(pr, "183", p.film_grain, seeds["pass2"])
     _set(pr, "183", "filename_prefix", f"{prefix}/create")
     outputs["183"] = "final"
     if p.save_first_pass:

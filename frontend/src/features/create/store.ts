@@ -4,6 +4,7 @@ import type { SamplerDefaults } from "../../api/types";
 import { ASPECTS, CUSTOM } from "../../lib/aspects";
 import type { LoraSel } from "../../components/LoraList";
 import type { LoraMode } from "../../lib/loras";
+import { GRAIN_DEFAULT } from "../edit/grain";
 
 export type { LoraSel, LoraTarget } from "../../components/LoraList";
 
@@ -31,6 +32,8 @@ export interface CreateState {
   sharpen: boolean;
   sharpenStrength?: number;
   tEnhancerStrength?: number;
+  /** film grain added to the saved result */
+  grain: { on: boolean; strength: number };
   variance: Record<string, string | number>;
   sampler: Partial<SamplerDefaults>;
   pass1: Partial<SamplerDefaults>;
@@ -61,6 +64,7 @@ const initial = (): Omit<CreateState, "patch" | "reset"> => ({
   seedVariance: true,
   tEnhancer: false,
   sharpen: true,
+  grain: { on: false, strength: GRAIN_DEFAULT },
   variance: {},
   sampler: {},
   pass1: {},

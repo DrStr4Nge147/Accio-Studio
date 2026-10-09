@@ -34,6 +34,7 @@ export function buildParams(s: CreateState, d: Defaults | null): Record<string, 
   if (s.sharpen && s.sharpenStrength !== undefined) p.sharpen_strength = s.sharpenStrength;
   if (s.tEnhancer && s.tEnhancerStrength !== undefined) p.t_enhancer_strength = s.tEnhancerStrength;
   if (s.seedVariance && nonEmpty(s.variance)) p.variance = s.variance;
+  if (s.grain.on) p.film_grain = s.grain.strength;
 
   if (s.variant === "standard") {
     if (nonEmpty(s.sampler)) p.sampler = s.sampler;
@@ -92,6 +93,7 @@ export function reuseJob(job: Job, d: Defaults | null, keepSeed = true) {
     sharpen: !!p.sharpen,
     sharpenStrength: p.sharpen_strength ?? undefined,
     tEnhancerStrength: p.t_enhancer_strength ?? undefined,
+    grain: p.film_grain ? { on: true, strength: p.film_grain } : { ...cur.grain, on: false },
     variance: p.variance ?? {},
     sampler: diff(p.sampler, d?.standard.sampler),
     pass1: diff(p.pass1, dd?.pass1),
