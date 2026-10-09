@@ -20,7 +20,7 @@ Project root = `E:\AI_Softwares\ImageGenerator\AccioStudio`. Git: all work is on
 
 ## Spec change recorded after Phase 2 (APP_SPEC rule 3, 5.1, 9.2 step 1, new section 11)
 
-Accio now ships its **own portable ComfyUI** (v0.38.0, port **8189**) installed by `Install.bat` into `comfyui\ComfyUI_windows_portable\`. The user's existing ComfyUI (`...\Merged\ComfyUI_windows_portable`, port 8188) is **reference only**: never edited, installed into, launched or depended on at runtime. The only allowed contact is reading its `models` folder via `extra_model_paths.yaml` (section 11.4) on the user's own PC. Parity (section 7) is now: user's ComfyUI (reference) vs Accio + bundled ComfyUI.
+Accio now ships its **own portable ComfyUI** (v0.38.0, port **8189**) installed by `Install.bat` into `comfyui\ComfyUI_windows_portable\`. The user's existing ComfyUI (port 8188) is **reference only**: never edited, installed into, launched or depended on at runtime. The only allowed contact is reading its `models` folder via `extra_model_paths.yaml` (section 11.4) on the user's own PC. Parity (section 7) is now: user's ComfyUI (reference) vs Accio + bundled ComfyUI.
 
 **Spec text still out of date (not edited, it is the user's document):** section 5.1 still says "ComfyUI URL ... default `http://127.0.0.1:8188`" and "queue is shared with the user's own ComfyUI use"; section 1 / 9.3 still describe the user's ComfyUI as the backend ("the user also uses this ComfyUI directly"). The code follows rule 3 / 9.2 / 11 (default 8189). Section 9.3 (auto-unload default OFF) is still a Phase 7/8 item.
 

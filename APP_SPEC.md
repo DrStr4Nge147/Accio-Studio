@@ -498,7 +498,7 @@ AccioStudio\
 | ComfyUI-Krea2T-Enhancer | github.com/capitan01R/ComfyUI-Krea2T-Enhancer | registry install, version **1.4.2** (no `.git`) |
 | ComfyUI-RBG-SmartSeedVariance | github.com/RamonGuthrie/ComfyUI-RBG-SmartSeedVariance | registry install, version **2.2.1** (no `.git`) |
 
-   - Get the full 40-character hashes with `git -C <pack> rev-parse HEAD` in the user's `...\Merged\...\custom_nodes\`.
+   - Get the full 40-character hashes with `git -C <pack> rev-parse HEAD` in the `custom_nodes\` folder of the ComfyUI install they come from.
    - For the two registry installs, find the GitHub commit (or Comfy Registry archive) whose files match the user's installed copy byte-for-byte (compare file hashes, ignoring `__pycache__`) and pin that.
    - Record every pin in `templates\manifest.json`.
    - Install each pack's `requirements.txt` into the **bundled** `python_embeded` (`python_embeded\python.exe -m pip install -r …`).

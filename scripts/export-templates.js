@@ -1,6 +1,6 @@
 // Re-export the 20 API templates from ComfyUI's own frontend (APP_SPEC 4.5). Nothing is queued.
 //
-// Run in the browser console (or via automation) on a ComfyUI tab at http://127.0.0.1:8188, after
+// Run in the browser console (or via automation) on a tab of the bundled ComfyUI, http://127.0.0.1:8189, after
 // serving the two workflow JSON files with CORS (see export-templates.md). Each export is POSTed to
 // `${BASE}/save/<template name>`; then run `python scripts/compare_exports.py <exports_dir>`.
 

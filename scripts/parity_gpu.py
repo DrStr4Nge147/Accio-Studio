@@ -362,7 +362,7 @@ def launch_reference(ref_dir: Path, work: Path, url: str) -> subprocess.Popen | 
         pass
     env = {**__import__("os").environ, "PYTHONUTF8": "1"}
     log = open(work / "reference.log", "wb")
-    # same flags as the reference's own launcher (run_merged.bat), plus loopback/no browser
+    # same flags as the reference's own launcher, plus loopback/no browser
     p = subprocess.Popen([str(ref_dir / "python_embeded" / "python.exe"), "-s", "ComfyUI\\main.py", "--windows-standalone-build", "--disable-cuda-malloc",
                           "--reserve-vram", "1", "--listen", "127.0.0.1", "--port", "8188", "--disable-auto-launch"], cwd=ref_dir, env=env, stdout=log, stderr=subprocess.STDOUT)
     for _ in range(240):
