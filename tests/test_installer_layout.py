@@ -282,3 +282,62 @@ def test_no_personal_strings_in_shipped_files():
     assert shipped
     hits = [f"{p.name}: {b}" for p in shipped for b in banned if b in p.read_text(encoding="utf-8", errors="ignore").lower()]
     assert not hits, hits
+
+
+# --------------------------------------------------------------------------- slow connections are dropped and re-made, progress kept
+
+def scripted_curl(monkeypatch, steps):
+    """Replace curl: each step is (exit code, bytes to append to the .part file). Returns the list of calls."""
+    calls = []
+    todo = iter(steps)
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        rc, grow = next(todo)
+        part = Path(cmd[cmd.index("-o") + 1])
+        if grow:
+            with part.open("ab") as f:
+                f.write(b"x" * grow)
+        return type("R", (), {"returncode": rc})()
+
+    monkeypatch.setattr(core.subprocess, "run", fake_run)
+    monkeypatch.setattr(core.time, "sleep", lambda seconds: None)  # the pause after a real failure; not needed to test the logic
+    return calls
+
+
+MB = 1024 * 1024
+
+
+def test_a_slow_connection_that_made_progress_is_reconnected_without_using_up_the_retries(tmp_path, monkeypatch, capsys):
+    calls = scripted_curl(monkeypatch, [(28, 3 * MB)] * 12 + [(0, MB)])  # twelve slow connections, then a good one
+    core.curl_download("http://x/f", tmp_path / "f.bin", retries=5)
+    assert len(calls) == 13 and (tmp_path / "f.bin").stat().st_size == 37 * MB
+    out = capsys.readouterr().out
+    assert out.count("reconnecting") == 12 and "failed" not in out  # none of it counted as a failure
+
+
+def test_attempts_that_get_nowhere_still_run_out(tmp_path, monkeypatch):
+    calls = scripted_curl(monkeypatch, [(28, 0)] * 10)
+    with pytest.raises(RuntimeError, match="download failed"):
+        core.curl_download("http://x/f", tmp_path / "f.bin", retries=5)
+    assert len(calls) == 5
+
+
+def test_progress_and_failures_mix(tmp_path, monkeypatch):
+    calls = scripted_curl(monkeypatch, [(28, 0), (28, 0), (28, 2 * MB), (6, 0), (28, 0), (0, 0)])
+    core.curl_download("http://x/f", tmp_path / "f.bin", retries=5)  # 4 real failures; the slow-but-moving connection did not count
+    assert len(calls) == 6
+
+
+def test_a_connection_that_is_slow_forever_still_ends(tmp_path, monkeypatch):
+    monkeypatch.setattr(core, "MAX_RECONNECTS", 6)
+    calls = scripted_curl(monkeypatch, [(28, MB)] * 50)
+    with pytest.raises(RuntimeError, match="too slow"):
+        core.curl_download("http://x/f", tmp_path / "f.bin")
+    assert len(calls) == 6
+
+
+def test_the_slow_limits_are_sensible():
+    assert 50_000 <= core.SLOW_BELOW_BYTES_PER_SECOND <= 500_000 and 10 <= core.SLOW_FOR_SECONDS <= 60
+    guard = " ".join(core.CURL_STALL_GUARD)
+    assert f"--speed-limit {core.SLOW_BELOW_BYTES_PER_SECOND}" in guard and f"--speed-time {core.SLOW_FOR_SECONDS}" in guard

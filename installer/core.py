@@ -11,6 +11,7 @@ import os
 import shutil
 import struct
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -87,9 +88,14 @@ def install_path_problem(root: Path) -> str | None:
 
 # --------------------------------------------------------------------------- downloading
 
-# Without these, a connection that stalls (no bytes arriving) hangs the installer forever. With them curl gives up
-# (exit 28), and curl_download resumes the .part file.
-CURL_STALL_GUARD = ["--connect-timeout", "30", "--speed-time", "60", "--speed-limit", "1024"]
+# A connection that delivers almost nothing is dropped and made again, and the download continues where it stopped (the
+# .part file is resumed). Servers such as Hugging Face's CDN hand out connections of very different speed, and a fresh one is
+# often many times faster: the same effect as quitting the installer and running it again, without doing it by hand.
+SLOW_BELOW_BYTES_PER_SECOND = 100_000
+SLOW_FOR_SECONDS = 20
+CURL_STALL_GUARD = ["--connect-timeout", "30", "--speed-time", str(SLOW_FOR_SECONDS), "--speed-limit", str(SLOW_BELOW_BYTES_PER_SECOND)]
+MIN_PROGRESS = 64 * 1024  # an attempt that added at least this much did work: dropping a slow connection then is not a failure
+MAX_RECONNECTS = 300
 
 
 def sha256_of(path: Path) -> str:
@@ -101,12 +107,18 @@ def sha256_of(path: Path) -> str:
 
 
 def curl_download(url: str, dest: Path, *, expected_size: int | None = None, retries: int = 5) -> None:
-    """Resumable download: <dest>.part is continued with `-C -`, then renamed. Raises RuntimeError on failure."""
+    """Resumable download: <dest>.part is continued with `-C -`, then renamed. Raises RuntimeError on failure.
+
+    A connection that is too slow is dropped and re-made at once (see CURL_STALL_GUARD) without using up `retries`, as long as
+    it made progress. `retries` counts attempts that got nowhere; MAX_RECONNECTS bounds the total, so it can never loop forever.
+    (curl's own --retry is not used: it would add its own pauses on top of this loop.)"""
     dest.parent.mkdir(parents=True, exist_ok=True)
     part = dest.with_name(dest.name + ".part")
-    for attempt in range(1, retries + 1):
+    failed = 0
+    for _ in range(MAX_RECONNECTS):
+        before = part.stat().st_size if part.exists() else 0
         rc = subprocess.run(
-            ["curl.exe", "-L", "-f", "-C", "-", "--retry", "3", "--retry-delay", "3", "--ssl-no-revoke", *CURL_STALL_GUARD, "-o", str(part), url]
+            ["curl.exe", "-L", "-f", "-C", "-", "--ssl-no-revoke", *CURL_STALL_GUARD, "-o", str(part), url]
         ).returncode
         if rc == 0:
             break
@@ -114,9 +126,17 @@ def curl_download(url: str, dest: Path, *, expected_size: int | None = None, ret
             if expected_size is None or part.stat().st_size == expected_size:
                 break
             part.unlink()
-        print(f"   download attempt {attempt}/{retries} failed (curl exit {rc})")
+        gained = (part.stat().st_size if part.exists() else 0) - before
+        if rc == 28 and gained >= MIN_PROGRESS:
+            print(f"   connection was slow (got {fmt_size(gained)}); reconnecting and continuing where it stopped ...")
+            continue
+        failed += 1
+        print(f"   download attempt {failed}/{retries} failed (curl exit {rc})")
+        if failed >= retries:
+            raise RuntimeError(f"download failed: {dest.name}")
+        time.sleep(2 * failed)  # a short, growing pause before trying a real failure again (no pause after a merely slow connection)
     else:
-        raise RuntimeError(f"download failed: {dest.name}")
+        raise RuntimeError(f"download failed: {dest.name} (the connection stayed too slow)")
     if expected_size is not None and part.stat().st_size != expected_size:
         got = part.stat().st_size
         part.unlink()

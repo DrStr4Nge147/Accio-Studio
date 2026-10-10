@@ -129,7 +129,7 @@ Create it next to `Run_Accio.bat`. Unknown keys are ignored.
 | Settings shows missing models or nodes | run `Install.bat` again, it downloads and verifies what is missing |
 | `Install.bat` says the folder path is too long | move the whole folder closer to the drive root, e.g. `C:\AccioStudio`, and run it again |
 | "The Python environment does not start" | the folder was moved or renamed; run `Install.bat`, it rebuilds the environment |
-| The install seems stuck on a download | a connection that delivers nothing for a minute is cancelled and retried by itself. If it still fails, close the window and run `Install.bat` again: finished files are kept and partial ones resume. |
+| A download is slow | `Install.bat` drops any connection slower than about 100 KB/s for 20 seconds and reconnects, continuing where it stopped (servers hand out connections of very different speed). You can also close the window and run `Install.bat` again at any time: finished files are kept and partial ones resume. If it ends with "download failed", just run it again. |
 | "The backend ran out of GPU memory" | close other GPU programs, lower the size, or use Standard instead of Detailed |
 | A job seems stuck at "Waiting for the GPU" | another job is running in the engine; the queue pane shows it |
 | Can't reach it from the phone | same Wi-Fi? choose option 4, and allow private networks if Windows Firewall asks |
