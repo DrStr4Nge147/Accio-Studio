@@ -41,7 +41,7 @@ echo   - the Tailscale address Accio published ^(Tailscale itself keeps running^
 echo.
 
 :: Only processes of this folder are stopped: programs located under it, and whatever listens on its two ports as long as it
-:: is one of our main.py scripts. Any other app, a separate ComfyUI or anything else on the PC is not touched.
+:: is one of our main.py scripts. The Run_Accio.bat console that started the server is closed too (otherwise it sits at its "stopped" pause). Any other app, a separate ComfyUI or anything else on the PC is not touched.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$root = $env:ACCIO_ROOT.TrimEnd('\') + '\';" ^
   "$ports = @([int]$env:ACCIO_PORT); if ($env:COMFY_EXTERNAL -ne '1') { $ports += [int]$env:COMFY_PORT };" ^
@@ -49,6 +49,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ids = @{};" ^
   "foreach ($p in $all) { if ($p.ProcessId -ne $PID -and $p.ExecutablePath -and $p.ExecutablePath.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) { $ids[[int]$p.ProcessId] = $p } }" ^
   "foreach ($port in $ports) { Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | ForEach-Object { $op = $_.OwningProcess; $o = $all | Where-Object { $_.ProcessId -eq $op } | Select-Object -First 1; if ($o -and $o.CommandLine -match 'main\.py') { $ids[[int]$o.ProcessId] = $o } } }" ^
+  "foreach ($p in @($ids.Values)) { $pp = $all | Where-Object { $_.ProcessId -eq $p.ParentProcessId } | Select-Object -First 1; if ($pp -and $pp.Name -eq 'cmd.exe' -and $pp.ProcessId -ne $PID -and $pp.CommandLine -match 'Run_Accio') { $ids[[int]$pp.ProcessId] = $pp } }" ^
   "if ($ids.Count -eq 0) { Write-Host 'Nothing of Accio Studio was running.'; exit 0 }" ^
   "foreach ($p in $ids.Values) { Write-Host ('  stopping ' + $p.Name + ' (PID ' + $p.ProcessId + ')'); Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }" ^
   "Start-Sleep -Seconds 2;" ^
