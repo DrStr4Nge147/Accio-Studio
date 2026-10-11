@@ -2,6 +2,7 @@ import { LayoutGrid, Settings as GearIcon, Sparkles, WandSparkles } from "lucide
 import { CoffeeBadge } from "../components/CoffeeBadge";
 import { HealthBanner } from "../components/HealthBanner";
 import { IconButton } from "../components/ui/controls";
+import { UpdatePill } from "../components/UpdatePill";
 import { SelectedStage } from "../components/stage/Stage";
 import { Wordmark } from "../components/Wordmark";
 import { ConsoleDrawer } from "../features/console/ConsoleDrawer";
@@ -84,6 +85,9 @@ export function DesktopLayout() {
               <GearIcon size={20} strokeWidth={1.7} />
             </IconButton>
           </div>
+        </div>
+        <div className="flex-none px-4 pt-3 empty:hidden">
+          <UpdatePill label="Update available" className="w-full justify-center" />
         </div>
         {tab === "create" ? (
           <CreateComposer layout="pane" above={nav} />
