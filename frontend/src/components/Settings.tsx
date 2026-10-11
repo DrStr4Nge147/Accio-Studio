@@ -36,19 +36,31 @@ export function SettingsBody({ open }: { open: boolean }) {
     if (open) void refreshHealth();
   }, [open, refreshHealth]);
 
+  // Mobile: one stack in `order-N` sequence. Desktop: two independent columns (wrappers become flex columns), so a tall card on one side leaves no gap on the other.
   return (
-      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8 lg:space-y-0 lg:[&>*]:mb-5">
-        <div>
+    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
+      <div className="contents lg:flex lg:flex-col lg:gap-5">
+        <div className="order-1">
           <Label>Theme</Label>
           <div className="mt-1.5">
             <Segmented<Theme> label="Theme" value={theme} options={THEMES} onChange={(t) => set({ theme: t })} />
           </div>
         </div>
-        <ConnectionSection open={open} />
-        <InstallApp />
-        <UpdateSection open={open} />
-        <AccountSection />
-        <div className="divide-y divide-line rounded-m border border-line px-3">
+        <div className="order-3">
+          <InstallApp />
+        </div>
+        <div className="order-5">
+          <AccountSection />
+        </div>
+      </div>
+      <div className="contents lg:flex lg:flex-col lg:gap-5">
+        <div className="order-2">
+          <ConnectionSection open={open} />
+        </div>
+        <div className="order-4">
+          <UpdateSection open={open} />
+        </div>
+        <div className="order-6 divide-y divide-line rounded-m border border-line px-3">
           <Row k="Accio server" v={unreachable ? "Unreachable" : "Running"} ok={!unreachable} />
           <Row k="Live updates" v={connected ? "Connected" : "Reconnecting…"} ok={connected} />
           <Row
@@ -64,7 +76,7 @@ export function SettingsBody({ open }: { open: boolean }) {
           )}
         </div>
         {health && health.missing_models.length > 0 && (
-          <div>
+          <div className="order-7">
             <Label>Missing models</Label>
             <ul className="mt-1 space-y-1 font-mono text-[12px] text-text-2">
               {health.missing_models.map((m) => (
@@ -75,20 +87,18 @@ export function SettingsBody({ open }: { open: boolean }) {
           </div>
         )}
         {health && health.missing_nodes.length > 0 && (
-          <div>
+          <div className="order-8">
             <Label>Missing components</Label>
             <p className="mt-1 font-mono text-[12px] text-text-2">{health.missing_nodes.join(", ")}</p>
           </div>
         )}
         {health?.warnings.map((w) => (
-          <p key={w} className="rounded-s border border-line p-3 text-[13px] text-text-2">
+          <p key={w} className="order-9 rounded-s border border-line p-3 text-[13px] text-text-2">
             {w}
           </p>
         ))}
-        <button type="button" onClick={() => void refreshHealth()} className="hover-wash h-11 rounded-full border border-line-strong px-4 text-[14px] text-text-2 hover:text-text">
-          Check again
-        </button>
       </div>
+    </div>
   );
 }
 
