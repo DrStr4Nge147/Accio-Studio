@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, RotateCcw } from "lucide-react";
 import type { EditDefaults } from "../../api/types";
+import { LoadNote } from "../../components/LoadNote";
 import { LoraList } from "../../components/LoraList";
 import { Field, Label, Slider, Toggle, inputCls } from "../../components/ui/controls";
 import { useServer } from "../../store/health";
@@ -22,8 +23,13 @@ const FILL_MODES: { value: FillMode; label: string }[] = [
 ];
 
 /** A slider whose value is stored only when it differs from the workflow default. */
-function Tuned({ label, tip, value, def, min, max, step, format, onChange }: { label: string; tip: string; value: number | undefined; def: number; min: number; max: number; step: number; format?: (v: number) => string; onChange: (v: number | undefined) => void }) {
-  return <Slider label={label} tip={tip} min={min} max={max} step={step} value={value ?? def} format={format} onChange={(v) => onChange(v === def ? undefined : v)} />;
+function Tuned({ label, tip, value, def, min, max, step, format, mp, onChange }: { label: string; tip: string; value: number | undefined; def: number; min: number; max: number; step: number; format?: (v: number) => string; /** A megapixel slider: warn when the value is a lot for this PC. */ mp?: boolean; onChange: (v: number | undefined) => void }) {
+  return (
+    <div>
+      <Slider label={label} tip={tip} min={min} max={max} step={step} value={value ?? def} format={format} onChange={(v) => onChange(v === def ? undefined : v)} />
+      {mp && <LoadNote mp={value ?? def} what={label} />}
+    </div>
+  );
 }
 
 function SeedField({ mode }: { mode: EditMode }) {
@@ -136,9 +142,10 @@ function MultiFields({ def, klein }: { def: EditDefaults["multiedit"]; klein: bo
           </>
         )}
       </div>
-      {(klein || !m.keepOriginal) && <Tuned label="Image 1 size" tip={T.baseMp} value={m.baseMp} def={def.base_megapixels} min={0.25} max={16} step={0.05} format={(v) => `${v.toFixed(2)} MP`} onChange={(baseMp) => set({ baseMp })} />}
+      {(klein || !m.keepOriginal) && <Tuned mp label="Image 1 size" tip={T.baseMp} value={m.baseMp} def={def.base_megapixels} min={0.25} max={16} step={0.05} format={(v) => `${v.toFixed(2)} MP`} onChange={(baseMp) => set({ baseMp })} />}
       {Array.from({ length: Math.max(0, Math.min(count, klein ? KLEIN_MAX_IMAGES : 9) - 1) }, (_, i) => (
         <Tuned
+          mp
           key={i}
           label={`Image ${i + 2} size`}
           tip={T.refMp}
@@ -216,7 +223,7 @@ function OutpaintFields({ def }: { def: EditDefaults["outpaint"] }) {
       )}
       {o.fillMode === "pillarbox blur" && <Tuned label="Backdrop blur" tip={T.fillMode} value={o.blur} def={def.backdrop_blur} min={0} max={1} step={0.05} onChange={(blur) => set({ blur })} />}
       <Tuned label="Feather" tip={T.feather} value={o.feather} def={def.feather} min={0} max={512} step={1} format={(v) => `${v} px`} onChange={(feather) => set({ feather })} />
-      <Tuned label="Target size" tip={T.targetMp} value={o.targetMp} def={def.target_megapixels} min={0.5} max={16} step={0.1} format={(v) => `${v.toFixed(1)} MP`} onChange={(targetMp) => set({ targetMp })} />
+      <Tuned mp label="Target size" tip={T.targetMp} value={o.targetMp} def={def.target_megapixels} min={0.5} max={16} step={0.1} format={(v) => `${v.toFixed(1)} MP`} onChange={(targetMp) => set({ targetMp })} />
       <Toggle on={o.halo} onChange={(halo) => set({ halo })} label="Fix edge halo" tip={T.halo} />
       <Field label="Seam" tip={T.seam}>
         <select value={o.seam ?? def.seam} onChange={(e) => set({ seam: e.target.value === def.seam ? undefined : (e.target.value as Seam) })} className={inputCls}>

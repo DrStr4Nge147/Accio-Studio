@@ -27,6 +27,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import engine
 import outputs
+import sysinfo
 import thumbs
 import tunnels
 import updates
@@ -375,6 +376,18 @@ async def job_image(job_id: str, index: int, request: Request, size: int | None 
 
     headers = {"Cache-Control": "private, max-age=31536000, immutable"}
     return StreamingResponse(body(), media_type=upstream.headers.get("content-type", "image/png"), headers=headers)
+
+
+@app.get("/api/system")
+async def system_info(request: Request):
+    """This PC's graphics card, driver, CUDA and RAM. `engine_cuda` is what the backend's PyTorch was built for (None while it is offline)."""
+    hw = await asyncio.to_thread(sysinfo.hardware)
+    pytorch = None
+    try:
+        pytorch = (await request.app.state.comfy.system_stats()).get("system", {}).get("pytorch_version")
+    except ComfyError:
+        pass
+    return {**hw, "engine_cuda": sysinfo.torch_cuda(pytorch), "pytorch": pytorch}
 
 
 @app.get("/api/update")

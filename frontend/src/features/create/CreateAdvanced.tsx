@@ -1,4 +1,5 @@
 import { RotateCcw } from "lucide-react";
+import { LoadNote } from "../../components/LoadNote";
 import { Label, Segmented, Slider, Toggle } from "../../components/ui/controls";
 import { useServer } from "../../store/health";
 import { GRAIN_MAX, GRAIN_MIN } from "../edit/grain";
@@ -19,6 +20,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
   const defaults = useServer((x) => x.catalog?.defaults);
   const detailed = s.variant === "detailed";
   const d = defaults?.detailed;
+  const size = s.sizes[s.variant];
 
   return (
     <div className="space-y-4 pb-2">
@@ -77,6 +79,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
                 options={UPSCALES.map((u) => ({ value: u, label: `${u}×` }))}
               />
             </div>
+            {s.upscale > 1 && <LoadNote mp={(size.w * size.h * s.upscale ** 2) / 1e6} what="The refine pass" />}
           </div>
           <Toggle on={s.saveFirstPass} onChange={(saveFirstPass) => s.patch({ saveFirstPass })} label="Save first-pass image" sub="Keep the image from before refining" tip={TIPS.saveFirstPass} />
         </>

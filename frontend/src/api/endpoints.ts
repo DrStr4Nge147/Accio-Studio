@@ -75,6 +75,21 @@ export interface UpdateInfo {
 export const fetchUpdate = (refresh = false) => get<UpdateInfo>(`/api/update${refresh ? "?refresh=true" : ""}`);
 export const applyUpdate = () => post<{ started: true; latest: string }>("/api/update/apply");
 
+export interface SystemGpu {
+  name: string;
+  vram_mb: number | null;
+  driver: string | null;
+}
+export interface SystemInfo {
+  gpus: SystemGpu[];
+  /** Newest CUDA the Nvidia driver supports (nvidia-smi); null without an Nvidia driver. */
+  driver_cuda: string | null;
+  /** CUDA the backend's PyTorch was built for; null while the backend is offline or on a non-CUDA build. */
+  engine_cuda: string | null;
+  ram_mb: number | null;
+}
+export const fetchSystem = () => get<SystemInfo>("/api/system");
+
 export interface ModelPathField {
   kind: "diffusion_models" | "text_encoders" | "vae" | "loras";
   label: string;

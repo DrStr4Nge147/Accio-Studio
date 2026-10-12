@@ -1,4 +1,5 @@
 import { ASPECTS, CUSTOM, snap8, MAX_DIM, MIN_DIM } from "../../lib/aspects";
+import { LoadNote } from "../../components/LoadNote";
 import { Label, inputCls } from "../../components/ui/controls";
 import { useCreate, type SizeSel } from "./store";
 
@@ -77,6 +78,7 @@ export function AspectPicker() {
         {size.w}×{size.h} · {((size.w * size.h) / 1e6).toFixed(2)} MP
         {active?.untested && " · portrait twin of a tested ratio; not tested directly with Krea2"}
       </p>
+      <LoadNote mp={(size.w * size.h) / 1e6} />
     </div>
   );
 }
