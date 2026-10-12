@@ -225,14 +225,27 @@ def test_pick_folder_returns_the_chosen_existing_folder(monkeypatch, tmp_path):
 
 
 def test_native_dialog_is_for_the_pc_itself(api, monkeypatch, tmp_path):
-    monkeypatch.setattr(modelpathsapi, "local_trusted", lambda app, scope: False)
+    monkeypatch.setattr(modelpathsapi, "on_this_pc", lambda request: False)
     assert client.get("/api/model-paths").json()["can_pick"] is False
     r = client.post("/api/model-paths/pick", json={"start": ""})
     assert r.status_code == 403 and "PC that runs Accio" in r.json()["error"]["message"]
-    monkeypatch.setattr(modelpathsapi, "local_trusted", lambda app, scope: True)
+    monkeypatch.setattr(modelpathsapi, "on_this_pc", lambda request: True)
     assert client.get("/api/model-paths").json()["can_pick"] is True
     monkeypatch.setattr(modelpaths, "pick_folder", lambda start="": str(tmp_path))
     assert client.post("/api/model-paths/pick", json={"start": "C:" + chr(92)}).json() == {"path": str(tmp_path)}
+
+
+def test_native_dialog_is_offered_to_the_pcs_own_browser_in_every_tunnel_mode():
+    from starlette.requests import Request
+
+    def req(host, peer="127.0.0.1", extra=()):
+        headers = [(b"host", host.encode()), *extra]
+        return Request({"type": "http", "headers": headers, "client": (peer, 5000), "method": "GET", "path": "/", "query_string": b""})
+
+    assert modelpathsapi.on_this_pc(req("127.0.0.1:7862")) and modelpathsapi.on_this_pc(req("localhost:7862"))
+    assert not modelpathsapi.on_this_pc(req("desktop.tail1.ts.net"))  # came through a tunnel (rewritten Host)
+    assert not modelpathsapi.on_this_pc(req("127.0.0.1:7862", extra=[(b"x-forwarded-for", b"100.1.2.3")]))  # proxied
+    assert not modelpathsapi.on_this_pc(req("192.168.1.5:7862", peer="192.168.1.9"))  # another device on the network
 
 
 def test_external_backend_cannot_be_configured(api, monkeypatch, tmp_path):

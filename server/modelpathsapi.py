@@ -12,7 +12,7 @@ from pydantic import BaseModel
 import backend
 import config
 import modelpaths
-from authapi import local_trusted
+from auth import is_local_direct
 
 log = logging.getLogger("accio")
 router = APIRouter(prefix="/api/model-paths")
@@ -21,6 +21,12 @@ READY_TIMEOUT = 180
 
 class PathsBody(BaseModel):
     paths: dict[str, dict[str, str]]
+
+
+def on_this_pc(request: Request) -> bool:
+    """The browser is on the PC that runs Accio, opened at localhost. Unlike skipping the login, this holds in every tunnel
+    mode: a request that came through a tunnel or the LAN address carries another Host or forwarding headers."""
+    return is_local_direct(request.scope)
 
 
 def _state(request: Request) -> dict[str, Any]:
@@ -42,7 +48,7 @@ async def read(request: Request):
         families.append({"id": fid, "label": info["label"], "fields": fields})
     return {
         "available": not str(st.settings["external_comfy_url"]).strip(),
-        "can_pick": local_trusted(request.app, request.scope),
+        "can_pick": on_this_pc(request),
         "restart": _state(request),
         "families": families,
     }
@@ -61,7 +67,7 @@ class PickBody(BaseModel):
 @router.post("/pick")
 async def pick(request: Request, body: PickBody):
     """Open Windows' folder dialog on the PC that runs Accio. It appears on that PC's screen, so only its own browser may ask."""
-    if not local_trusted(request.app, request.scope):
+    if not on_this_pc(request):
         raise HTTPException(403, "The folder dialog opens on the PC that runs Accio, so it can only be used from that PC's browser.")
     try:
         chosen = await asyncio.to_thread(modelpaths.pick_folder, body.start)
