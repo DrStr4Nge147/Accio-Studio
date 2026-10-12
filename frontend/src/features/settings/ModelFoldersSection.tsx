@@ -7,6 +7,8 @@ import { FolderBrowser } from "./FolderBrowser";
 
 const btn = "hover-wash h-11 rounded-full border border-line-strong px-4 text-[14px] text-text-2 hover:text-text disabled:opacity-50";
 
+const pickBtn = "hover-wash h-9 rounded-full border border-line-strong px-3 text-[13px] text-text-2 hover:text-text disabled:opacity-50";
+
 const valuesOf = (m: ModelPaths): ModelPathValues =>
   Object.fromEntries(m.families.map((f) => [f.id, Object.fromEntries(f.fields.map((x) => [x.kind, x.path]))]));
 
@@ -108,10 +110,10 @@ export function ModelFoldersSection({ open }: { open: boolean }) {
                     <label htmlFor={id} className="text-[12px] text-text-2">
                       {f.label}
                     </label>
-                    <div className="mt-0.5 flex gap-2">
+                    <div className="mt-0.5">
                       <input
                         id={id}
-                        className={`${inputCls} min-w-0 flex-1 font-mono text-[12px]`}
+                        className={`${inputCls} font-mono text-[12px]`}
                         value={current}
                         placeholder={`Default: ${f.default}`}
                         title={f.default}
@@ -119,10 +121,11 @@ export function ModelFoldersSection({ open }: { open: boolean }) {
                         autoComplete="off"
                         onChange={(e) => setValues((v) => ({ ...v, [fam.id]: { ...v[fam.id], [f.kind]: e.target.value } }))}
                       />
+                      <div className="mt-1.5 flex flex-wrap gap-2">
                       {data.can_pick && (
                         <button
                           type="button"
-                          className={`${btn} shrink-0 px-3`}
+                          className={pickBtn}
                           disabled={dialog !== null}
                           title="Opens Windows' folder window on this PC"
                           onClick={() => {
@@ -137,9 +140,10 @@ export function ModelFoldersSection({ open }: { open: boolean }) {
                           {dialog === id ? "Choose in the window…" : "Browse on this PC"}
                         </button>
                       )}
-                      <button type="button" className={`${btn} shrink-0 px-3`} onClick={() => setPicking(picking === id ? null : id)}>
-                        {data.can_pick ? "List" : "Browse"}
+                      <button type="button" className={pickBtn} onClick={() => setPicking(picking === id ? null : id)}>
+                        {data.can_pick ? "List folders" : "Browse"}
                       </button>
+                      </div>
                     </div>
                     {picking === id && (
                       <FolderBrowser
