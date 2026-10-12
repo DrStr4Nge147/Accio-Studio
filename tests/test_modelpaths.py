@@ -108,6 +108,22 @@ def test_lora_folder_holding_files_is_not_replaced(tmp_path):
     assert mine.is_file()
 
 
+def test_browse_lists_folders_only_and_falls_back_to_an_existing_parent(tmp_path):
+    root = make_models(tmp_path)  # holds a.safetensors, sub/, notes.txt
+    got = modelpaths.browse(str(root))
+    assert got["folders"] == ["sub"] and got["path"] == str(root) and got["parent"] == str(tmp_path) and not got["drives"]
+    assert modelpaths.browse(str(root / "gone" / "deeper"))["path"] == str(root)  # nearest folder that exists
+    drives = modelpaths.browse("")
+    assert drives["drives"] and drives["parent"] is None and all(d.endswith(":\\") for d in drives["folders"])
+    top = modelpaths.browse(drives["folders"][0])
+    assert top["parent"] == ""  # up from a drive root goes back to the drives list
+
+
+def test_default_folder_is_the_apps_own_one(tmp_path):
+    assert modelpaths.default_folder(tmp_path, "krea2", "vae") == str(tmp_path / "ComfyUI" / "models" / "vae")
+    assert modelpaths.default_folder(tmp_path, "klein", "loras") == str(tmp_path / "ComfyUI" / "models" / "loras" / "flux-klein9b-edit")
+
+
 def test_installer_and_server_share_the_yaml_marker():
     assert install.YAML_MARKER == modelpaths.YAML_MARKER
 
@@ -131,7 +147,6 @@ def api(session_token, tmp_path, monkeypatch):
     monkeypatch.setattr(main.app.state, "backend_restart", None, raising=False)
     restarts = []
     monkeypatch.setattr(backend, "restart", lambda settings: restarts.append(1))
-    monkeypatch.setattr(modelpathsapi, "local_trusted", lambda app, scope: True)
     client.cookies.set("accio_session", session_token)
     yield base, restarts
     client.cookies.clear()
@@ -169,11 +184,55 @@ def test_bad_folder_is_refused_and_nothing_changes(api, tmp_path):
     assert not (base / "ComfyUI" / "extra_model_paths.yaml").exists()
 
 
-def test_only_this_pc_may_change_the_folders(api, monkeypatch, tmp_path):
-    monkeypatch.setattr(modelpathsapi, "local_trusted", lambda app, scope: False)
-    assert client.get("/api/model-paths").json()["can_edit"] is False
+def test_changing_the_folders_needs_a_login(api, tmp_path):
+    client.cookies.clear()
+    assert client.get("/api/model-paths").status_code == 401
     r = client.put("/api/model-paths", json={"paths": {"krea2": {"vae": str(make_models(tmp_path))}}})
+    assert r.status_code == 401
+
+
+def test_api_offers_defaults_and_a_folder_browser(api, tmp_path):
+    base, _ = api
+    body = client.get("/api/model-paths").json()
+    vae = next(x for x in body["families"][0]["fields"] if x["kind"] == "vae")
+    assert vae["default"] == str(base / "ComfyUI" / "models" / "vae")
+    root = make_models(tmp_path)
+    got = client.get("/api/model-paths/browse", params={"path": str(root)}).json()
+    assert got["folders"] == ["sub"] and got["drives"] is False
+    client.cookies.clear()
+    assert client.get("/api/model-paths/browse", params={"path": str(root)}).status_code == 401
+
+
+def fake_dialog(monkeypatch, stdout):
+    seen = {}
+
+    def run(args, **kw):
+        seen.update(env=kw["env"], args=args)
+        return type("Done", (), {"stdout": stdout})()
+
+    monkeypatch.setattr(modelpaths.subprocess, "run", run)
+    return seen
+
+
+def test_pick_folder_returns_the_chosen_existing_folder(monkeypatch, tmp_path):
+    seen = fake_dialog(monkeypatch, str(tmp_path) + chr(13) + chr(10))
+    assert modelpaths.pick_folder("D:" + chr(92) + "Start") == str(tmp_path)
+    assert "-STA" in seen["args"] and seen["env"]["ACCIO_START"] == "D:" + chr(92) + "Start"  # the start folder travels in the environment, never in the script
+    fake_dialog(monkeypatch, "")  # cancelled
+    assert modelpaths.pick_folder() is None
+    fake_dialog(monkeypatch, str(tmp_path / "nowhere"))  # never trust what came back
+    assert modelpaths.pick_folder() is None
+
+
+def test_native_dialog_is_for_the_pc_itself(api, monkeypatch, tmp_path):
+    monkeypatch.setattr(modelpathsapi, "local_trusted", lambda app, scope: False)
+    assert client.get("/api/model-paths").json()["can_pick"] is False
+    r = client.post("/api/model-paths/pick", json={"start": ""})
     assert r.status_code == 403 and "PC that runs Accio" in r.json()["error"]["message"]
+    monkeypatch.setattr(modelpathsapi, "local_trusted", lambda app, scope: True)
+    assert client.get("/api/model-paths").json()["can_pick"] is True
+    monkeypatch.setattr(modelpaths, "pick_folder", lambda start="": str(tmp_path))
+    assert client.post("/api/model-paths/pick", json={"start": "C:" + chr(92)}).json() == {"path": str(tmp_path)}
 
 
 def test_external_backend_cannot_be_configured(api, monkeypatch, tmp_path):

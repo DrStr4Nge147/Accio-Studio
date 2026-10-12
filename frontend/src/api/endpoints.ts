@@ -79,6 +79,8 @@ export interface ModelPathField {
   kind: "diffusion_models" | "text_encoders" | "vae" | "loras";
   label: string;
   path: string;
+  /** The app's own folder for this kind, used when the field is empty. */
+  default: string;
   /** Model files in the saved folder (null when it is not there). */
   found: number | null;
   missing: boolean;
@@ -86,11 +88,21 @@ export interface ModelPathField {
 export interface ModelPaths {
   /** false when an external backend is configured: its folders are set up there. */
   available: boolean;
-  /** Only the browser on the PC that runs Accio may change the folders. */
-  can_edit: boolean;
+  /** True in the browser on the PC that runs Accio: the native folder dialog can open there. */
+  can_pick: boolean;
   restart: { state: "idle" | "restarting" | "ready" | "failed"; message: string };
   families: { id: string; label: string; fields: ModelPathField[] }[];
 }
 export type ModelPathValues = Record<string, Record<string, string>>;
+export interface FolderListing {
+  path: string;
+  /** "" = the drives list is the parent; null = already showing the drives. */
+  parent: string | null;
+  folders: string[];
+  drives: boolean;
+}
+export const browseFolders = (path: string) => get<FolderListing>(`/api/model-paths/browse?path=${encodeURIComponent(path)}`);
+/** Opens Windows' folder dialog on the PC (waits for the choice); path is null when cancelled. */
+export const pickFolder = (start: string) => post<{ path: string | null }>("/api/model-paths/pick", { start });
 export const fetchModelPaths = () => get<ModelPaths>("/api/model-paths");
 export const saveModelPaths = (paths: ModelPathValues) => put<{ restart: ModelPaths["restart"] }>("/api/model-paths", { paths });

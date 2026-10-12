@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import stat
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -83,6 +84,59 @@ def count_models(path: str) -> int | None:
         if n >= COUNT_CAP:
             return COUNT_CAP
     return n
+
+
+def default_folder(comfy_base: Path, family: str, kind: str) -> str:
+    """Where the app keeps that kind of model itself (what an empty field means)."""
+    models = comfy_base / "ComfyUI" / "models"
+    return str(models / "loras" / FAMILIES[family]["lora_dir"] if kind == "loras" else models / kind)
+
+
+def browse(path: str) -> dict[str, Any]:
+    """Sub-folders of `path` for the folder picker; no path = the drives. Folders only, never file names. A folder that is
+    gone or unreadable falls back to its nearest existing parent."""
+    if not path.strip():
+        drives = [f"{c}:\\" for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.isdir(f"{c}:\\")]
+        return {"path": "", "parent": None, "folders": drives, "drives": True}
+    p = Path(os.path.abspath(path.strip().strip('"')))
+    while not p.is_dir() and p.parent != p:
+        p = p.parent
+    if not p.is_dir():
+        return browse("")
+    try:
+        names = sorted((e.name for e in os.scandir(p) if e.is_dir(follow_symlinks=True) and not e.name.startswith("$")), key=str.lower)
+    except OSError:
+        names = []
+    parent = "" if p.parent == p else str(p.parent)
+    return {"path": str(p), "parent": parent, "folders": names[:500], "drives": False}
+
+
+PICK_SCRIPT = (
+    "Add-Type -AssemblyName System.Windows.Forms;"
+    "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;"
+    "$owner = New-Object System.Windows.Forms.Form; $owner.TopMost = $true;"
+    "$d = New-Object System.Windows.Forms.FolderBrowserDialog;"
+    "$d.Description = 'Choose the folder that holds these models'; $d.ShowNewFolderButton = $false;"
+    "if ($env:ACCIO_START -and (Test-Path -LiteralPath $env:ACCIO_START -PathType Container)) { $d.SelectedPath = $env:ACCIO_START };"
+    "if ($d.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $d.SelectedPath }"
+)
+PICK_TIMEOUT = 600
+
+
+def pick_folder(start: str = "") -> str | None:
+    """Windows' own folder dialog, opened on the PC that runs Accio (the caller makes sure the request comes from there).
+    Blocks until the user chooses or cancels; returns the path or None."""
+    env = {**os.environ, "ACCIO_START": start[:1024]}
+    try:
+        done = subprocess.run(  # noqa: S603
+            ["powershell", "-NoProfile", "-STA", "-ExecutionPolicy", "Bypass", "-Command", PICK_SCRIPT],
+            env=env, capture_output=True, text=True, encoding="utf-8", timeout=PICK_TIMEOUT,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        raise ModelPathError("Could not open the folder dialog on this PC.") from None
+    chosen = done.stdout.strip().splitlines()
+    return chosen[-1].strip() if chosen and os.path.isdir(chosen[-1].strip()) else None
 
 
 def _is_link(p: Path) -> bool:

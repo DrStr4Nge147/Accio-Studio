@@ -37,14 +37,37 @@ async def read(request: Request):
         for kind, label in modelpaths.KINDS.items():
             path = saved.get(fid, {}).get(kind, "")
             found = await asyncio.to_thread(modelpaths.count_models, path) if path else None
-            fields.append({"kind": kind, "label": label, "path": path, "found": found, "missing": bool(path) and found is None})
+            default = modelpaths.default_folder(config.comfy_dir(st.settings), fid, kind)
+            fields.append({"kind": kind, "label": label, "path": path, "default": default, "found": found, "missing": bool(path) and found is None})
         families.append({"id": fid, "label": info["label"], "fields": fields})
     return {
         "available": not str(st.settings["external_comfy_url"]).strip(),
-        "can_edit": local_trusted(request.app, request.scope),
+        "can_pick": local_trusted(request.app, request.scope),
         "restart": _state(request),
         "families": families,
     }
+
+
+@router.get("/browse")
+async def browse(path: str = ""):
+    """Folders under `path` (empty = drives), for the Browse picker. The login guards it like every other API route."""
+    return await asyncio.to_thread(modelpaths.browse, path[:1024])
+
+
+class PickBody(BaseModel):
+    start: str = ""
+
+
+@router.post("/pick")
+async def pick(request: Request, body: PickBody):
+    """Open Windows' folder dialog on the PC that runs Accio. It appears on that PC's screen, so only its own browser may ask."""
+    if not local_trusted(request.app, request.scope):
+        raise HTTPException(403, "The folder dialog opens on the PC that runs Accio, so it can only be used from that PC's browser.")
+    try:
+        chosen = await asyncio.to_thread(modelpaths.pick_folder, body.start)
+    except modelpaths.ModelPathError as e:
+        raise HTTPException(500, str(e)) from None
+    return {"path": chosen}
 
 
 async def _restart_and_wait(app) -> None:
@@ -70,8 +93,6 @@ async def _restart_and_wait(app) -> None:
 @router.put("", status_code=202)
 async def save(request: Request, body: PathsBody):
     st = request.app.state
-    if not local_trusted(request.app, request.scope):
-        raise HTTPException(403, "Model folders can only be changed from the browser on the PC that runs Accio.")
     if str(st.settings["external_comfy_url"]).strip():
         raise HTTPException(400, "This app uses an external backend, so its model folders are set up there.")
     if _state(request)["state"] == "restarting":
