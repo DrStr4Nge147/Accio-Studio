@@ -104,7 +104,7 @@ export function Toggle({
       onClick={() => onChange(!on)}
       className="flex min-h-11 w-full items-center justify-between gap-3 py-1 text-left text-[14px] disabled:opacity-50"
     >
-      <span className="min-w-0">
+      <span className="min-w-0 [overflow-wrap:anywhere]">
         {label}
         {sub && <span className="block text-[12px] text-text-3">{sub}</span>}
       </span>

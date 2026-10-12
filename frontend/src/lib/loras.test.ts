@@ -9,6 +9,8 @@ describe("loras", () => {
     expect(loraGroup("c.safetensors")).toBe("shared");
     expect(loraGroup("other/d.safetensors")).toBe("shared");
     expect(loraGroup("krea2.safetensors")).toBe("shared"); // a file, not the folder
+    expect(loraGroup("qwen2.1-edit\\e.safetensors")).toBe("edit");
+    expect(loraGroup("flux-klein9b-edit/f.safetensors")).toBe("edit");
   });
 
   it("labels without folder or extension", () => {
@@ -20,5 +22,11 @@ describe("loras", () => {
     const r = lorasForMode(all, "create", { "b.safetensors": "create", "a.safetensors": "edit" });
     expect(r.own).toEqual(["krea2/k.safetensors"]);
     expect(r.shared).toEqual(["b.safetensors", "a.safetensors"]);
+  });
+
+  it("splits a mode's own LoRAs by folder", () => {
+    const all = ["qwen2.1-edit/q.safetensors", "flux-klein9b-edit/f.safetensors", "krea2/k.safetensors"];
+    const r = lorasForMode(all, "edit", {});
+    expect(r.folders.map((f) => f.folder)).toEqual(["flux-klein9b-edit", "qwen2.1-edit"]);
   });
 });

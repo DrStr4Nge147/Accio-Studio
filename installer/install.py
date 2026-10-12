@@ -388,13 +388,23 @@ def models_dir_of(path: str) -> Path | None:
     return None
 
 
+def find_model_file(folder: Path, name: str) -> Path | None:
+    """`name` directly in `folder`, else in any subfolder (ComfyUI lists models recursively, so users file LoRAs into loras/krea2/...)."""
+    direct = folder / name
+    if direct.is_file():
+        return direct
+    if not folder.is_dir():
+        return None
+    return next((p for p in sorted(folder.rglob("*")) if p.name.lower() == name.lower() and p.is_file()), None)
+
+
 def locate_existing(models_from: Path | None, m: dict) -> Path | None:
     if not models_from:
         return None
     folders = [m["folder"]] + {"diffusion_models": ["unet"], "text_encoders": ["clip"]}.get(m["folder"], [])
     for f in folders:
-        p = models_from / f / m["file"]
-        if p.is_file():
+        p = find_model_file(models_from / f, m["file"])
+        if p:
             ok, why = verify_safetensors(p, m["size"])
             if ok:
                 return p
@@ -422,6 +432,15 @@ def confirm_download(need: int, count: int, interactive: bool) -> bool:
     return answer.lower() not in ("n", "no")
 
 
+# The folders the app sorts LoRAs by (frontend/src/lib/loras.ts): Create's, then the two Edit families.
+LORA_FOLDERS = ("krea2", "qwen2.1-edit", "flux-klein9b-edit")
+
+
+def make_lora_folders(models_dir: Path) -> None:
+    for name in LORA_FOLDERS:
+        (models_dir / "loras" / name).mkdir(parents=True, exist_ok=True)
+
+
 def install_models(manifest: dict, models_from: Path | None, optional: bool, interactive: bool, groups: frozenset[str] = frozenset()) -> list[str]:
     dest_root = comfy_dir() / "models"
     todo, rows = [], []
@@ -433,13 +452,15 @@ def install_models(manifest: dict, models_from: Path | None, optional: bool, int
         if ext:
             rows.append((m["file"], m["size"], "found in existing models folder"))
             continue
-        if dest.is_file():
-            ok, why = verify_safetensors(dest, m["size"])
+        have_at = find_model_file(dest.parent, m["file"])
+        if have_at:
+            ok, why = verify_safetensors(have_at, m["size"])
             if ok:
                 rows.append((m["file"], m["size"], "already installed"))
                 continue
-            say(f"  [!] {m['file']} is incomplete or damaged ({why}); removing and re-downloading")
-            dest.unlink()
+            say(f"  [!] {m['file']} is incomplete or damaged ({why}); re-downloading")
+            if have_at == dest:
+                dest.unlink()  # only ever delete our own copy; a damaged file the user filed in a subfolder is left alone
         part = dest.with_name(dest.name + ".part")
         have = part.stat().st_size if part.is_file() else 0
         rows.append((m["file"], m["size"], f"download{f' (resume from {fmt_size(have)})' if have else ''}"))
@@ -614,6 +635,7 @@ def main() -> int:
         def models_step():
             if models_from:
                 write_extra_model_paths(models_from)
+            make_lora_folders(comfy_dir() / "models")
             failed = install_models(manifest, models_from, optional, interactive, groups)
             if failed:
                 raise RuntimeError("these models failed to download or verify: " + ", ".join(failed))

@@ -369,8 +369,8 @@ The app must feel instant on a mid-range phone over a tunnel:
 ### 6.6 LoRAs
 - The list comes from ComfyUI (`/models/loras`), refreshed each time the picker opens.
 - Each entry has on/off and a strength slider; entries can be stacked; the panel is collapsible.
-- Filtering: files under `loras/krea2/` show only in Create, files under `loras/qwen/` only in Edit, and everything else under "Shared / unsorted" in both. Remember which mode each LoRA was last used in.
-- Do not move existing LoRA files; their paths are referenced by the user's ComfyUI workflows.
+- Filtering is by top-level folder name only (never file contents): folders starting `krea2` show only in Create; folders starting `qwen` or `flux`, or ending `-edit`, only in Edit; everything else, including files loose in `loras/`, under "Shared / unsorted" in both. The picker shows one headed section per folder with a divider between sections, and long names truncate with the full name on hover. Remember which mode each LoRA was last used in.
+- The installer creates `loras/krea2`, `loras/qwen2.1-edit` and `loras/flux-klein9b-edit`. Files may sit in any subfolder: the manifest and templates name bare files, so the health check, the installer's already-installed check and the engine (for template LoRAs) match by file name anywhere under `loras`. A file name present in two subfolders is ambiguous and counts as missing.
 - A wrong-family LoRA usually only triggers ComfyUI "lora key not loaded" warnings. Surface that as a non-blocking hint if detectable.
 
 ---

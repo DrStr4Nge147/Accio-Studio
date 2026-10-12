@@ -6,7 +6,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from engine import BuildError, Catalog, build
+from engine import BuildError, Catalog, build, find_model
 from schemas import JobRequest
 
 CAT = Catalog(
@@ -70,6 +70,20 @@ def test_lora_injection_goes_before_marker_and_respects_targets():
     keys = list(p2)
     assert keys.index("lora_3") < keys.index("➕ Add Lora")
     assert p1["lora_1"]["lora"] == "krea2_turbo_lora_rank_64_bf16.safetensors"  # untouched
+
+
+def test_template_loras_follow_files_filed_into_subfolders():
+    cat = Catalog(loras={"krea2/krea2_turbo_lora_rank_64_bf16.safetensors"}, samplers=CAT.samplers, schedulers=CAT.schedulers, variance_spec=CAT.variance_spec)
+    b = build(mk(mode="create", variant="detailed", prompt="x"), cat, seed_source=iter(range(10, 99)).__next__)
+    assert b.prompt["180"]["inputs"]["lora_1"]["lora"] == "krea2/krea2_turbo_lora_rank_64_bf16.safetensors"
+    assert b.prompt["174"]["inputs"]["lora_1"]["lora"] == "krea2/krea2_turbo_lora_rank_64_bf16.safetensors"
+
+
+def test_find_model_matches_by_file_name_in_any_subfolder():
+    assert find_model("x.safetensors", {"x.safetensors", "a/x.safetensors"}) == "x.safetensors"
+    assert find_model("x.safetensors", {r"deep\sub\X.safetensors"}) == r"deep\sub\X.safetensors"
+    assert find_model("x.safetensors", {"a/x.safetensors", "b/x.safetensors"}) is None  # ambiguous
+    assert find_model("x.safetensors", {"y.safetensors"}) is None
 
 
 def test_standard_lora_loader_starts_empty():

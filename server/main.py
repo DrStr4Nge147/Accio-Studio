@@ -232,7 +232,7 @@ async def health(request: Request):
     missing = []
     for folder, names in REQUIRED_MODELS.items():
         have = set(await comfy.models(folder))
-        missing += [f"{folder}/{n}" for n in names if n not in have]
+        missing += [f"{folder}/{n}" for n in names if engine.find_model(n, have) is None]
     info = await cached(request, "object_info_keys", 300, lambda: _object_info_keys(comfy))
     version = stats.get("system", {}).get("comfyui_version")
     pinned = MANIFEST["comfyui"]["version"]

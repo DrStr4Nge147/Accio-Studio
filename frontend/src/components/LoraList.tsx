@@ -41,7 +41,7 @@ export function LoraList({
   }, [adding, refreshCatalog]);
 
   const update = (i: number, p: Partial<LoraSel>) => onChange(loras.map((l, n) => (n === i ? { ...l, ...p } : l)));
-  const { own, shared } = lorasForMode(catalog?.loras ?? [], mode, loraLastMode);
+  const { own, folders, shared } = lorasForMode(catalog?.loras ?? [], mode, loraLastMode);
   const taken = new Set(loras.map((l) => l.name));
   const add = (name: string) => {
     onChange([...loras, { name, strength: 1, on: true, target: "both" }]);
@@ -100,31 +100,30 @@ export function LoraList({
           ))}
           {adding ? (
             <div className="rounded-s border border-line-strong bg-raised p-1" role="listbox" aria-label="Choose a LoRA">
-              {[
-                [mode === "create" ? "Krea2" : "Qwen", own],
-                ["Shared / unsorted", shared],
-              ].map(([title, names]) => {
-                const list = (names as string[]).filter((n) => !taken.has(n));
-                return (
-                  list.length > 0 && (
-                    <div key={title as string}>
-                      <div className="px-2 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-text-3">{title as string}</div>
-                      {list.map((n) => (
-                        <button
-                          key={n}
-                          type="button"
-                          role="option"
-                          aria-selected={false}
-                          onClick={() => add(n)}
-                          className="block min-h-11 w-full rounded-lg px-2 text-left text-[14px] hover:bg-overlay hover:text-text"
-                        >
-                          {loraLabel(n)}
-                        </button>
-                      ))}
+              {[...folders.map((f) => [f.folder, f.names] as const), ["Shared / unsorted", shared] as const]
+                .map(([title, names]) => ({ title, list: names.filter((n) => !taken.has(n)) }))
+                .filter((g) => g.list.length > 0)
+                .map(({ title, list }, gi) => (
+                  <div key={title} className={gi > 0 ? "mt-2 border-t border-line pt-1" : ""}>
+                    <div className="flex items-center justify-between px-2 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-text-3">
+                      <span>{title}</span>
+                      <span className="font-normal normal-case tracking-normal">{list.length}</span>
                     </div>
-                  )
-                );
-              })}
+                    {list.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        role="option"
+                        aria-selected={false}
+                        title={loraLabel(n)}
+                        onClick={() => add(n)}
+                        className="block min-h-11 w-full rounded-lg px-2 text-left text-[14px] hover:bg-overlay hover:text-text"
+                      >
+                        <span className="block truncate">{loraLabel(n)}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
               {!catalog && <p className="p-2 text-[13px] text-text-3">Couldn't load the LoRA list from the backend.</p>}
               {catalog && own.length + shared.length === taken.size && <p className="p-2 text-[13px] text-text-3">No more LoRAs to add.</p>}
               <button type="button" onClick={() => setAdding(false)} className="hover-wash h-11 w-full rounded-s text-[13px] text-text-2 hover:text-text">

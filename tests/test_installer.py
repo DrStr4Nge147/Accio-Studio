@@ -143,6 +143,26 @@ def test_existing_models_must_verify_before_they_are_reused(tmp_path):
     assert install.locate_existing(tmp_path, m) is None
 
 
+def test_models_filed_into_subfolders_still_count_as_installed(tmp_path):
+    (tmp_path / "loras" / "krea2").mkdir(parents=True)
+    filed = make_safetensors(tmp_path / "loras" / "krea2" / "a.safetensors")
+    m = {"folder": "loras", "file": "a.safetensors", "size": filed.stat().st_size}
+    assert install.locate_existing(tmp_path, m) == filed
+    assert install.find_model_file(tmp_path / "loras", "A.safetensors") == filed
+    assert install.find_model_file(tmp_path / "loras", "missing.safetensors") is None
+    assert install.find_model_file(tmp_path / "nowhere", "a.safetensors") is None
+
+
+def test_lora_folders_are_created_and_kept(tmp_path):
+    (tmp_path / "loras" / "krea2").mkdir(parents=True)
+    keep = tmp_path / "loras" / "krea2" / "a.txt"
+    keep.write_text("x")
+    install.make_lora_folders(tmp_path)
+    install.make_lora_folders(tmp_path)  # idempotent
+    assert sorted(p.name for p in (tmp_path / "loras").iterdir()) == sorted(install.LORA_FOLDERS)
+    assert keep.read_text() == "x"
+
+
 def test_no_hard_coded_user_paths_in_shipped_files():
     needles = ["E:" + "\\AI_Softwares", "E:" + "/AI_Softwares", "Nick" + "-PC"]
     skip_dirs = {"env", "bin", "comfyui", "data", "node_modules", "dist", ".git", "__pycache__", ".pytest_cache", "comfy-templates"}

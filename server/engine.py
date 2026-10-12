@@ -168,6 +168,32 @@ def _apply_unet(prompt: dict, name: str | None, cat: Catalog) -> None:
     loaders[0]["inputs"]["unet_name"] = name
 
 
+def find_model(name: str, available: set[str]) -> str | None:
+    """The installed entry for a model file, wherever it sits under its models folder.
+
+    ComfyUI lists models relative to the folder (`krea2/x.safetensors`), but templates and the manifest name bare
+    files. An exact match wins; otherwise a unique entry with the same file name in any subfolder.
+    """
+    if name in available:
+        return name
+    base = name.replace("\\", "/").rsplit("/", 1)[-1].lower()
+    hits = sorted(a for a in available if a.replace("\\", "/").rsplit("/", 1)[-1].lower() == base)
+    return hits[0] if len(hits) == 1 else None
+
+
+def _relocate_template_loras(prompt: dict, installed: set[str] | None) -> None:
+    """Template LoRAs are named by bare file; point them at wherever the user filed them (loras/krea2/...)."""
+    if installed is None:
+        return
+    for node in prompt.values():
+        inputs = node["inputs"]
+        if node["class_type"] == "LoraLoaderModelOnly" and isinstance(inputs.get("lora_name"), str):
+            inputs["lora_name"] = find_model(inputs["lora_name"], installed) or inputs["lora_name"]
+        for v in inputs.values():
+            if isinstance(v, dict) and isinstance(v.get("lora"), str):
+                v["lora"] = find_model(v["lora"], installed) or v["lora"]
+
+
 def _inject_loras(prompt: dict, node: str, entries: list[LoraEntry], cat: Catalog) -> None:
     """Add `lora_N` entries to an rgthree Power Lora Loader, just before its add-lora marker."""
     if not entries:
@@ -573,5 +599,6 @@ def build(
         built = _build_outpaint(params, cat, seed_source, output_prefix)
     else:  # pragma: no cover - the discriminated union makes this unreachable
         raise BuildError("unknown mode")
+    _relocate_template_loras(built.prompt, cat.loras)
     assert_graph_ok(built.prompt)
     return built
