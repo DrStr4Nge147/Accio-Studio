@@ -41,51 +41,119 @@ BODY_SIZE = (768, 1344)
 MERGED_FACE_SIZE = (1536, 1024)
 MERGED_BODY_SIZE = (1536, 768)
 
-# (label shown on the sheet, wording of the view)
+# (label shown on the sheet, wording of the view). "Left" and "right" are as seen in the picture: a "left" view looks toward
+# the left edge of the image.
 FACE_VIEWS: dict[str, tuple[str, str]] = {
-    "front": ("Front", "Front view, looking straight at the camera."),
-    "three_quarter_left": ("3/4 left", "Three-quarter view: the head is turned about 45 degrees so the character faces toward the left side of the image."),
-    "left_profile": ("Left profile", "Left side profile view: the head is turned 90 degrees, facing the left side of the image."),
-    "three_quarter_right": ("3/4 right", "Three-quarter view: the head is turned about 45 degrees so the character faces toward the right side of the image."),
-    "right_profile": ("Right profile", "Right side profile view: the head is turned 90 degrees, facing the right side of the image."),
-    "back": ("Back", "View of the back of the head, seen from behind, showing the hair."),
+    "front": (
+        "Front",
+        "Completely front-facing, like a passport photo: the face points squarely at the camera, the nose is centered between the eyes, "
+        "both eyes and both ears are equally visible, and the head and shoulders are square to the camera, symmetrical, upright and level.",
+    ),
+    "three_quarter_left": (
+        "3/4 left",
+        "Exact three-quarter view: the head and shoulders are turned about 45 degrees so the face looks toward the left edge of the image; "
+        "both eyes are still visible with the far cheek showing, and the head stays upright and level.",
+    ),
+    "left_profile": (
+        "Left profile",
+        "Exact side profile view: the head and shoulders are turned 90 degrees so the face looks toward the left edge of the image; "
+        "only one eye and one ear are visible, the nose and lips are in clean profile, and the head stays upright and level.",
+    ),
+    "three_quarter_right": (
+        "3/4 right",
+        "Exact three-quarter view: the head and shoulders are turned about 45 degrees so the face looks toward the right edge of the image; "
+        "both eyes are still visible with the far cheek showing, and the head stays upright and level.",
+    ),
+    "right_profile": (
+        "Right profile",
+        "Exact side profile view: the head and shoulders are turned 90 degrees so the face looks toward the right edge of the image; "
+        "only one eye and one ear are visible, the nose and lips are in clean profile, and the head stays upright and level.",
+    ),
+    "back": (
+        "Back of head",
+        "Seen completely from behind: the back of the head, the hair and the back of the neck fill the frame, no face is visible, "
+        "and the shoulders are square and level.",
+    ),
 }
 BODY_VIEWS: dict[str, tuple[str, str]] = {
-    "front": ("Front", "Front view, facing the camera."),
-    "three_quarter_left": ("3/4 left", "Three-quarter view: the whole body is turned about 45 degrees so the character faces toward the left side of the image."),
-    "left_side": ("Left side", "Left side view: the whole body is turned 90 degrees, facing the left side of the image."),
-    "back": ("Back", "Back view, seen from behind."),
-    "right_side": ("Right side", "Right side view: the whole body is turned 90 degrees, facing the right side of the image."),
-    "three_quarter_right": ("3/4 right", "Three-quarter view: the whole body is turned about 45 degrees so the character faces toward the right side of the image."),
+    "front": (
+        "Front",
+        "Completely front-facing: the whole body points squarely at the camera, the head is upright and looks straight into the lens, "
+        "and the body is symmetrical with the shoulders and hips square and level.",
+    ),
+    "three_quarter_left": (
+        "3/4 left",
+        "Exact three-quarter view: the whole body turns about 45 degrees to the LEFT so the chest points toward the left-front of the image, and the head follows the body, "
+        "looking toward the left-front rather than straight at the camera; the far shoulder is partly hidden.",
+    ),
+    "left_side": (
+        "Left side",
+        "Exact full-profile side view: the character is facing the LEFT edge of the image. The nose, chest and toes all point left and the character looks toward the left edge of the image, "
+        "not at the camera; the back is toward the right edge of the image. Only one arm and one leg are in front.",
+    ),
+    "back": (
+        "Back",
+        "Seen completely from behind: the character faces away from the camera, the back of the head and the back of the outfit are visible, no face is visible.",
+    ),
+    "right_side": (
+        "Right side",
+        "Exact full-profile side view: the character is facing the RIGHT edge of the image. The nose, chest and toes all point right and the character looks toward the right edge of the image, "
+        "not at the camera; the back is toward the left edge of the image. Only one arm and one leg are in front.",
+    ),
+    "three_quarter_right": (
+        "3/4 right",
+        "Exact three-quarter view: the whole body turns about 45 degrees to the RIGHT so the chest points toward the right-front of the image, and the head follows the body, "
+        "looking toward the right-front rather than straight at the camera; the far shoulder is partly hidden.",
+    ),
 }
 
+# Every prompt rebuilds the character in a fresh studio pose: Qwen Edit otherwise keeps the input photo's body angle, head turn and tilt.
+KEEP = "the exact same face, hair, skin, age, makeup, accessories and clothing"
+RESET = "Do not copy the body angle, head turn, head tilt, pose, framing or background of the input photo."
 FACE_PROMPT = (
-    "Using the character in the input image, make a head-and-shoulders close-up portrait on a plain light gray studio background "
-    "with soft even lighting. Keep the exact same face, hair, skin, age, makeup and accessories. Neutral relaxed expression. "
-    "Ignore the pose of the input photo: the head is perfectly upright and level (no tilt, no lean), the shoulders are square and level, "
-    "and the chin is neither raised nor lowered, like an ID or reference photo. "
+    "Create a brand new studio character-reference portrait of the same person as in the input image, with " + KEEP + ". "
+    "Tight head-and-shoulders close-up: the head fills most of the frame and the picture is cropped at the upper chest. "
+    "Plain light gray background, soft even lighting, neutral relaxed expression. " + RESET + " "
 )
 BODY_PROMPT = (
-    "Using the character in the input image, show the same character in a full-body shot from head to toe, standing in a relaxed "
-    "neutral A-pose with the arms slightly away from the body, on a plain light gray studio background with soft even lighting. "
-    "Keep the exact same face, hair, skin, body proportions, outfit, shoes and accessories; invent the parts of the outfit that "
-    "are not visible in a way that matches. The whole body must be fully visible with empty space around it. "
-    "Ignore the pose of the input photo: the body is straight and symmetrical with the head upright and level, not tilted, leaning or posing. "
+    "Create a brand new studio character-reference full-body picture of the same person as in the input image, with " + KEEP + ". "
+    "The character stands in a relaxed neutral A-pose with the arms slightly away from the body and the legs straight, shown from head to toe "
+    "with the shoes visible; the figure fills about 90 percent of the picture height with a little empty space around it. Where the input photo does not show part of the outfit (for example the "
+    "legs or shoes), draw it in a matching style. Plain light gray background, soft even lighting, neutral relaxed expression. " + RESET + " "
 )
 MERGED_FACE_PROMPT = (
-    "Using the character in the input image, make a character reference sheet: {n} head-and-shoulders close-up portraits of the "
-    "same character, laid out in a clean grid on a plain light gray studio background, each portrait at a different angle: {views}. "
-    "Every portrait keeps the exact same face, hair, skin, age, makeup and accessories, with a neutral relaxed expression and "
-    "soft even lighting. Ignore the pose of the input photo: in every portrait the head is upright and level, with no tilt or lean. "
-    "No text, no labels. "
+    "Create a brand new character-reference sheet of the same person as in the input image: exactly {n} tight head-and-shoulders close-up "
+    "portraits and no others, laid out in {layout} on a plain light gray studio background. " + RESET + " Every portrait has " + KEEP + ", "
+    "a neutral relaxed expression and soft even lighting. Each portrait is its own separate, clean photo in its own cell with a thin white gutter between cells; "
+    "nothing overlaps and there is no double exposure or ghosting. The portraits, in order: {panels} No text, no labels. "
 )
 MERGED_BODY_PROMPT = (
-    "Using the character in the input image, make a character reference sheet: {n} full-body views of the same character, head to "
-    "toe, standing in a relaxed neutral A-pose, side by side in a single row on a plain light gray studio background, each at a "
-    "different angle: {views}. Every view keeps the exact same face, hair, skin, body proportions, outfit, shoes and accessories "
-    "and is fully visible. Soft even lighting. Ignore the pose of the input photo: every figure stands straight and symmetrical with "
-    "the head upright and level, not tilted or posing. No text, no labels. "
+    "Create a brand new character-reference sheet of the same person as in the input image: exactly {n} full-body views and no others, head to toe, "
+    "standing in a relaxed neutral A-pose, laid out in {layout} on a plain light gray studio background. " + RESET + " Every view has " + KEEP + ", "
+    "shows the shoes, and is fully visible; draw the parts of the outfit the input photo does not show in a matching style. Soft even lighting. "
+    "Each view is its own separate, clean figure with clear space between figures; nothing overlaps. The views, in order: {panels} No text, no labels. "
 )
+
+
+def merged_face_views(chosen: list[str]) -> list[str]:
+    """A merged face sheet is drawn as a full grid: the model ghosts or blends the panels of a half-empty last row. With 5 views the
+    one that is missing is added to complete a 3x2 grid."""
+    if len(chosen) != 5:
+        return list(chosen)
+    return list(chosen) + [v for v in FACE_VIEWS if v not in chosen][:1]
+
+
+def _panels(views: list[str], table: dict[str, tuple[str, str]], cols: int, noun: str) -> tuple[str, str]:
+    """(layout phrase, numbered per-panel descriptions) for a merged sheet's prompt."""
+    n = len(views)
+    rows = math.ceil(n / cols)
+    counts = [min(cols, n - r * cols) for r in range(rows)]
+    layout = f"a single row of {n}" if rows == 1 else f"{rows} rows ({', '.join(f'{c} in row {i + 1}' for i, c in enumerate(counts))}), filled left to right, top to bottom"
+    parts = []
+    for i, v in enumerate(views):
+        place = f"position {i + 1}" if rows == 1 else f"row {i // cols + 1}, column {i % cols + 1}"
+        parts.append(f"{noun} {i + 1} ({place}): {table[v][1]}")
+    return layout, " ".join(parts)
 
 
 @dataclass
@@ -129,11 +197,14 @@ def plan(p: CharSheetParams, seed: int) -> list[Child]:
     out: list[Child] = []
     if p.delivery == "merged":
         if p.face_views:
-            views = ", ".join(FACE_VIEWS[v][0].lower() for v in p.face_views)
-            out.append(_child(p, seed, "faces", "sheet", "Face sheet", MERGED_FACE_PROMPT.format(n=len(p.face_views), views=views), MERGED_FACE_SIZE))
+            views = merged_face_views(p.face_views)
+            layout, panels = _panels(views, FACE_VIEWS, grid_columns(len(views)), "Portrait")
+            prompt = MERGED_FACE_PROMPT.format(n=len(views), layout=layout, panels=panels)
+            out.append(_child(p, seed, "faces", "sheet", "Face sheet", prompt, MERGED_FACE_SIZE))
         if p.body_views:
-            views = ", ".join(BODY_VIEWS[v][0].lower() for v in p.body_views)
-            out.append(_child(p, seed, "body", "sheet", "Body sheet", MERGED_BODY_PROMPT.format(n=len(p.body_views), views=views), MERGED_BODY_SIZE))
+            layout, panels = _panels(p.body_views, BODY_VIEWS, len(p.body_views), "View")
+            prompt = MERGED_BODY_PROMPT.format(n=len(p.body_views), layout=layout, panels=panels)
+            out.append(_child(p, seed, "body", "sheet", "Body sheet", prompt, MERGED_BODY_SIZE))
         return out
     for v in p.face_views:
         label, text = FACE_VIEWS[v]

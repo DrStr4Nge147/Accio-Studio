@@ -171,6 +171,7 @@ export function SheetEditor() {
           <p className="flex items-start gap-1.5 text-[12px] leading-snug text-text-3">
             <TriangleAlert size={14} strokeWidth={1.7} className="mt-px flex-none" />
             Merged sheets are faster but lower quality: every view is drawn small, and the model may not keep all angles exact. Use One by one for the best result.
+            {sheet.faceViews.length === 5 && " With 5 face views the model draws a full grid of 6, so the back of the head is added."}
           </p>
         )}
       </div>

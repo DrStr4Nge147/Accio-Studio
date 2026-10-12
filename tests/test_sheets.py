@@ -61,7 +61,8 @@ def test_separate_plan_one_job_per_view_same_seed_and_sizes():
 def test_merged_plan_is_two_sheet_jobs():
     kids = sheets.plan(params(delivery="merged", face_views=["front", "back"]), 1)
     assert [(c.group, c.key) for c in kids] == [("faces", "sheet"), ("body", "sheet")]
-    assert "2 head-and-shoulders" in kids[0].params.prompt and "front, back" in kids[0].params.prompt
+    face = kids[0].params.prompt
+    assert "exactly 2" in face and "a single row of 2" in face and "Portrait 1 (position 1): Completely front-facing" in face and "Portrait 2 (position 2): Seen completely from behind" in face
     assert (kids[0].params.manual_width, kids[0].params.manual_height) == sheets.MERGED_FACE_SIZE
 
 
@@ -264,7 +265,18 @@ def test_schema_rejects_bad_sizes(bad):
         params(face_size=bad)
 
 
+def test_merged_grid_prompt_numbers_every_panel_with_its_position():
+    face = sheets.plan(params(delivery="merged", body_views=[]), 1)[0].params.prompt
+    # five views are completed to a full 3x2 grid with the missing sixth (the model ghosts a half-empty last row)
+    assert "exactly 6" in face and "2 rows (3 in row 1, 3 in row 2)" in face
+    assert "Portrait 1 (row 1, column 1)" in face and "Portrait 4 (row 2, column 1)" in face and "Portrait 6 (row 2, column 3): Seen completely from behind" in face
+    assert sheets.merged_face_views(["front", "back"]) == ["front", "back"]
+    assert len(sheets.merged_face_views(["front", "three_quarter_left", "back", "left_profile", "right_profile"])) == 6
+    body = sheets.plan(params(delivery="merged", face_views=[]), 1)[0].params.prompt
+    assert "exactly 6" in body and "a single row of 6" in body and "View 6 (position 6)" in body
+
+
 def test_every_prompt_resets_the_photos_pose():
     for delivery in ("separate", "merged"):
         for c in sheets.plan(params(delivery=delivery), 1):
-            assert "Ignore the pose of the input photo" in c.params.prompt and "upright" in c.params.prompt
+            assert sheets.RESET in c.params.prompt
