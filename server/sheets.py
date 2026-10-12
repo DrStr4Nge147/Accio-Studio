@@ -62,24 +62,29 @@ BODY_VIEWS: dict[str, tuple[str, str]] = {
 FACE_PROMPT = (
     "Using the character in the input image, make a head-and-shoulders close-up portrait on a plain light gray studio background "
     "with soft even lighting. Keep the exact same face, hair, skin, age, makeup and accessories. Neutral relaxed expression. "
+    "Ignore the pose of the input photo: the head is perfectly upright and level (no tilt, no lean), the shoulders are square and level, "
+    "and the chin is neither raised nor lowered, like an ID or reference photo. "
 )
 BODY_PROMPT = (
     "Using the character in the input image, show the same character in a full-body shot from head to toe, standing in a relaxed "
     "neutral A-pose with the arms slightly away from the body, on a plain light gray studio background with soft even lighting. "
     "Keep the exact same face, hair, skin, body proportions, outfit, shoes and accessories; invent the parts of the outfit that "
     "are not visible in a way that matches. The whole body must be fully visible with empty space around it. "
+    "Ignore the pose of the input photo: the body is straight and symmetrical with the head upright and level, not tilted, leaning or posing. "
 )
 MERGED_FACE_PROMPT = (
     "Using the character in the input image, make a character reference sheet: {n} head-and-shoulders close-up portraits of the "
     "same character, laid out in a clean grid on a plain light gray studio background, each portrait at a different angle: {views}. "
     "Every portrait keeps the exact same face, hair, skin, age, makeup and accessories, with a neutral relaxed expression and "
-    "soft even lighting. No text, no labels. "
+    "soft even lighting. Ignore the pose of the input photo: in every portrait the head is upright and level, with no tilt or lean. "
+    "No text, no labels. "
 )
 MERGED_BODY_PROMPT = (
     "Using the character in the input image, make a character reference sheet: {n} full-body views of the same character, head to "
     "toe, standing in a relaxed neutral A-pose, side by side in a single row on a plain light gray studio background, each at a "
     "different angle: {views}. Every view keeps the exact same face, hair, skin, body proportions, outfit, shoes and accessories "
-    "and is fully visible. Soft even lighting. No text, no labels. "
+    "and is fully visible. Soft even lighting. Ignore the pose of the input photo: every figure stands straight and symmetrical with "
+    "the head upright and level, not tilted or posing. No text, no labels. "
 )
 
 

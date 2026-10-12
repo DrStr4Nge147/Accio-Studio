@@ -262,3 +262,9 @@ def test_custom_sizes_apply_per_group_and_default_otherwise():
 def test_schema_rejects_bad_sizes(bad):
     with pytest.raises(ValidationError):
         params(face_size=bad)
+
+
+def test_every_prompt_resets_the_photos_pose():
+    for delivery in ("separate", "merged"):
+        for c in sheets.plan(params(delivery=delivery), 1):
+            assert "Ignore the pose of the input photo" in c.params.prompt and "upright" in c.params.prompt
