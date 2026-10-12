@@ -398,12 +398,19 @@ def find_model_file(folder: Path, name: str) -> Path | None:
     return next((p for p in sorted(folder.rglob("*")) if p.name.lower() == name.lower() and p.is_file()), None)
 
 
+def settings_model_folders(kind: str) -> list[Path]:
+    """The folders chosen in Settings > Model folders for one kind (diffusion_models, text_encoders, vae, loras), any family."""
+    try:
+        saved = json.loads((ROOT / "settings.json").read_text(encoding="utf-8")).get("model_paths", {})
+        return [Path(k[kind]) for k in saved.values() if isinstance(k, dict) and isinstance(k.get(kind), str)]
+    except (OSError, ValueError, AttributeError):
+        return []
+
+
 def locate_existing(models_from: Path | None, m: dict) -> Path | None:
-    if not models_from:
-        return None
     folders = [m["folder"]] + {"diffusion_models": ["unet"], "text_encoders": ["clip"]}.get(m["folder"], [])
-    for f in folders:
-        p = find_model_file(models_from / f, m["file"])
+    searched = [models_from / f for f in folders] if models_from else []
+    for p in (find_model_file(d, m["file"]) for d in [*searched, *settings_model_folders(m["folder"])]):
         if p:
             ok, why = verify_safetensors(p, m["size"])
             if ok:
@@ -495,12 +502,22 @@ def install_models(manifest: dict, models_from: Path | None, optional: bool, int
     return failed
 
 
+# Mirrors server/modelpaths.py: everything from this line on is the folders chosen in Settings, which a re-install keeps.
+YAML_MARKER = "# --- Accio Studio: model folders set in Settings (rewritten on every save) ---"
+
+
 def write_extra_model_paths(models_from: Path) -> None:
     lines = ["# Written by Accio's installer. Read-only use of an existing ComfyUI models folder (APP_SPEC 11.4).", "accio_existing:"]
     for folder in ("diffusion_models", "text_encoders", "vae", "loras"):
         if (models_from / folder).is_dir():
             lines.append(f"    {folder}: {(models_from / folder).as_posix()}/")
-    (comfy_dir() / "extra_model_paths.yaml").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    target = comfy_dir() / "extra_model_paths.yaml"
+    try:
+        before, marker, after = target.read_text(encoding="utf-8").partition(YAML_MARKER)
+        keep = "\n" + marker + after if marker else ""
+    except OSError:
+        keep = ""
+    target.write_text("\n".join(lines) + "\n" + keep, encoding="utf-8")
 
 
 # --------------------------------------------------------------------------- 7. frontend

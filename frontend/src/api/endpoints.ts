@@ -1,4 +1,4 @@
-import { del, get, post } from "./http";
+import { del, get, post, put } from "./http";
 import type { Catalog, Health, Job } from "./types";
 
 export const fetchHealth = () => get<Health>("/api/health");
@@ -74,3 +74,23 @@ export interface UpdateInfo {
 }
 export const fetchUpdate = (refresh = false) => get<UpdateInfo>(`/api/update${refresh ? "?refresh=true" : ""}`);
 export const applyUpdate = () => post<{ started: true; latest: string }>("/api/update/apply");
+
+export interface ModelPathField {
+  kind: "diffusion_models" | "text_encoders" | "vae" | "loras";
+  label: string;
+  path: string;
+  /** Model files in the saved folder (null when it is not there). */
+  found: number | null;
+  missing: boolean;
+}
+export interface ModelPaths {
+  /** false when an external backend is configured: its folders are set up there. */
+  available: boolean;
+  /** Only the browser on the PC that runs Accio may change the folders. */
+  can_edit: boolean;
+  restart: { state: "idle" | "restarting" | "ready" | "failed"; message: string };
+  families: { id: string; label: string; fields: ModelPathField[] }[];
+}
+export type ModelPathValues = Record<string, Record<string, string>>;
+export const fetchModelPaths = () => get<ModelPaths>("/api/model-paths");
+export const saveModelPaths = (paths: ModelPathValues) => put<{ restart: ModelPaths["restart"] }>("/api/model-paths", { paths });

@@ -520,6 +520,12 @@ AccioStudio\
 ### 11.4 On the user's own PC (don't re-download 37 GB)
 `Install.bat` asks: "Use models from an existing ComfyUI folder? (path or Enter to skip)". If a path is given, write the bundled ComfyUI's `extra_model_paths.yaml` to point at that folder's `models\` subfolders, read-only use. Skip downloading files that are found there. The user's ComfyUI itself is never modified or launched by Accio.
 
+**Settings > Model folders** does the same after install, per family (Krea2, Qwen 2.1 Edit, Flux Klein 9B) and per kind (diffusion model, text encoder, VAE, LoRAs), for models used by other apps. Only the browser on the PC that runs Accio may change them, and only with the bundled backend (not with `external_comfy_url`). Saving validates each path (absolute, existing, outside the bundled `models\` folder), then:
+- writes the diffusion/text-encoder/VAE folders to `extra_model_paths.yaml` under a marker comment (`server/modelpaths.py`; whatever the installer wrote above it is kept, and the installer keeps the block on re-install);
+- makes `models\loras\<krea2 | qwen2.1-edit | flux-klein9b-edit>` a folder junction to the chosen LoRA folder (an empty real folder again when cleared), so the picker's folder grouping (§6.6) works unchanged. A folder that already holds files is never replaced;
+- restarts the bundled backend (`server/backend.py`: stops only a process running from the bundled ComfyUI folder, starts it with `Run_Accio.bat`'s arguments) and Settings polls until it is back. Running jobs are stopped, so the UI confirms first.
+Folders are stored in `settings.json` (`model_paths`). Nothing in the chosen folders is written, moved or deleted. The installer also treats files found there as already installed. Template model names are bare files, so each model file must sit directly in (or, for LoRAs, anywhere under) the folder given.
+
 ### 11.5 Release packaging
 A script (`scripts\make_release`) produces `AccioStudio-<version>.zip` containing:
 - the app code, `frontend\dist`, `templates\` + manifest;

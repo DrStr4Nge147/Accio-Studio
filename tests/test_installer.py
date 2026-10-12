@@ -163,6 +163,30 @@ def test_lora_folders_are_created_and_kept(tmp_path):
     assert keep.read_text() == "x"
 
 
+def test_models_in_folders_chosen_in_settings_are_not_downloaded_again(tmp_path, monkeypatch):
+    mine = tmp_path / "my vaes"
+    mine.mkdir()
+    good = make_safetensors(mine / "v.safetensors")
+    (tmp_path / "settings.json").write_text(json.dumps({"model_paths": {"krea2": {"vae": str(mine)}}}), encoding="utf-8")
+    monkeypatch.setattr(install, "ROOT", tmp_path)
+    m = {"folder": "vae", "file": "v.safetensors", "size": good.stat().st_size}
+    assert install.locate_existing(None, m) == good
+    assert install.locate_existing(None, {**m, "folder": "loras"}) is None  # only the matching kind is searched
+    assert install.settings_model_folders("text_encoders") == []
+
+
+def test_reinstall_keeps_the_folders_chosen_in_settings(tmp_path, monkeypatch):
+    monkeypatch.setattr(install, "comfy_dir", lambda: tmp_path)
+    old = ["accio_existing:", "    vae: D:/old/", "", install.YAML_MARKER, "accio_user:", '    vae: "D:/mine"']
+    (tmp_path / "extra_model_paths.yaml").write_text(chr(10).join(old) + chr(10), encoding="utf-8")
+    models = tmp_path / "other" / "models"
+    (models / "vae").mkdir(parents=True)
+    install.write_extra_model_paths(models)
+    text = (tmp_path / "extra_model_paths.yaml").read_text(encoding="utf-8")
+    assert text.count("accio_existing") == 1 and models.as_posix() in text and "D:/old/" not in text
+    assert install.YAML_MARKER in text and 'vae: "D:/mine"' in text
+
+
 def test_no_hard_coded_user_paths_in_shipped_files():
     needles = ["E:" + "\\AI_Softwares", "E:" + "/AI_Softwares", "Nick" + "-PC"]
     skip_dirs = {"env", "bin", "comfyui", "data", "node_modules", "dist", ".git", "__pycache__", ".pytest_cache", "comfy-templates"}

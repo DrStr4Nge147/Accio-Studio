@@ -1,0 +1,92 @@
+"""/api/model-paths: read and change the model folders (Settings > Model folders). Changing them restarts the backend."""
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel
+
+import backend
+import config
+import modelpaths
+from authapi import local_trusted
+
+log = logging.getLogger("accio")
+router = APIRouter(prefix="/api/model-paths")
+READY_TIMEOUT = 180
+
+
+class PathsBody(BaseModel):
+    paths: dict[str, dict[str, str]]
+
+
+def _state(request: Request) -> dict[str, Any]:
+    return getattr(request.app.state, "backend_restart", None) or {"state": "idle", "message": ""}
+
+
+@router.get("")
+async def read(request: Request):
+    st = request.app.state
+    saved = st.settings.get("model_paths") or {}
+    families = []
+    for fid, info in modelpaths.FAMILIES.items():
+        fields = []
+        for kind, label in modelpaths.KINDS.items():
+            path = saved.get(fid, {}).get(kind, "")
+            found = await asyncio.to_thread(modelpaths.count_models, path) if path else None
+            fields.append({"kind": kind, "label": label, "path": path, "found": found, "missing": bool(path) and found is None})
+        families.append({"id": fid, "label": info["label"], "fields": fields})
+    return {
+        "available": not str(st.settings["external_comfy_url"]).strip(),
+        "can_edit": local_trusted(request.app, request.scope),
+        "restart": _state(request),
+        "families": families,
+    }
+
+
+async def _restart_and_wait(app) -> None:
+    st = app.state
+    try:
+        await asyncio.to_thread(backend.restart, st.settings)
+        deadline = time.time() + READY_TIMEOUT
+        while time.time() < deadline:
+            try:
+                await st.comfy.system_stats()
+                st.backend_restart = {"state": "ready", "message": "The backend is back with your model folders."}
+                return
+            except Exception:  # noqa: BLE001 - still starting
+                await asyncio.sleep(2)
+        st.backend_restart = {"state": "failed", "message": "The backend did not come back in time. See its console log in the app."}
+    except backend.BackendError as e:
+        st.backend_restart = {"state": "failed", "message": str(e)}
+    except Exception:  # noqa: BLE001
+        log.exception("backend restart failed")
+        st.backend_restart = {"state": "failed", "message": "Could not restart the backend. Stop and start Accio to apply the folders."}
+
+
+@router.put("", status_code=202)
+async def save(request: Request, body: PathsBody):
+    st = request.app.state
+    if not local_trusted(request.app, request.scope):
+        raise HTTPException(403, "Model folders can only be changed from the browser on the PC that runs Accio.")
+    if str(st.settings["external_comfy_url"]).strip():
+        raise HTTPException(400, "This app uses an external backend, so its model folders are set up there.")
+    if _state(request)["state"] == "restarting":
+        raise HTTPException(409, "The backend is still restarting. Try again in a moment.")
+    try:
+        paths = modelpaths.normalize(body.paths)
+        await asyncio.to_thread(modelpaths.apply, config.comfy_dir(st.settings), paths)
+    except modelpaths.ModelPathError as e:
+        raise HTTPException(400, str(e)) from None
+    except OSError:
+        log.exception("could not apply model folders")
+        raise HTTPException(500, "Could not set up the model folders. Check that the app can write to its own folder.") from None
+    config.save_setting("model_paths", paths)
+    st.settings["model_paths"] = paths
+    st.cache.clear()
+    st.backend_restart = {"state": "restarting", "message": "Restarting the backend…"}
+    st.backend_restart_task = asyncio.create_task(_restart_and_wait(request.app))
+    return {"restart": st.backend_restart}

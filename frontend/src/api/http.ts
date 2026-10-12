@@ -51,7 +51,10 @@ export const post = <T,>(url: string, body?: unknown) =>
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
-export const del = <T,>(url: string) => request<T>(url, { method: "DELETE" });
+export const put = <T,>(url: string, body: unknown) =>
+  request<T>(url, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+export const del =<T,>(url: string) => request<T>(url, { method: "DELETE" });
 
 /** Full-size result, or a cached WebP thumbnail (longest side 384 or 1024 px) for lists. */
 export const imageUrl = (jobId: string, index: number, size?: 384 | 1024) =>

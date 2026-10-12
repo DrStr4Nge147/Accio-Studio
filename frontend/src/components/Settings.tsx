@@ -4,6 +4,7 @@ import { useJobs } from "../store/jobs";
 import { AccountSection } from "../features/settings/AccountSection";
 import { ConnectionSection } from "../features/settings/ConnectionSection";
 import { InstallApp } from "../features/settings/InstallApp";
+import { ModelFoldersSection } from "../features/settings/ModelFoldersSection";
 import { UpdateSection } from "../features/settings/UpdateSection";
 import { useUi, type Theme } from "../store/ui";
 import { useIsDesktop } from "../lib/useMedia";
@@ -51,6 +52,9 @@ export function SettingsBody({ open }: { open: boolean }) {
         </div>
         <div className="order-5">
           <AccountSection />
+        </div>
+        <div className="order-10">
+          <ModelFoldersSection open={open} />
         </div>
       </div>
       <div className="contents lg:flex lg:flex-col lg:gap-5">

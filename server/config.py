@@ -30,6 +30,7 @@ DEFAULTS: dict[str, Any] = {
     "output_prefix": "AccioStudio",
     "max_upload_mb": 40,
     "session_days": 14,  # how long a login lasts
+    "model_paths": {},  # Settings > Model folders: {family: {kind: folder}} (modelpaths.py)
     "auto_unload_minutes": 0,  # 0 = off. Frees GPU memory in the backend after this many idle minutes (spec 9.3)
 }
 

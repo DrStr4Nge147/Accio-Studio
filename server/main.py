@@ -32,6 +32,7 @@ import tunnels
 import updates
 from auth import Auth
 from authapi import GuardMiddleware, local_trusted, router as auth_router
+from modelpathsapi import router as model_paths_router
 from comfy import ComfyClient, ComfyError
 from config import DATA_DIR, FRONTEND_DIST, ROOT, comfy_dir, comfy_url, load_manifest, load_settings, template_files
 from history import History
@@ -142,6 +143,7 @@ class SkipImageGZip:
 app.add_middleware(SkipImageGZip)
 app.add_middleware(GuardMiddleware)  # added last = outermost: nothing private runs before the session check
 app.include_router(auth_router)
+app.include_router(model_paths_router)
 
 
 # --------------------------------------------------------------------------- error mapping
