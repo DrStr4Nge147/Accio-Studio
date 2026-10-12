@@ -4,6 +4,9 @@ import { browseFolders, type FolderListing } from "../../api/endpoints";
 
 const small = "hover-wash inline-flex h-9 items-center gap-1 rounded-full border border-line-strong px-3 text-[13px] text-text-2 hover:text-text disabled:opacity-50";
 
+const primary =
+  "inline-flex h-9 items-center rounded-full border border-transparent bg-gold px-3 text-[13px] font-semibold text-on-gold disabled:border-line disabled:bg-transparent disabled:font-normal disabled:text-text-3";
+
 const join = (dir: string, name: string) => (dir.endsWith("\\") ? dir + name : `${dir}\\${name}`);
 
 /** Picks a folder on the PC that runs Accio (a browser cannot read real paths, so the server lists the folders). */
@@ -25,7 +28,7 @@ export function FolderBrowser({ start, onPick, onClose }: { start: string; onPic
         <button type="button" className={small} disabled={!list || list.parent === null} onClick={() => list && go(list.parent ?? "")}>
           <CornerLeftUp size={14} strokeWidth={1.7} /> Up
         </button>
-        <button type="button" className={`${small} bg-gold text-on-gold`} disabled={!list || list.drives} onClick={() => list && onPick(list.path)}>
+        <button type="button" className={primary} disabled={!list || list.drives} onClick={() => list && onPick(list.path)}>
           Use this folder
         </button>
         <button type="button" className={small} onClick={onClose}>

@@ -53,17 +53,6 @@ export function SettingsBody({ open }: { open: boolean }) {
         <div className="order-5">
           <AccountSection />
         </div>
-        <div className="order-10">
-          <ModelFoldersSection open={open} />
-        </div>
-      </div>
-      <div className="contents lg:flex lg:flex-col lg:gap-5">
-        <div className="order-2">
-          <ConnectionSection open={open} />
-        </div>
-        <div className="order-4">
-          <UpdateSection open={open} />
-        </div>
         <div className="order-6 divide-y divide-line rounded-m border border-line px-3">
           <Row k="Accio server" v={unreachable ? "Unreachable" : "Running"} ok={!unreachable} />
           <Row k="Live updates" v={connected ? "Connected" : "Reconnecting…"} ok={connected} />
@@ -102,6 +91,17 @@ export function SettingsBody({ open }: { open: boolean }) {
           </p>
         ))}
       </div>
+      <div className="contents lg:flex lg:flex-col lg:gap-5">
+        <div className="order-2">
+          <ConnectionSection open={open} />
+        </div>
+        <div className="order-4">
+          <UpdateSection open={open} />
+        </div>
+      </div>
+      <div className="order-10 lg:col-span-2">
+        <ModelFoldersSection open={open} />
+      </div>
     </div>
   );
 }
@@ -112,7 +112,7 @@ export function Settings() {
   const set = useUi((s) => s.set);
   const desktop = useIsDesktop();
   return (
-    <Sheet open={open && desktop} onClose={() => set({ settingsOpen: false })} title="Settings" desktopModalWidth={760}>
+    <Sheet open={open && desktop} onClose={() => set({ settingsOpen: false })} title="Settings" desktopModalWidth={1200}>
       <SettingsBody open={open && desktop} />
     </Sheet>
   );

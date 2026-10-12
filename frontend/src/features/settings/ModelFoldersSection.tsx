@@ -95,7 +95,7 @@ export function ModelFoldersSection({ open }: { open: boolean }) {
         Already have models from ComfyUI or another app? Enter the folder that holds each one. Nothing in them is moved, copied or changed. Leave a
         field empty to use the app's own folder.
       </p>
-      <div className="mt-2 space-y-3">
+      <div className="mt-2 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
         {data.families.map((fam) => (
           <fieldset key={fam.id} className="rounded-m border border-line p-3" disabled={busy}>
             <legend className="px-1 text-[13px] font-medium text-text">{fam.label}</legend>

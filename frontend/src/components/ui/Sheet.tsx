@@ -39,7 +39,7 @@ export function Sheet({
   if (!open) return null;
   if (modal) {
     return (
-      <div className="fixed inset-0 z-40 flex items-center justify-center p-8">
+      <div className="fixed inset-0 z-40 flex items-center justify-center p-5">
         <div className="fade-in absolute inset-0 bg-[var(--scrim)]" onClick={onClose} aria-hidden />
         <div
           ref={ref}
@@ -47,7 +47,7 @@ export function Sheet({
           aria-modal="true"
           aria-label={title}
           tabIndex={-1}
-          style={{ width: desktopModalWidth, maxHeight: "85vh" }}
+          style={{ width: desktopModalWidth, maxHeight: "92vh" }}
           className="fade-in relative flex max-w-full flex-col rounded-[20px] border border-line-strong bg-surface shadow-float outline-none"
         >
           <div className="flex items-center justify-between border-b border-line px-6 py-4">
