@@ -57,7 +57,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
                 <Slider
                   label="Strength"
                   min={0}
-                  max={1}
+                  max={5}
                   step={0.05}
                   value={cur.strength}
                   disabled={!cur.on}

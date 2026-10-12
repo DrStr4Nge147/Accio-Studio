@@ -136,7 +136,7 @@ function MultiFields({ def, klein }: { def: EditDefaults["multiedit"]; klein: bo
           </>
         )}
       </div>
-      {(klein || !m.keepOriginal) && <Tuned label="Image 1 size" tip={T.baseMp} value={m.baseMp} def={def.base_megapixels} min={0.25} max={4} step={0.05} format={(v) => `${v.toFixed(2)} MP`} onChange={(baseMp) => set({ baseMp })} />}
+      {(klein || !m.keepOriginal) && <Tuned label="Image 1 size" tip={T.baseMp} value={m.baseMp} def={def.base_megapixels} min={0.25} max={16} step={0.05} format={(v) => `${v.toFixed(2)} MP`} onChange={(baseMp) => set({ baseMp })} />}
       {Array.from({ length: Math.max(0, Math.min(count, klein ? KLEIN_MAX_IMAGES : 9) - 1) }, (_, i) => (
         <Tuned
           key={i}
@@ -145,7 +145,7 @@ function MultiFields({ def, klein }: { def: EditDefaults["multiedit"]; klein: bo
           value={m.refMp[i]}
           def={def.ref_megapixels[i] ?? 1}
           min={0.25}
-          max={4}
+          max={16}
           step={0.05}
           format={(v) => `${v.toFixed(2)} MP`}
           onChange={(v) => {
@@ -172,9 +172,9 @@ function InpaintFields({ def }: { def: EditDefaults["inpaint"] }) {
   return (
     <div className="space-y-3">
       <Toggle on={i.invert} onChange={(invert) => set({ invert })} label="Invert mask" sub="Change everything except the painted area" tip={T.invert} />
-      <Tuned label="Mask grow" tip={T.maskGrow} value={i.crop.mask_grow} def={def.crop.mask_grow} min={-64} max={128} step={1} format={(v) => `${v} px`} onChange={crop("mask_grow")} />
-      <Tuned label="Context factor" tip={T.contextFactor} value={i.crop.context_factor} def={def.crop.context_factor} min={1} max={3} step={0.05} format={(v) => `${v.toFixed(2)}×`} onChange={crop("context_factor")} />
-      <Tuned label="Blend pixels" tip={T.blendPixels} value={i.crop.blend_pixels} def={def.crop.blend_pixels} min={0} max={128} step={1} format={(v) => `${v} px`} onChange={crop("blend_pixels")} />
+      <Tuned label="Mask grow" tip={T.maskGrow} value={i.crop.mask_grow} def={def.crop.mask_grow} min={-256} max={256} step={1} format={(v) => `${v} px`} onChange={crop("mask_grow")} />
+      <Tuned label="Context factor" tip={T.contextFactor} value={i.crop.context_factor} def={def.crop.context_factor} min={1} max={10} step={0.05} format={(v) => `${v.toFixed(2)}×`} onChange={crop("context_factor")} />
+      <Tuned label="Blend pixels" tip={T.blendPixels} value={i.crop.blend_pixels} def={def.crop.blend_pixels} min={0} max={256} step={1} format={(v) => `${v} px`} onChange={crop("blend_pixels")} />
       <Toggle on={i.halo} onChange={(halo) => set({ halo })} label="Fix edge halo" tip={T.halo} />
       <Field label="Seam" tip={T.seam}>
         <select value={i.seam ?? def.seam} onChange={(e) => set({ seam: e.target.value === def.seam ? undefined : (e.target.value as Seam) })} className={inputCls}>
@@ -215,8 +215,8 @@ function OutpaintFields({ def }: { def: EditDefaults["outpaint"] }) {
         </div>
       )}
       {o.fillMode === "pillarbox blur" && <Tuned label="Backdrop blur" tip={T.fillMode} value={o.blur} def={def.backdrop_blur} min={0} max={1} step={0.05} onChange={(blur) => set({ blur })} />}
-      <Tuned label="Feather" tip={T.feather} value={o.feather} def={def.feather} min={0} max={256} step={1} format={(v) => `${v} px`} onChange={(feather) => set({ feather })} />
-      <Tuned label="Target size" tip={T.targetMp} value={o.targetMp} def={def.target_megapixels} min={0.5} max={4} step={0.1} format={(v) => `${v.toFixed(1)} MP`} onChange={(targetMp) => set({ targetMp })} />
+      <Tuned label="Feather" tip={T.feather} value={o.feather} def={def.feather} min={0} max={512} step={1} format={(v) => `${v} px`} onChange={(feather) => set({ feather })} />
+      <Tuned label="Target size" tip={T.targetMp} value={o.targetMp} def={def.target_megapixels} min={0.5} max={16} step={0.1} format={(v) => `${v.toFixed(1)} MP`} onChange={(targetMp) => set({ targetMp })} />
       <Toggle on={o.halo} onChange={(halo) => set({ halo })} label="Fix edge halo" tip={T.halo} />
       <Field label="Seam" tip={T.seam}>
         <select value={o.seam ?? def.seam} onChange={(e) => set({ seam: e.target.value === def.seam ? undefined : (e.target.value as Seam) })} className={inputCls}>
@@ -226,7 +226,7 @@ function OutpaintFields({ def }: { def: EditDefaults["outpaint"] }) {
       </Field>
       <div className="space-y-1">
         <Toggle on={o.loraOn} onChange={(loraOn) => set({ loraOn })} label="Outpaint LoRA" tip={T.outpaintLora} />
-        <Tuned label="Strength" tip={T.outpaintLora} value={o.loraStrength} def={def.lora_strength} min={0} max={2} step={0.05} onChange={(loraStrength) => set({ loraStrength })} />
+        <Tuned label="Strength" tip={T.outpaintLora} value={o.loraStrength} def={def.lora_strength} min={0} max={5} step={0.05} onChange={(loraStrength) => set({ loraStrength })} />
       </div>
     </div>
   );

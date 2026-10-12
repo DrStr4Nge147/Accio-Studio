@@ -76,8 +76,8 @@ export function LoraList({
               </div>
               <Slider
                 label="Strength"
-                min={-2}
-                max={2}
+                min={-10}
+                max={10}
                 step={0.05}
                 value={l.strength}
                 disabled={!l.on}
