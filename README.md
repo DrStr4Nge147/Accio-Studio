@@ -65,6 +65,16 @@ The first job after starting takes longer: the models have to load into GPU memo
 **`Stop_Accio.bat`** stops the server, the engine and any tunnel this folder started, and nothing else.
 **`Reset_Password.bat`** removes the password and signs every device out (use it if you forget it).
 
+## Settings
+
+The gear opens Settings: theme, connection (addresses and QR code), updates, model folders and a setup check. It also has a **This PC** card with your
+graphics card and its memory, the driver, the CUDA version the driver supports and the one the engine was built for, and your RAM. CUDA rows say
+"Not applicable" on a PC without an Nvidia card.
+
+When an image size, an upscale or a megapixel slider is more than your graphics card handles comfortably, a short note appears under it. It is a
+heads-up only: nothing is blocked. The limit follows your card's memory and drops a little under 16 GB of RAM. The notes need an Nvidia card; the
+memory of AMD and Intel cards is not read.
+
 ## Updating
 
 Settings (the gear) shows the installed version and tells you when a newer release exists. To install it:
@@ -130,7 +140,7 @@ Create it next to `Run_Accio.bat`. Unknown keys are ignored.
 | `Install.bat` says the folder path is too long | move the whole folder closer to the drive root, e.g. `C:\AccioStudio`, and run it again |
 | "The Python environment does not start" | the folder was moved or renamed; run `Install.bat`, it rebuilds the environment |
 | A download is slow | `Install.bat` drops any connection slower than about 100 KB/s for 20 seconds and reconnects, continuing where it stopped (servers hand out connections of very different speed). You can also close the window and run `Install.bat` again at any time: finished files are kept and partial ones resume. If it ends with "download failed", just run it again. |
-| "The backend ran out of GPU memory" | close other GPU programs, lower the size, or use Standard instead of Detailed |
+| "The backend ran out of GPU memory" | close other GPU programs, lower the size (the note under the size shows what your card handles comfortably), or use Standard instead of Detailed |
 | A job seems stuck at "Waiting for the GPU" | another job is running in the engine; the queue pane shows it |
 | Can't reach it from the phone | same Wi-Fi? choose option 4, and allow private networks if Windows Firewall asks |
 | Forgot the password | `Reset_Password.bat` |
