@@ -178,11 +178,40 @@ export function Slider({
   tip?: string;
 }) {
   const pct = max > min ? ((value - min) / (max - min)) * 100 : 0;
+  const decimals = (String(step).split(".")[1] ?? "").length;
+  const unit = format(value).replace(/^\s*-?[\d.]+/, "");
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    const n = Number(draft);
+    setDraft(null);
+    if (draft === null || draft.trim() === "" || !Number.isFinite(n)) return;
+    const next = Number(Math.min(max, Math.max(min, n)).toFixed(decimals));
+    if (next !== value) onChange(next);
+  };
   return (
     <div className={disabled ? "opacity-50" : undefined}>
       <div className="flex items-center justify-between text-[13px]">
         <span className="font-medium text-text-2" data-tip={tip}>{label}</span>
-        <span className="font-mono text-[13px] text-text">{format(value)}</span>
+        <span className="flex items-center gap-1 font-mono text-[13px] text-text">
+          <input
+            type="number"
+            inputMode="decimal"
+            aria-label={`${label} value`}
+            className="h-7 w-20 rounded-s border border-line bg-raised px-1.5 text-right text-[13px] text-text outline-none focus:border-gold"
+            min={min}
+            max={max}
+            step={step}
+            disabled={disabled}
+            value={draft ?? value.toFixed(decimals)}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+              else if (e.key === "Escape") setDraft(null);
+            }}
+          />
+          {unit && <span className="text-text-3">{unit.trim()}</span>}
+        </span>
       </div>
       <input
         type="range"
