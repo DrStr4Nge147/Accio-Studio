@@ -24,6 +24,9 @@ export function SystemSection({ open }: { open: boolean }) {
     fetchSystem().then(setInfo).catch(() => setFailed(true));
   }, [open]);
 
+  const nvidia = !!info?.driver_cuda || !!info?.gpus.some((g) => /nvidia/i.test(g.name));
+  const cuda = (v: string | null) => v ?? (nvidia ? "Not available" : "Not applicable");
+
   if (!info) return failed ? <p className="text-[13px] text-text-3">Can't read this PC's hardware right now.</p> : null;
 
   return (
@@ -38,8 +41,8 @@ export function SystemSection({ open }: { open: boolean }) {
           <Row k="Graphics card" v="Not detected" />
         )}
         {info.gpus[0]?.driver && <Row k="Driver" v={info.gpus[0].driver} />}
-        <Row k="CUDA (driver supports)" v={info.driver_cuda ?? "Not available"} />
-        <Row k="CUDA (engine built for)" v={info.engine_cuda ?? "Not available"} />
+        <Row k="CUDA (driver supports)" v={cuda(info.driver_cuda)} />
+        <Row k="CUDA (engine built for)" v={cuda(info.engine_cuda)} />
         <Row k="RAM" v={info.ram_mb ? gb(info.ram_mb) : "Unknown"} />
       </div>
     </div>
