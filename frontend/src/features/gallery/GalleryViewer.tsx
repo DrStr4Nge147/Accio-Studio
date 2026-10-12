@@ -105,7 +105,7 @@ function ViewerFrame({
               onClick={() => setOutIndex(n)}
               className={`${glass} h-9 rounded-full px-3.5 text-[12px] ${n === outIndex ? "!border-gold !text-gold-hi" : ""}`}
             >
-              {it.o.role === "final" ? `Image ${n + 1}` : "First pass"}
+              {it.o.label ?? (it.o.role === "final" ? `Image ${n + 1}` : "First pass")}
             </button>
           ))}
         </div>
@@ -169,7 +169,7 @@ function ViewerFrame({
                 <Share2 size={20} strokeWidth={1.7} />
               </button>
             )}
-            {job.mode !== "create" && !firstPass && (
+            {job.mode !== "create" && job.mode !== "charsheet" && !firstPass && (
               <button type="button" aria-label="Edit this result" data-tip="Edit this result" className={btn} onClick={() => void continueFromResult(job, cur.i).then((err) => (err ? setNotice(err) : onLeave()))}>
                 <Repeat size={20} strokeWidth={1.7} />
               </button>

@@ -39,7 +39,8 @@ from config import DATA_DIR, FRONTEND_DIST, ROOT, comfy_dir, comfy_url, load_man
 from history import History
 from jobs import JobManager
 from logtail import read_log
-from schemas import JobRequest
+from schemas import CharSheetParams, JobRequest
+from sheets import SheetManager
 
 log = logging.getLogger("accio")
 STATIC_DIR = ROOT / "server" / "static"
@@ -108,9 +109,12 @@ async def lifespan(app: FastAPI):
     app.state.comfy = ComfyClient(comfy_url(settings))
     app.state.history = History(DATA_DIR / "history.db")
     app.state.jobs = JobManager(app.state.comfy, app.state.history)
+    out_dir = outputs.output_dir(comfy_dir(settings)) if outputs.can_delete(settings, comfy_dir(settings)) else None
+    app.state.sheets = SheetManager(app.state.jobs, app.state.history, app.state.comfy, out_dir)
     app.state.auth = Auth(DATA_DIR / "sessions.json", settings["session_days"])
     app.state.cache = {}
     await app.state.jobs.start()
+    await app.state.sheets.resume()
     unload = float(settings["auto_unload_minutes"])
     unloader = asyncio.create_task(auto_unload(app, unload), name="auto-unload") if unload > 0 else None
     if app.state.auth.setup_code:
@@ -120,6 +124,7 @@ async def lifespan(app: FastAPI):
     yield
     if unloader:
         unloader.cancel()
+    await app.state.sheets.stop()
     await app.state.jobs.stop()
     await app.state.comfy.aclose()
 
@@ -291,7 +296,10 @@ async def create_job(req: JobRequest, request: Request):
         need_loras=bool(getattr(req.params, "loras", None)),
         need_unets=bool(getattr(req.params, "unet_name", None)),
     )
-    built = engine.build(req.params, cat, output_prefix=request.app.state.settings["output_prefix"])
+    prefix = request.app.state.settings["output_prefix"]
+    if isinstance(req.params, CharSheetParams):
+        return await request.app.state.sheets.create(req.params, cat, prefix)
+    built = engine.build(req.params, cat, output_prefix=prefix)
     return await request.app.state.jobs.submit(built, req.params.model_dump(mode="json"))
 
 
@@ -328,13 +336,18 @@ async def delete_job(job_id: str, request: Request):
     else:
         files["failed"] = len(job["outputs"])  # not ours to delete (external backend): left on disk
     request.app.state.history.delete(job_id)
+    request.app.state.history.delete_children(job_id)  # a character sheet's per-view renders (their files are in its outputs)
     await asyncio.to_thread(thumbs.remove_for_job, THUMBS_DIR, job_id)
     return {"ok": True, "files_deleted": files["deleted"], "files_kept": files["failed"]}
 
 
 @app.post("/api/jobs/{job_id}/cancel")
 async def cancel_job(job_id: str, request: Request):
-    job = await request.app.state.jobs.cancel(job_id)
+    row = request.app.state.history.get(job_id)
+    if row and row["mode"] == "charsheet":
+        job = await request.app.state.sheets.cancel(job_id)
+    else:
+        job = await request.app.state.jobs.cancel(job_id)
     if not job:
         raise HTTPException(404, "Job not found.")
     return job

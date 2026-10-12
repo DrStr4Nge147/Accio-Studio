@@ -9,6 +9,7 @@ import { SamplerFields } from "../create/SamplerFields";
 import { SeedInput, randomSeed } from "../create/SeedFields";
 import { GRAIN_MAX, GRAIN_MIN } from "./grain";
 import { isKleinModel, KLEIN_MAX_IMAGES } from "./klein";
+import { isMultiEngine } from "./params";
 import { PaddingFields } from "./PaddingFields";
 import { EDIT_TIPS as T } from "./tips";
 import { useEdit, type CropKey, type EditMode, type FillMode, type Seam } from "./store";
@@ -80,7 +81,7 @@ function ModelField({ def }: { def: string }) {
   const mode = useEdit((s) => s.mode);
   const chosen = useEdit((s) => s.model);
   const setModel = useEdit((s) => s.setModel);
-  const multi = mode === "multiedit";
+  const multi = isMultiEngine(mode);
   const models = (useServer((s) => s.catalog?.edit_models) ?? []).filter((m) => multi || !isKleinModel(m));
   const model = multi || !isKleinModel(chosen) ? chosen : undefined; // a chosen Klein model is kept for Multi-edit
   if (!models.length && !model) return null;
@@ -268,7 +269,7 @@ export function EditAdvanced({ withPadding }: { withPadding?: boolean }) {
           </div>
         </div>
       )}
-      {withPadding && mode !== "outpaint" && !(klein && mode === "multiedit") && (
+      {withPadding && (mode === "multiedit" || mode === "inpaint") && !(klein && mode === "multiedit") && (
         <div>
           <Toggle on={enhancer} onChange={(on) => patch({ enhancer: { ...enhancerAll, [mode]: on } })} label="Prompt enhancer" sub={T.enhancer} />
           {mode === "multiedit" && (
@@ -281,7 +282,7 @@ export function EditAdvanced({ withPadding }: { withPadding?: boolean }) {
       )}
       <SeedField mode={mode} />
       {def && <ModelField def={def.unet_name} />}
-      <SamplerFields title="Sampler" def={klein && mode === "multiedit" ? def?.klein.sampler : def?.[mode].sampler} value={sampler} onChange={(v) => setSampler(mode, v)} action={<SavePreset />} />
+      <SamplerFields title="Sampler" def={klein && isMultiEngine(mode) ? def?.klein.sampler : isMultiEngine(mode) ? def?.multiedit.sampler : def?.[mode as "inpaint" | "outpaint"].sampler} value={sampler} onChange={(v) => setSampler(mode, v)} action={<SavePreset />} />
       {multiDef && mode === "multiedit" && <MultiFields def={multiDef} klein={klein} />}
       {def && mode === "inpaint" && <InpaintFields def={def.inpaint} />}
       {def && mode === "outpaint" && <OutpaintFields def={def.outpaint} />}

@@ -9,10 +9,10 @@ import { isActive, useJobs } from "../../store/jobs";
 import { useUi } from "../../store/ui";
 import { boxesOf, isEmptyMask, maskBytes, maskPreviewUrl } from "./maskOps";
 import { paddedBefore } from "../../lib/paddedBefore";
-import { editBlocker, inpaintParams, multiParams, outpaintParams, reuseEditSettings } from "./params";
+import { editBlocker, inpaintParams, multiParams, outpaintParams, reuseEditSettings, sheetParams } from "./params";
 import { PRESETS, type PresetId } from "./presets";
 import { useEdit, type EditMode } from "./store";
-import { giveFilesToMode, loadSource, replaceBaseSlot, restoreSlots, setPads, setInpaintSource, setOutpaintSource, useWorkspace } from "./workspace";
+import { giveFilesToMode, loadSource, replaceBaseSlot, restoreSlots, setPads, setInpaintSource, setOutpaintSource, setSheetSource, useWorkspace } from "./workspace";
 
 interface SubmitState {
   busy: boolean;
@@ -42,6 +42,8 @@ export async function generateEdit() {
     if (mode === "multiedit") {
       params = multiParams(s, ws.slots, def?.multiedit.base_megapixels ?? 1);
       before = ws.slots[0]?.url;
+    } else if (mode === "charsheet") {
+      params = sheetParams(s, { file: ws.sheet.upload.file!, name: ws.sheet.src!.name });
     } else if (mode === "inpaint") {
       const src = ws.inpaint.src!;
       useEditSubmit.setState({ stage: "Preparing the mask…" });
@@ -173,6 +175,14 @@ export async function reuseEdit(job: Job, keepSeed = true) {
       setInpaintSource(await loadSource(await res.blob(), "image"));
     } catch {
       /* the original is gone from the backend's input folder: settings are restored, the image has to be chosen again */
+    }
+  } else if (p.mode === "charsheet") {
+    try {
+      const res = await fetch(inputUrl("media", p.image.file));
+      if (!res.ok) return;
+      setSheetSource(await loadSource(await res.blob(), p.image.name || "photo"), p.image.file);
+    } catch {
+      /* the photo is gone from the backend's input folder: settings are restored, the photo has to be chosen again */
     }
   } else if (p.mode === "outpaint") {
     try {

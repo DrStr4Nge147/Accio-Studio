@@ -15,8 +15,8 @@ const noWs = {
 
 const state = () => useEdit.getState();
 beforeEach(() => {
-  for (const m of ["multiedit", "inpaint", "outpaint"] as const) state().reset(m);
-  state().patch({ mode: "multiedit", model: undefined, modelPresets: {}, grain: { on: false, strength: 0.04 }, prompts: { multiedit: "", inpaint: "", outpaint: "" } });
+  for (const m of ["multiedit", "inpaint", "outpaint", "charsheet"] as const) state().reset(m);
+  state().patch({ mode: "multiedit", model: undefined, modelPresets: {}, grain: { on: false, strength: 0.04 }, prompts: { multiedit: "", inpaint: "", outpaint: "", charsheet: "" } });
 });
 
 describe("editBlocker", () => {

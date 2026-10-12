@@ -50,6 +50,8 @@ interface Workspace {
   slots: Slot[];
   inpaint: { src: Source | null; ops: Op[]; redo: Op[] };
   outpaint: { src: Source | null; pads: Pads; upload: OutpaintUpload };
+  /** Character sheet: the one photo, uploaded as soon as it is picked. */
+  sheet: { src: Source | null; upload: OutpaintUpload };
   /** "Before" image of an Edit job, for the compare slider (this session only). */
   before: Record<string, string>;
   /** Inpaint: the painted shape of a running job (transparent PNG), for the sweep over the area being regenerated. */
@@ -57,6 +59,7 @@ interface Workspace {
   setSlots: (fn: (s: Slot[]) => Slot[]) => void;
   setInpaint: (p: Partial<Workspace["inpaint"]>) => void;
   setOutpaint: (p: Partial<Workspace["outpaint"]>) => void;
+  setSheet: (p: Partial<Workspace["sheet"]>) => void;
   setBefore: (jobId: string, url: string) => void;
   setMaskPreview: (jobId: string, url: string) => void;
 }
@@ -65,11 +68,13 @@ export const useWorkspace = create<Workspace>((set) => ({
   slots: [],
   inpaint: { src: null, ops: [], redo: [] },
   outpaint: { src: null, pads: NO_PADS, upload: { status: "idle", progress: 0 } },
+  sheet: { src: null, upload: { status: "idle", progress: 0 } },
   before: {},
   maskPreview: {},
   setSlots: (fn) => set((s) => ({ slots: fn(s.slots) })),
   setInpaint: (p) => set((s) => ({ inpaint: { ...s.inpaint, ...p } })),
   setOutpaint: (p) => set((s) => ({ outpaint: { ...s.outpaint, ...p } })),
+  setSheet: (p) => set((s) => ({ sheet: { ...s.sheet, ...p } })),
   setBefore: (jobId, url) => set((s) => ({ before: { ...s.before, [jobId]: url } })),
   setMaskPreview: (jobId, url) => set((s) => ({ maskPreview: { ...s.maskPreview, [jobId]: url } })),
 }));
@@ -215,12 +220,25 @@ export function setOutpaintSource(src: Source | null) {
     .catch((e) => up({ status: "error", error: message(e, "Couldn't upload this image.") }));
 }
 
+/** Character sheet: the photo goes to the same upload folder as Multi-edit images (the sheet's jobs are Multi-edit jobs). */
+export function setSheetSource(src: Source | null, uploaded?: string) {
+  useWorkspace.getState().setSheet({ src, upload: uploaded ? { status: "ready", progress: 1, file: uploaded } : { status: src ? "uploading" : "idle", progress: 0 } });
+  if (!src || uploaded) return;
+  const up = (patch: Partial<OutpaintUpload>) => {
+    if (useWorkspace.getState().sheet.src !== src) return; // another photo replaced it meanwhile
+    useWorkspace.getState().setSheet({ upload: { ...useWorkspace.getState().sheet.upload, ...patch } });
+  };
+  uploadImage("media", src.blob, (progress) => up({ progress }))
+    .then((file) => up({ status: "ready", progress: 1, file }))
+    .catch((e) => up({ status: "error", error: message(e, "Couldn't upload this image.") }));
+}
+
 export function setPads(pads: Pads) {
   useWorkspace.getState().setOutpaint({ pads });
 }
 
 /** Route dropped, pasted or picked images to a mode. Returns an error text, or null. */
-export async function giveFilesToMode(mode: "multiedit" | "inpaint" | "outpaint", files: File[]): Promise<string | null> {
+export async function giveFilesToMode(mode: "multiedit" | "inpaint" | "outpaint" | "charsheet", files: File[]): Promise<string | null> {
   const list = imageFiles(files);
   if (!list.length) return "That isn't an image. Use a PNG, JPEG or WebP.";
   if (mode === "multiedit") {
@@ -230,6 +248,7 @@ export async function giveFilesToMode(mode: "multiedit" | "inpaint" | "outpaint"
   try {
     const src = await loadSource(list[0]!, list[0]!.name || "image");
     if (mode === "inpaint") setInpaintSource(src);
+    else if (mode === "charsheet") setSheetSource(src);
     else setOutpaintSource(src);
     return null;
   } catch (e) {

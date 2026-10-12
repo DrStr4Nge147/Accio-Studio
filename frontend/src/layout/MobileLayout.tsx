@@ -147,7 +147,7 @@ function EditMobile() {
   const srcUrl = useWorkspace((s) => s.inpaint.src?.url);
   const maskFullscreen = useUi((s) => s.maskFullscreen);
   // While an image is open in the editor the canvas needs the height; Recent comes back when previewing or empty.
-  const editing = useWorkspace((s) => (mode === "multiedit" ? s.slots.length > 0 : mode === "inpaint" ? !!s.inpaint.src : !!s.outpaint.src));
+  const editing = useWorkspace((s) => (mode === "multiedit" ? s.slots.length > 0 : mode === "inpaint" ? !!s.inpaint.src : mode === "charsheet" ? !!s.sheet.src : !!s.outpaint.src));
   // A newly chosen Inpaint image opens the full-screen painter.
   useEffect(() => {
     if (mode === "inpaint" && srcUrl && srcUrl !== paintedUrl) set({ maskFullscreen: true });

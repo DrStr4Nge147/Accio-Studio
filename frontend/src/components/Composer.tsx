@@ -138,7 +138,7 @@ export function Composer({
         onBlur={() => setTrig(null)}
         placeholder={placeholder}
         rows={dock ? (short ? 1 : 2) : 4}
-        aria-label="Prompt"
+        aria-label={collapse?.label ?? "Prompt"}
         aria-autocomplete={tags ? "list" : undefined}
         maxLength={8000}
         className="w-full resize-none rounded-m border border-line bg-raised px-3 py-2.5 text-[15px] leading-snug text-text outline-none focus:border-gold"

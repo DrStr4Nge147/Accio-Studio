@@ -79,9 +79,9 @@ export function EditToggles() {
           </div>
         </div>
       )}
-      {!(klein && mode === "multiedit") && (
+      {(mode === "multiedit" || mode === "inpaint") && !(klein && mode === "multiedit") && (
       <div>
-        {mode !== "outpaint" && <Toggle on={s.enhancer[mode]} onChange={(v) => s.patch({ enhancer: { ...s.enhancer, [mode]: v } })} label="Prompt enhancer" tip={T.enhancer} />}
+        {<Toggle on={s.enhancer[mode]} onChange={(v) => s.patch({ enhancer: { ...s.enhancer, [mode]: v } })} label="Prompt enhancer" tip={T.enhancer} />}
         {mode === "multiedit" && (
           <>
             <Toggle on={s.multi.keepOriginal} onChange={(keepOriginal) => s.setMulti({ keepOriginal })} label="Keep original resolution" tip={T.keepOriginal} />

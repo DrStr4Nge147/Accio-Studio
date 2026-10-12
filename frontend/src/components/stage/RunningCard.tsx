@@ -92,6 +92,7 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
   const maskUrl = useMaskPreviewUrl(job);
   const masked = job.mode === "inpaint" && !!before && !!maskUrl;
   const staged = padded || masked; // the card shows the photo itself instead of the blurred live preview
+  const sheet = job.mode === "charsheet"; // step / max count finished views, not sampler steps
   const pct = max ? Math.min(100, ((step ?? 0) / max) * 100) : 0;
   const waiting = ahead ? `${ahead} job${ahead === 1 ? "" : "s"} ahead in the queue` : null;
 
@@ -116,6 +117,10 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
             <span className="font-mono text-gold-hi">stopping</span>
           ) : enhancing ? (
             <span className="font-mono text-gold-hi">writing</span>
+          ) : sheet && max ? (
+            <span className="font-mono text-gold-hi">
+              {step ?? 0}/{max} {max === 1 ? "image" : "images"} done
+            </span>
           ) : decoding ? (
             <span className="font-mono text-gold-hi">decoding</span>
           ) : max ? (
@@ -147,7 +152,7 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
               ? "Waiting for the backend to reach a stopping point…"
               : enhancing
                 ? "The enhancer rewrites your instruction first; the image comes next."
-                : [!decoding && eta !== null && !compact ? `${formatEta(eta)} left in this pass` : null, waiting].filter(Boolean).join(" · ") ||
+                : [!decoding && eta !== null && !compact ? `${formatEta(eta)} left${sheet ? "" : " in this pass"}` : null, waiting].filter(Boolean).join(" · ") ||
                 (queued ? "Starting…" : "Working…")}
           </span>
           <button

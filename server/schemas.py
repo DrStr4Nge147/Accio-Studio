@@ -12,6 +12,8 @@ Prompt = Annotated[str, StringConstraints(min_length=1, max_length=8000)]
 # Server-generated upload names only: no path separators, no dots-only, no spaces.
 Filename = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")]
 Dim = Annotated[int, Field(ge=64, le=8192, multiple_of=8)]
+# Render size of one picture: [width, height].
+Size = Annotated[list[Dim], Field(min_length=2, max_length=2)]
 # Display-only: pixel size the UI should reserve for the result (Edit jobs have no width/height inputs). Never reaches a node.
 SizeHint = Annotated[list[Annotated[int, Field(ge=1, le=32768)]], Field(min_length=2, max_length=2)]
 # Qwen Edit only: a diffusion model file name from ComfyUI's list (checked against it in engine.py). None = the template's model.
@@ -162,7 +164,44 @@ class OutpaintParams(Strict):
         return self
 
 
-JobParams = Annotated[Union[CreateParams, MultiEditParams, InpaintParams, OutpaintParams], Field(discriminator="mode")]
+FaceView = Literal["front", "three_quarter_left", "left_profile", "three_quarter_right", "right_profile", "back"]
+BodyView = Literal["front", "three_quarter_left", "left_side", "back", "right_side", "three_quarter_right"]
+
+
+class CharSheetParams(Strict):
+    """Character sheet: one photo in, a sheet of face close-ups and a sheet of full-body views out (Qwen/Klein multi-edit under the hood).
+
+    separate = one render per view at full quality, stitched into two sheets afterwards.
+    merged   = two renders (faces, body) that each draw a whole sheet in one picture: quicker, lower quality per view.
+    """
+
+    mode: Literal["charsheet"]
+    image: ImageRef
+    delivery: Literal["separate", "merged"] = "separate"
+    face_views: list[FaceView] = Field(default_factory=lambda: ["front", "three_quarter_left", "left_profile", "three_quarter_right", "right_profile"], max_length=6)
+    body_views: list[BodyView] = Field(default_factory=lambda: ["front", "three_quarter_left", "left_side", "back", "right_side", "three_quarter_right"], max_length=6)
+    # Optional extra text about the character (outfit, hair colour...) added to every view's prompt.
+    notes: str = Field("", max_length=1000)
+    # Size of every face view / body view when separate, of the faces sheet / body sheet when merged. None = the tuned default.
+    face_size: Size | None = None
+    body_size: Size | None = None
+    seed: Seed | None = None
+    sampler: SamplerOpts | None = None
+    size_hint: SizeHint | None = None
+    loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
+    unet_name: UnetName | None = None
+    film_grain: FilmGrain | None = None
+
+    @model_validator(mode="after")
+    def _views(self) -> "CharSheetParams":
+        if len(set(self.face_views)) != len(self.face_views) or len(set(self.body_views)) != len(self.body_views):
+            raise ValueError("each view can be chosen once")
+        if not (self.face_views or self.body_views):
+            raise ValueError("choose at least one view")
+        return self
+
+
+JobParams = Annotated[Union[CreateParams, MultiEditParams, InpaintParams, OutpaintParams, CharSheetParams], Field(discriminator="mode")]
 
 
 class JobRequest(Strict):

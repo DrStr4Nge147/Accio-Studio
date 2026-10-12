@@ -2,7 +2,9 @@ export type JobStatus = "queued" | "running" | "done" | "error" | "cancelled";
 
 export interface JobOutput {
   node: string;
-  role: "final" | "first_pass";
+  role: "final" | "first_pass" | "part";
+  /** character sheets: what the picture is ("Faces sheet", "Faces · Front") */
+  label?: string;
   filename: string;
   subfolder: string;
   type: string;

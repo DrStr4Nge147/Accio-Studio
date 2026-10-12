@@ -15,6 +15,7 @@ const PLACEHOLDERS = {
   multiedit: "Say what to change, e.g. “replace the jacket in <image1> with the one from <image2>”. Keep what should stay.",
   inpaint: "Say what should appear in the painted area. Use action words: replace, remove, add, change. Match the lighting and style.",
   outpaint: "Describe what continues into the new area. The default works as it is.",
+  charsheet: "Optional. Nothing is needed here: the sheet is made for you. Add only what the photo does not show, e.g. “red scarf, silver ring on the left hand”.",
 } as const;
 
 /** Edit's instance of the shared composer, in the layout the viewport asks for. */
@@ -36,15 +37,15 @@ export function EditComposer({ layout, above }: { layout: "dock" | "pane"; above
     <Composer
       layout={layout}
       above={above}
-      fieldHeader={mode === "outpaint" ? undefined : <EnhancedSwitch mode={mode} />}
+      fieldHeader={mode === "multiedit" || mode === "inpaint" ? <EnhancedSwitch mode={mode} /> : undefined}
       collapse={
         mode === "multiedit"
           ? undefined
           : {
               collapsed: !open[mode],
               onToggle: () => useUi.getState().set({ promptOpen: { ...open, [mode]: !open[mode] } }),
-              label: "Prompt",
-              hint: mode === "outpaint" ? "Built in, tap to change" : "Required, tap to write",
+              label: mode === "charsheet" ? "Additional prompt" : "Prompt",
+              hint: mode === "outpaint" ? "Built in, tap to change" : mode === "charsheet" ? "Optional, you don't need to write anything" : "Required, tap to write",
             }
       }
       tags={mode === "multiedit" ? ws.slots.map((s, i) => ({ n: i + 1, name: s.name, thumb: s.url })) : undefined}

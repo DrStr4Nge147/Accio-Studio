@@ -101,7 +101,7 @@ export function ResultView({ job }: { job: Job }) {
             <Share2 size={20} strokeWidth={1.7} className={ic} />
           </IconButton>
         )}
-        {job.mode !== "create" && !firstPass && (
+        {job.mode !== "create" && job.mode !== "charsheet" && !firstPass && (
           <IconButton label="Edit this result" className={cls} onClick={() => void continueFromResult(job, cur.i).then(setSendError)}>
             <Repeat size={20} strokeWidth={1.7} className={ic} />
           </IconButton>
@@ -200,12 +200,12 @@ export function ResultView({ job }: { job: Job }) {
               type="button"
               role="tab"
               aria-selected={n === index}
-              aria-label={it.o.role === "final" ? `Image ${n + 1}` : "First pass image"}
+              aria-label={it.o.label ?? (it.o.role === "final" ? `Image ${n + 1}` : "First pass image")}
               onClick={() => setIndex(n)}
               className={`relative h-14 w-14 flex-none overflow-hidden rounded-s border ${n === index ? "border-gold" : "border-line-strong hover:border-text-3"}`}
             >
               <img src={imageUrl(job.id, it.i, 384)} alt="" loading="lazy" className="h-full w-full object-cover" />
-              {it.o.role !== "final" && <span className="absolute inset-x-0 bottom-0 bg-black/60 text-[9px] text-white">1st pass</span>}
+              {it.o.role !== "final" && <span className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-0.5 text-[9px] text-white">{it.o.role === "part" ? (it.o.label ?? "View") : "1st pass"}</span>}
             </button>
           ))}
         </div>
@@ -243,7 +243,7 @@ export function PromptUsed({ job, open, onOpen: setOpen, bar, always }: { job: J
         <button
           type="button"
           onClick={() => {
-            if (mode !== "outpaint") showEnhanced(mode, { id: job.id, text });
+            if (mode === "multiedit" || mode === "inpaint") showEnhanced(mode, { id: job.id, text });
             setCopied(true);
             window.clearTimeout(timer.current);
             timer.current = window.setTimeout(() => setCopied(false), 1800);

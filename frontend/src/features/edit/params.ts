@@ -4,6 +4,7 @@ import { BOX_RULE } from "./presets";
 import { useEdit, type CropKey, type EditMode, type EditSettings } from "./store";
 import type { Op } from "./maskOps";
 import { boxesOf, hasMaskOps } from "./maskOps";
+import { BASE_SIZES, initialSheet, renderCount, sheetSizeHint, sheetSizes, sizeProblem, type Size } from "./sheet";
 import type { Pads, Slot, Source } from "./workspace";
 
 const nonEmpty = <T extends object>(o: T) => (Object.keys(o).length ? o : undefined);
@@ -14,9 +15,16 @@ export const totalPad = (p: Pads) => p.l + p.t + p.r + p.b;
 /** What stops Generate right now (shown under the button), or null when the mode is ready. */
 export function editBlocker(
   s: EditSettings,
-  ws: { slots: Slot[]; inpaint: { src: Source | null; ops: Op[] }; outpaint: { src: Source | null; pads: Pads; upload: { status: string } } },
+  ws: { slots: Slot[]; inpaint: { src: Source | null; ops: Op[] }; outpaint: { src: Source | null; pads: Pads; upload: { status: string } }; sheet?: { src: Source | null; upload: { status: string } } },
 ): string | null {
   const mode = s.mode;
+  if (mode === "charsheet") {
+    if (!ws.sheet?.src) return "Choose a photo of the character first.";
+    if (ws.sheet.upload.status === "uploading") return "Uploading the photo…";
+    if (ws.sheet.upload.status === "error") return "The photo failed to upload. Choose it again.";
+    if (renderCount(s.sheet) === 0) return "Choose at least one view.";
+    return sizeProblem(s.sheet);
+  }
   const klein = isKleinModel(s.model);
   if (mode === "multiedit") {
     const { slots } = ws;
@@ -51,8 +59,11 @@ export function editBlocker(
 
 const samplerOpt = (s: EditSettings, mode: EditMode) => nonEmpty(s.sampler[mode]);
 
+/** Modes that run the Multi-edit workflow (the character sheet's views are Multi-edit jobs). */
+export const isMultiEngine = (mode: EditMode) => mode === "multiedit" || mode === "charsheet";
+
 /** The model a mode runs: Klein is Multi-edit only, so Inpaint and Outpaint use the default even while Klein is chosen. */
-export const modelFor = (s: EditSettings, mode: EditMode): string | undefined => (isKleinModel(s.model) && mode !== "multiedit" ? undefined : s.model);
+export const modelFor = (s: EditSettings, mode: EditMode): string | undefined => (isKleinModel(s.model) && !isMultiEngine(mode) ? undefined : s.model);
 
 function common(s: EditSettings, mode: EditMode): Record<string, unknown> {
   const p: Record<string, unknown> = {};
@@ -154,6 +165,25 @@ export function outpaintParams(s: EditSettings, src: Source, file: string, pads:
   return p;
 }
 
+export function sheetParams(s: EditSettings, image: { file: string; name: string }): Record<string, unknown> {
+  const sh = s.sheet;
+  const sizes = sheetSizes(sh);
+  const p: Record<string, unknown> = {
+    mode: "charsheet",
+    image: { file: image.file, name: image.name.slice(0, 200) },
+    delivery: sh.delivery,
+    face_views: sh.faceViews,
+    body_views: sh.bodyViews,
+    face_size: sizes.face,
+    body_size: sizes.body,
+    size_hint: sheetSizeHint(sh),
+    ...common(s, "charsheet"),
+  };
+  const notes = s.prompts.charsheet.trim();
+  if (notes) p.notes = notes;
+  return p;
+}
+
 const diffSampler = (from: Record<string, any> | null | undefined, def: SamplerDefaults | undefined): Partial<SamplerDefaults> => {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(from ?? {})) if (v !== null && v !== undefined && (!def || def[k as keyof SamplerDefaults] !== v)) out[k] = v;
@@ -166,19 +196,36 @@ const CROP_KEYS: CropKey[] = ["context_factor", "blend_pixels", "mask_grow", "ma
 export function reuseEditSettings(job: Job, def: import("../../api/types").EditDefaults | null, keepSeed = true) {
   const p = job.params;
   const mode = p.mode as EditMode;
-  if (mode !== "multiedit" && mode !== "inpaint" && mode !== "outpaint") return;
+  if (mode !== "multiedit" && mode !== "inpaint" && mode !== "outpaint" && mode !== "charsheet") return;
   const st = useEdit.getState();
   st.patch({ mode, model: p.unet_name ?? undefined });
   st.setGrain(p.film_grain ? { on: true, strength: p.film_grain } : { on: false });
-  st.setPrompt(mode, p.prompt ?? "");
+  st.setPrompt(mode, mode === "charsheet" ? (p.notes ?? "") : (p.prompt ?? ""));
   const klein = isKleinModel(p.unet_name ?? undefined);
-  st.setSampler(mode, diffSampler(p.sampler, klein && def ? (def.klein.sampler as SamplerDefaults) : def?.[mode].sampler));
+  const samplerDef = klein && def ? (def.klein.sampler as SamplerDefaults) : isMultiEngine(mode) ? def?.multiedit.sampler : def?.[mode as "inpaint" | "outpaint"].sampler;
+  st.setSampler(mode, diffSampler(p.sampler, samplerDef));
   st.setLoras(
     mode,
     ((p.loras ?? []) as { name: string; strength?: number; on?: boolean }[]).map((l) => ({ name: String(l.name), strength: l.strength ?? 1, on: l.on ?? true, target: "both" as const })),
   );
   st.setSeed(mode, keepSeed, keepSeed ? (job.seeds.main ?? null) : null);
-  if (mode === "multiedit") {
+  if (mode === "charsheet") {
+    const d = initialSheet();
+    const delivery = p.delivery ?? d.delivery;
+    const base = BASE_SIZES[delivery as keyof typeof BASE_SIZES];
+    const face = (p.face_size as Size | undefined) ?? base.face;
+    const body = (p.body_size as Size | undefined) ?? base.body;
+    const tuned = face.join() === base.face.join() && body.join() === base.body.join();
+    st.setSheet({
+      delivery,
+      faceViews: p.face_views ?? d.faceViews,
+      bodyViews: p.body_views ?? d.bodyViews,
+      // a size that is not the tuned one comes back as typed sizes (it may not be a whole multiple of a scale step)
+      sizeMode: tuned ? "auto" : "manual",
+      scale: 1,
+      manual: { ...useEdit.getState().sheet.manual, [delivery]: { face, body } },
+    });
+  } else if (mode === "multiedit") {
     st.patch({ enhancer: { ...useEdit.getState().enhancer, multiedit: p.prompt_enhancer ?? true } });
     const refMp: Record<number, number> = {};
     ((p.ref_megapixels ?? []) as (number | null)[]).forEach((v, i) => v != null && (refMp[i] = v));

@@ -40,6 +40,10 @@ class History:
         self._lock = threading.Lock()
         with self._lock:
             self._db.executescript(SCHEMA)
+            # Added later: a character sheet's per-view renders point at their sheet and stay out of the gallery.
+            if "parent" not in {r["name"] for r in self._db.execute("PRAGMA table_info(jobs)")}:
+                self._db.execute("ALTER TABLE jobs ADD COLUMN parent TEXT")
+            self._db.execute("CREATE INDEX IF NOT EXISTS jobs_parent ON jobs (parent)")
             self._db.commit()
 
     @staticmethod
@@ -54,11 +58,12 @@ class History:
     def create(self, job: dict[str, Any]) -> None:
         with self._lock:
             self._db.execute(
-                "INSERT INTO jobs (id, created_at, mode, label, template, status, params, seeds, prompt_id, warnings)"
-                " VALUES (?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO jobs (id, created_at, mode, label, template, status, params, seeds, prompt_id, warnings, parent)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     job["id"], job["created_at"], job["mode"], job["label"], job["template"], job["status"],
                     json.dumps(job["params"]), json.dumps(job["seeds"]), job.get("prompt_id"), json.dumps(job.get("warnings", [])),
+                    job.get("parent"),
                 ),
             )
             self._db.commit()
@@ -85,8 +90,8 @@ class History:
     def list(
         self, limit: int = 30, before: float | None = None, status: str | None = None, group: str | None = None
     ) -> list[dict[str, Any]]:
-        """Newest first. `group` is "create" or "edit" (everything that is not create)."""
-        where, args = [], []
+        """Newest first. `group` is "create" or "edit" (everything that is not create). Per-view renders of a sheet are not listed."""
+        where, args = ["parent IS NULL"], []
         if before is not None:
             where.append("created_at < ?")
             args.append(before)
@@ -109,6 +114,15 @@ class History:
             cur = self._db.execute("DELETE FROM jobs WHERE id = ? AND status NOT IN ('queued', 'running')", (job_id,))
             self._db.commit()
             return cur.rowcount > 0
+
+    def children(self, parent: str) -> list[dict[str, Any]]:
+        with self._lock:
+            return [self._row(r) for r in self._db.execute("SELECT * FROM jobs WHERE parent = ? ORDER BY created_at, rowid", (parent,)).fetchall()]
+
+    def delete_children(self, parent: str) -> None:
+        with self._lock:
+            self._db.execute("DELETE FROM jobs WHERE parent = ? AND status NOT IN ('queued', 'running')", (parent,))
+            self._db.commit()
 
     def active(self) -> list[dict[str, Any]]:
         with self._lock:

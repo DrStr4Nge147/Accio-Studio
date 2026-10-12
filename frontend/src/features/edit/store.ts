@@ -5,8 +5,9 @@ import type { LoraSel } from "../../components/LoraList";
 import type { LoraMode } from "../../lib/loras";
 import { GRAIN_DEFAULT } from "./grain";
 import { isKleinModel } from "./klein";
+import { initialSheet, type SheetState } from "./sheet";
 
-export type EditMode = "multiedit" | "inpaint" | "outpaint";
+export type EditMode = "multiedit" | "inpaint" | "outpaint" | "charsheet";
 export type Seam = "classic" | "blend in";
 export type FillMode = "color" | "edge" | "edge pixel" | "pillarbox blur" | "mirror";
 export type CropKey = "context_factor" | "blend_pixels" | "mask_grow" | "mask_blur" | "context_pixels" | "output_multiple" | "target_megapixels";
@@ -15,6 +16,7 @@ export const EDIT_MODES: { value: EditMode; label: string; short: string }[] = [
   { value: "multiedit", label: "Multi-edit", short: "Multi" },
   { value: "inpaint", label: "Inpaint", short: "Inpaint" },
   { value: "outpaint", label: "Outpaint", short: "Outpaint" },
+  { value: "charsheet", label: "Character sheet", short: "Sheet" },
 ];
 
 export interface MultiState {
@@ -70,6 +72,7 @@ export interface EditSettings {
   multi: MultiState;
   inpaint: InpaintState;
   outpaint: OutpaintState;
+  sheet: SheetState;
   sampler: Record<EditMode, Partial<SamplerDefaults>>;
   lockSeed: Record<EditMode, boolean>;
   seeds: Record<EditMode, number | null>;
@@ -91,6 +94,7 @@ interface EditActions {
   setPixelDrift: (on: boolean) => void;
   setInpaint: (p: Partial<InpaintState>) => void;
   setOutpaint: (p: Partial<OutpaintState>) => void;
+  setSheet: (p: Partial<SheetState>) => void;
   setPrompt: (mode: EditMode, text: string) => void;
   setSampler: (mode: EditMode, s: Partial<SamplerDefaults>) => void;
   setLoras: (mode: EditMode, l: LoraSel[]) => void;
@@ -99,7 +103,7 @@ interface EditActions {
   reset: (mode: EditMode) => void;
 }
 
-const perMode = <T,>(v: () => T): Record<EditMode, T> => ({ multiedit: v(), inpaint: v(), outpaint: v() });
+const perMode = <T,>(v: () => T): Record<EditMode, T> => ({ multiedit: v(), inpaint: v(), outpaint: v(), charsheet: v() });
 
 export const initialMulti = (): MultiState => ({
   keepOriginal: false,
@@ -117,11 +121,12 @@ const initial = (): EditSettings => ({
   mode: "multiedit",
   grain: { on: false, strength: GRAIN_DEFAULT },
   modelPresets: {},
-  prompts: { multiedit: "", inpaint: "", outpaint: "" },
+  prompts: { multiedit: "", inpaint: "", outpaint: "", charsheet: "" }, // charsheet: optional notes about the character
   enhancer: { multiedit: true, inpaint: true },
   multi: initialMulti(),
   inpaint: initialInpaint(),
   outpaint: initialOutpaint(),
+  sheet: initialSheet(),
   sampler: perMode(() => ({})),
   lockSeed: perMode(() => false),
   seeds: perMode(() => null),
@@ -154,6 +159,7 @@ export const useEdit = create<EditSettings & EditActions>()(
       setPixelDrift: (on) => set((s) => ({ multi: { ...s.multi, pixelDrift: on, driftAuto: false } })),
       setInpaint: (p) => set((s) => ({ inpaint: { ...s.inpaint, ...p } })),
       setOutpaint: (p) => set((s) => ({ outpaint: { ...s.outpaint, ...p } })),
+      setSheet: (p) => set((s) => ({ sheet: { ...s.sheet, ...p } })),
       setPrompt: (mode, text) => set((s) => ({ prompts: { ...s.prompts, [mode]: text } })),
       setSampler: (mode, v) => set((s) => ({ sampler: { ...s.sampler, [mode]: v } })),
       setLoras: (mode, l) => set((s) => ({ loras: { ...s.loras, [mode]: l } })),
@@ -165,7 +171,8 @@ export const useEdit = create<EditSettings & EditActions>()(
             multi: mode === "multiedit" ? base.multi : s.multi,
             inpaint: mode === "inpaint" ? { ...base.inpaint, brush: s.inpaint.brush } : s.inpaint,
             outpaint: mode === "outpaint" ? base.outpaint : s.outpaint,
-            enhancer: { ...s.enhancer, ...(mode !== "outpaint" ? { [mode]: true } : {}) },
+            sheet: mode === "charsheet" ? base.sheet : s.sheet,
+            enhancer: { ...s.enhancer, ...(mode === "multiedit" || mode === "inpaint" ? { [mode]: true } : {}) },
             sampler: { ...s.sampler, [mode]: {} },
             lockSeed: { ...s.lockSeed, [mode]: false },
             seeds: { ...s.seeds, [mode]: null },
@@ -176,6 +183,12 @@ export const useEdit = create<EditSettings & EditActions>()(
     {
       name: "accio.edit",
       version: 1,
+      // Settings saved before a mode existed lack its entry in the per-mode records: fill those from the defaults.
+      merge: (saved, current) => {
+        const p = (saved ?? {}) as Partial<EditSettings>;
+        const fill = <K extends "prompts" | "sampler" | "lockSeed" | "seeds" | "loras">(k: K) => ({ ...current[k], ...p[k] }) as EditSettings[K];
+        return { ...current, ...p, prompts: fill("prompts"), sampler: fill("sampler"), lockSeed: fill("lockSeed"), seeds: fill("seeds"), loras: fill("loras"), sheet: { ...current.sheet, ...p.sheet } };
+      },
       partialize: (s) => ({
         mode: s.mode,
         grain: s.grain,
@@ -186,6 +199,7 @@ export const useEdit = create<EditSettings & EditActions>()(
         multi: s.multi,
         inpaint: s.inpaint,
         outpaint: s.outpaint,
+        sheet: s.sheet,
         sampler: s.sampler,
         lockSeed: s.lockSeed,
         seeds: s.seeds,

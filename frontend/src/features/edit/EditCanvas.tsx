@@ -11,6 +11,7 @@ import { usePasteImages } from "./ImagePicker";
 const SlotGrid = lazy(() => import("./SlotGrid").then((m) => ({ default: m.SlotGrid })));
 const MaskEditor = lazy(() => import("./MaskEditor").then((m) => ({ default: m.MaskEditor })));
 const OutpaintEditor = lazy(() => import("./OutpaintEditor").then((m) => ({ default: m.OutpaintEditor })));
+const SheetEditor = lazy(() => import("./SheetEditor").then((m) => ({ default: m.SheetEditor })));
 
 /** The Edit canvas: the editor of the current mode, or the result of the selected Edit job with a way back. */
 export function EditCanvas() {
@@ -44,7 +45,7 @@ export function EditCanvas() {
   }
   return (
     <Suspense fallback={<div className="h-full animate-pulse rounded-m border border-line bg-raised motion-reduce:animate-none" aria-busy />}>
-      {mode === "multiedit" ? <SlotGrid /> : mode === "inpaint" ? <MaskEditor /> : <OutpaintEditor />}
+      {mode === "multiedit" ? <SlotGrid /> : mode === "inpaint" ? <MaskEditor /> : mode === "charsheet" ? <SheetEditor /> : <OutpaintEditor />}
     </Suspense>
   );
 }

@@ -58,8 +58,9 @@ class JobManager:
 
     # ------------------------------------------------------------------ public API
 
-    async def submit(self, built: Built, params: dict[str, Any]) -> dict[str, Any]:
+    async def submit(self, built: Built, params: dict[str, Any], parent: str | None = None) -> dict[str, Any]:
         job = {
+            "parent": parent,
             "id": uuid.uuid4().hex,
             "created_at": time.time(),
             "mode": built.mode,
@@ -105,7 +106,7 @@ class JobManager:
 
     async def add_client(self, ws: WebSocket) -> None:
         self.clients.add(ws)
-        await ws.send_json({"type": "snapshot", "jobs": [self.public(j["id"]) for j in self.history.active()]})
+        await ws.send_json({"type": "snapshot", "jobs": [self.public(j["id"]) for j in self.history.active() if not j["parent"]]})
 
     def drop_client(self, ws: WebSocket) -> None:
         self.clients.discard(ws)
@@ -118,6 +119,9 @@ class JobManager:
                 self.clients.discard(ws)
 
     async def _broadcast_job(self, job_id: str) -> None:
+        job = self.history.get(job_id)
+        if job and job["parent"]:
+            return  # a sheet's per-view renders are shown through the sheet, not as jobs of their own
         msg = {"type": "job", "job": self.public(job_id)}
         await self._send_all(lambda ws: ws.send_json(msg))
 
@@ -267,7 +271,7 @@ class JobManager:
     # ------------------------------------------------------------------ queue position / recovery
 
     async def _refresh_positions(self) -> None:
-        active = self.history.active()
+        active = [j for j in self.history.active() if j["prompt_id"]]  # a character sheet itself is never in ComfyUI's queue
         if not active:
             return
         try:
@@ -291,6 +295,8 @@ class JobManager:
         """After (re)connecting, settle jobs whose events we missed (server restart, dropped socket)."""
         for job in self.history.active():
             pid = job["prompt_id"]
+            if not pid:
+                continue  # a character sheet: its own task follows its renders
             try:
                 hist = (await self.comfy.history(pid)).get(pid)
                 q = await self.comfy.queue()
