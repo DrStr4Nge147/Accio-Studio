@@ -224,6 +224,12 @@ def test_pick_folder_returns_the_chosen_existing_folder(monkeypatch, tmp_path):
     assert modelpaths.pick_folder() is None
 
 
+def test_native_dialog_script_brings_itself_to_the_front():
+    # Windows keeps a background process from taking focus: without these steps the dialog opens behind the browser.
+    for part in ("$owner.Show()", "SetForegroundWindow", "keybd_event", "ShowDialog($owner)"):
+        assert part in modelpaths.PICK_SCRIPT
+
+
 def test_native_dialog_is_for_the_pc_itself(api, monkeypatch, tmp_path):
     monkeypatch.setattr(modelpathsapi, "on_this_pc", lambda request: False)
     assert client.get("/api/model-paths").json()["can_pick"] is False

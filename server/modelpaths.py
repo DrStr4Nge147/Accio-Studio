@@ -114,7 +114,15 @@ def browse(path: str) -> dict[str, Any]:
 PICK_SCRIPT = (
     "Add-Type -AssemblyName System.Windows.Forms;"
     "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;"
-    "$owner = New-Object System.Windows.Forms.Form; $owner.TopMost = $true;"
+    # Windows keeps a background process from taking focus, so the dialog would open behind the browser. Show a tiny
+    # invisible topmost owner window, press Alt (releases the foreground lock) and bring that owner to the front first.
+    "Add-Type -Namespace Native -Name U -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr h);"
+    " [DllImport(\"user32.dll\")] public static extern void keybd_event(byte k, byte s, int f, int e);';"
+    "$owner = New-Object System.Windows.Forms.Form; $owner.TopMost = $true; $owner.ShowInTaskbar = $false;"
+    "$owner.FormBorderStyle = 'None'; $owner.Opacity = 0; $owner.Size = New-Object System.Drawing.Size(1, 1);"
+    "$owner.StartPosition = 'CenterScreen'; $owner.Show();"
+    "[Native.U]::keybd_event(0x12, 0, 0, 0); [Native.U]::keybd_event(0x12, 0, 2, 0);"
+    "[void][Native.U]::SetForegroundWindow($owner.Handle); $owner.Activate();"
     "$d = New-Object System.Windows.Forms.FolderBrowserDialog;"
     "$d.Description = 'Choose the folder that holds these models'; $d.ShowNewFolderButton = $false;"
     "if ($env:ACCIO_START -and (Test-Path -LiteralPath $env:ACCIO_START -PathType Container)) { $d.SelectedPath = $env:ACCIO_START };"
