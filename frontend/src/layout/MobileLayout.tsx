@@ -1,4 +1,5 @@
 import { ArrowRight, ChevronLeft, ChevronRight, LayoutGrid, Maximize2, Settings as GearIcon, Sparkles, Terminal, WandSparkles } from "lucide-react";
+import type { Job } from "../api/types";
 import { CoffeeBadge } from "../components/CoffeeBadge";
 import { UpdatePill } from "../components/UpdatePill";
 import { Wordmark } from "../components/Wordmark";
@@ -36,28 +37,41 @@ const TABS: { id: Tab; label: string; icon: typeof Sparkles }[] = [
 function Feed() {
   const jobs = useJobs(useShallow((s) => s.order.map((id) => s.jobs[id]!).filter((j) => j.mode === "create" && (j.status === "done" || isActive(j)))));
   if (!jobs.length) return <EmptyStage />;
+  // Two masonry columns: each result goes into the shorter column, so mixed aspect ratios leave no gaps.
+  const columns: Job[][] = [[], []];
+  const heights = [0, 0];
+  for (const j of jobs) {
+    const { w, h } = jobSize(j);
+    const c = heights[0]! <= heights[1]! ? 0 : 1;
+    columns[c]!.push(j);
+    heights[c]! += h / w;
+  }
   return (
-    <ul className="grid grid-cols-2 items-start gap-1.5 overflow-y-auto p-2.5">
-      {jobs.map((j) => {
-        const { w, h } = jobSize(j);
-        return (
-          <li key={j.id}>
-            <button
-              type="button"
-              aria-label={`Open: ${String(j.params.prompt ?? "").slice(0, 60)}`}
-              onClick={() => {
-                useJobs.getState().select(j.id);
-                useUi.getState().set({ viewerOpen: true });
-              }}
-              className="block w-full overflow-hidden rounded-m border border-line"
-              style={{ aspectRatio: `${w} / ${h}` }}
-            >
-              <Thumb job={j} size={1024} className="h-full w-full" />
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="grid grid-cols-2 items-start gap-1.5 p-2.5">
+      {columns.map((col, ci) => (
+        <ul key={ci} className="flex flex-col gap-1.5">
+          {col.map((j) => {
+            const { w, h } = jobSize(j);
+            return (
+              <li key={j.id}>
+                <button
+                  type="button"
+                  aria-label={`Open: ${String(j.params.prompt ?? "").slice(0, 60)}`}
+                  onClick={() => {
+                    useJobs.getState().select(j.id);
+                    useUi.getState().set({ viewerOpen: true });
+                  }}
+                  className="block w-full overflow-hidden rounded-m border border-line"
+                  style={{ aspectRatio: `${w} / ${h}` }}
+                >
+                  <Thumb job={j} size={1024} className="h-full w-full" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ))}
+    </div>
   );
 }
 
