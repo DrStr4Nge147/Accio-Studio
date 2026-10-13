@@ -62,7 +62,7 @@ def test_merged_plan_is_two_sheet_jobs():
     kids = sheets.plan(params(delivery="merged", face_views=["front", "back"]), 1)
     assert [(c.group, c.key) for c in kids] == [("faces", "sheet"), ("body", "sheet")]
     face = kids[0].params.prompt
-    assert "exactly 2" in face and "a single row of 2" in face and "Portrait 1 (position 1): Completely front-facing" in face and "Portrait 2 (position 2): Seen completely from behind" in face
+    assert "exactly 2" in face and "a single row of 2" in face and "Portrait 1 (position 1): Completely front-facing" in face and "Portrait 2 (position 2): The camera is behind the character" in face
     assert (kids[0].params.manual_width, kids[0].params.manual_height) == sheets.MERGED_FACE_SIZE
 
 
@@ -269,7 +269,7 @@ def test_merged_grid_prompt_numbers_every_panel_with_its_position():
     face = sheets.plan(params(delivery="merged", body_views=[]), 1)[0].params.prompt
     # five views are completed to a full 3x2 grid with the missing sixth (the model ghosts a half-empty last row)
     assert "exactly 6" in face and "2 rows (3 in row 1, 3 in row 2)" in face
-    assert "Portrait 1 (row 1, column 1)" in face and "Portrait 4 (row 2, column 1)" in face and "Portrait 6 (row 2, column 3): Seen completely from behind" in face
+    assert "Portrait 1 (row 1, column 1)" in face and "Portrait 4 (row 2, column 1)" in face and "Portrait 6 (row 2, column 3): The camera is behind the character" in face
     assert sheets.merged_face_views(["front", "back"]) == ["front", "back"]
     assert len(sheets.merged_face_views(["front", "three_quarter_left", "back", "left_profile", "right_profile"])) == 6
     body = sheets.plan(params(delivery="merged", face_views=[]), 1)[0].params.prompt
@@ -280,3 +280,9 @@ def test_every_prompt_resets_the_photos_pose():
     for delivery in ("separate", "merged"):
         for c in sheets.plan(params(delivery=delivery), 1):
             assert sheets.RESET in c.params.prompt
+
+
+def test_face_back_view_avoids_words_that_bring_the_face_back():
+    back = next(c for c in sheets.plan(params(face_views=["back"], body_views=[]), 1)).params.prompt
+    assert "photographed from directly behind" in back and "No face, eyes, nose or lips are visible in this view" in back
+    assert "expression" not in back and "portrait" not in back

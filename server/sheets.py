@@ -71,8 +71,8 @@ FACE_VIEWS: dict[str, tuple[str, str]] = {
     ),
     "back": (
         "Back of head",
-        "Seen completely from behind: the back of the head, the hair and the back of the neck fill the frame, no face is visible, "
-        "and the shoulders are square and level.",
+        "The camera is behind the character and the character faces completely away from it: only the back of the head, the hair falling down the back, "
+        "the nape of the neck, the back of the shoulders and the back of the collar are visible. No face, eyes, nose or lips are visible in this view.",
     ),
 }
 BODY_VIEWS: dict[str, tuple[str, str]] = {
@@ -114,6 +114,11 @@ FACE_PROMPT = (
     "Create a brand new studio character-reference portrait of the same person as in the input image, with " + KEEP + ". "
     "Tight head-and-shoulders close-up: the head fills most of the frame and the picture is cropped at the upper chest. "
     "Plain light gray background, soft even lighting, neutral relaxed expression. " + RESET + " "
+)
+# The back view cannot ask for an expression or a "portrait": with those words the model often turns the face back to the camera.
+FACE_BACK_PROMPT = (
+    "Create a brand new studio character-reference photo of the same person as in the input image, photographed from directly behind, with " + KEEP + ". "
+    "Tight head-and-shoulders shot, cropped at the upper back. Plain light gray background, soft even lighting. " + RESET + " "
 )
 BODY_PROMPT = (
     "Create a brand new studio character-reference full-body picture of the same person as in the input image, with " + KEEP + ". "
@@ -208,7 +213,7 @@ def plan(p: CharSheetParams, seed: int) -> list[Child]:
         return out
     for v in p.face_views:
         label, text = FACE_VIEWS[v]
-        out.append(_child(p, seed, "faces", v, label, FACE_PROMPT + text + " ", FACE_SIZE))
+        out.append(_child(p, seed, "faces", v, label, (FACE_BACK_PROMPT if v == "back" else FACE_PROMPT) + text + " ", FACE_SIZE))
     for v in p.body_views:
         label, text = BODY_VIEWS[v]
         out.append(_child(p, seed, "body", v, label, BODY_PROMPT + text + " ", BODY_SIZE))
