@@ -26,10 +26,10 @@ export function QueuePane() {
   const jobs = [...useJobList(isActive)].reverse(); // oldest (running) first
   const cancelling = useJobs((s) => s.cancelling);
   return (
-    <section aria-label="Queue" className="flex-none">
+    <section aria-label="Queue" className="flex min-h-0 max-h-[55%] flex-none flex-col">
       <PaneHeader title="Queue" hint={jobs.length ? `${jobs.length} job${jobs.length === 1 ? "" : "s"}` : "idle"} />
       {jobs.length > 0 && (
-        <ul className="space-y-2 p-3">
+        <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
           {jobs.map((j) => {
             const { step, max, queue_ahead: ahead } = j.live;
             return (
