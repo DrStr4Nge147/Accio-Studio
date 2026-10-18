@@ -71,6 +71,8 @@ export function Composer({
   const short = useMedia("(max-height: 700px)"); // small phones: the dock must leave room for the image
   const [trig, setTrig] = useState<TagTrigger | null>(null);
   const [active, setActive] = useState(0);
+  const [focused, setFocused] = useState(false);
+  const [slot, setSlot] = useState(0); // dock: height the prompt keeps in the layout; typing past it grows the box upward over the stage
   const options = trig && tags ? tags.filter((t) => String(t.n).startsWith(trig.digits)) : [];
   const open = options.length > 0;
 
@@ -104,10 +106,13 @@ export function Composer({
     const el = area.current;
     if (!el) return;
     el.style.height = "auto";
-    const cap = dock ? (short ? 44 : 64) : 220; // long prompts scroll inside the box instead of squeezing the image
-    el.style.height = `${Math.min(el.scrollHeight, cap)}px`;
+    const rest = dock ? (short ? 44 : 64) : 220; // long prompts scroll inside the box instead of squeezing the image
+    const cap = dock && focused ? Math.max(rest, Math.min(window.innerHeight * 0.4, 320)) : rest;
+    const h = Math.min(el.scrollHeight, cap);
+    el.style.height = `${h}px`;
     el.style.overflowY = el.scrollHeight > cap ? "auto" : "hidden";
-  }, [prompt, dock, short, collapse?.collapsed]);
+    if (dock) setSlot(Math.min(el.scrollHeight, rest)); // the layout slot ignores the focus growth, so nothing above moves
+  }, [prompt, dock, short, focused, collapse?.collapsed]);
 
   const handle = (
     <div
@@ -128,7 +133,7 @@ export function Composer({
 
   const tool = dock ? null : promptTool;
   const field = (
-    <div className={`relative ${tool ? "rounded-m border border-line bg-raised focus-within:border-gold" : ""}`}>
+    <div style={dock && slot ? { height: slot } : undefined} className={`relative ${tool ? "rounded-m border border-line bg-raised focus-within:border-gold" : ""}`}>
       <textarea
         ref={area}
         value={prompt}
@@ -139,14 +144,34 @@ export function Composer({
         onKeyDown={onKeyDown}
         onKeyUp={(e) => !["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key) && refresh(e.currentTarget)}
         onClick={(e) => refresh(e.currentTarget)}
-        onBlur={() => setTrig(null)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setTrig(null);
+          setFocused(false);
+        }}
         placeholder={placeholder}
         rows={dock ? (short ? 1 : 2) : 4}
         aria-label={collapse?.label ?? "Prompt"}
         aria-autocomplete={tags ? "list" : undefined}
         maxLength={8000}
-        className={`w-full resize-none px-3 py-2.5 text-[15px] leading-snug text-text outline-none ${tool ? "rounded-t-m bg-transparent" : "rounded-m border border-line bg-raised focus:border-gold"}`}
+        className={`w-full resize-none px-3 py-2.5 text-[15px] leading-snug text-text outline-none ${dock ? `absolute inset-x-0 bottom-0 ${focused ? "z-20 shadow-[0_-8px_24px_rgba(0,0,0,0.35)]" : ""}` : ""} ${tool ? "rounded-t-m bg-transparent" : "rounded-m border border-line bg-raised focus:border-gold"}`}
       />
+      {dock && focused && (
+        <button
+          type="button"
+          // mouse down, not click: keeps the textarea's focus until we blur it ourselves
+          onMouseDown={(e) => {
+            e.preventDefault();
+            area.current?.blur();
+          }}
+          aria-label="Collapse prompt"
+          data-tip="Collapse prompt"
+          className="absolute right-1.5 z-30 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-overlay text-text-2"
+          style={{ bottom: Math.max(slot, area.current?.offsetHeight ?? 0) - 36 }}
+        >
+          <ChevronDown size={16} strokeWidth={1.7} />
+        </button>
+      )}
       {tool && <div className="px-2 pb-2">{tool}</div>}
       {open && (
         <ul role="listbox" aria-label="Images to refer to" className={`absolute inset-x-0 z-30 max-h-56 overflow-y-auto rounded-m border border-line-strong bg-overlay p-1 shadow-xl ${dock ? "bottom-full mb-1.5" : "top-full mt-1"}`}>
@@ -215,7 +240,10 @@ export function Composer({
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={onGenerate}
+          onClick={() => {
+            area.current?.blur(); // folds the grown prompt (and closes the keyboard) so the result is visible
+            onGenerate();
+          }}
           disabled={disabled}
           title={disabledReason ?? undefined}
           className="flex h-[52px] min-w-0 flex-1 [@media(max-height:700px)]:h-12 items-center justify-center gap-2 rounded-2xl px-4 bg-gradient-to-b from-gold-hi to-gold text-[16px] font-semibold text-on-gold shadow-[0_6px_20px_color-mix(in_srgb,var(--gold)_30%,transparent)] transition-[opacity,filter] hover:brightness-105 disabled:opacity-50"
