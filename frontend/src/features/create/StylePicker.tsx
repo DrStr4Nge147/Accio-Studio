@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, Palette, Search, X } from "lucide-react";
 import { Chip } from "../../components/ui/controls";
 import { Sheet } from "../../components/ui/Sheet";
@@ -40,7 +41,8 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
     onClose();
   };
 
-  return (
+  // Portaled to <body>: inside the composer dock (its own stacking context, clipped chip row) the sheet rendered half-hidden on phones.
+  return createPortal(
     <Sheet open={open} onClose={onClose} title="Style" height="88%" desktopModalWidth={640}>
       <p className="mb-3 text-[13px] leading-snug text-text-2">The style is added after your prompt when you generate. Your own words stay in charge of the subject.</p>
       <div className="relative">
@@ -73,7 +75,8 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           </li>
         ))}
       </ul>
-    </Sheet>
+    </Sheet>,
+    document.body,
   );
 }
 
