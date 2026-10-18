@@ -6,6 +6,10 @@ export type Tab = "create" | "edit" | "gallery" | "settings";
 
 interface UiState {
   theme: Theme;
+  /** Chime when a generation finishes. */
+  notifyOnDone: boolean;
+  /** Id of the finish sound (see lib/sounds). */
+  notifySound: string;
   tab: Tab;
   settingsOpen: boolean;
   /** Mobile Advanced sheet (desktop uses an inline collapsible instead). */
@@ -27,6 +31,8 @@ export const useUi = create<UiState>()(
   persist(
     (set) => ({
       theme: "dark",
+      notifyOnDone: true,
+      notifySound: "chime",
       tab: "create",
       settingsOpen: false,
       advancedOpen: false,
@@ -40,7 +46,7 @@ export const useUi = create<UiState>()(
     {
       name: "accio.ui",
       version: 1,
-      partialize: (s) => ({ theme: s.theme, tab: s.tab === "settings" ? "create" : s.tab, advancedInline: s.advancedInline, consoleOpen: s.consoleOpen }),
+      partialize: (s) => ({ theme: s.theme, notifyOnDone: s.notifyOnDone, notifySound: s.notifySound, tab: s.tab === "settings" ? "create" : s.tab, advancedInline: s.advancedInline, consoleOpen: s.consoleOpen }),
     },
   ),
 );
