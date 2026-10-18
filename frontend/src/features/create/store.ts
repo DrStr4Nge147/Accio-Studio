@@ -25,6 +25,8 @@ export interface Seeds {
 export interface CreateState {
   variant: Variant;
   prompt: string;
+  /** a style from the library; its descriptor is appended to the prompt when generating */
+  style: { id: string; name: string } | null;
   sizes: Record<Variant, SizeSel>;
   batch: number;
   seedVariance: boolean;
@@ -59,6 +61,7 @@ const preset = (key: string): SizeSel => {
 const initial = (): Omit<CreateState, "patch" | "reset"> => ({
   variant: "standard",
   prompt: "",
+  style: null,
   sizes: { standard: preset("9:16"), detailed: preset("16:9") },
   batch: 1,
   seedVariance: true,
@@ -84,8 +87,8 @@ export const useCreate = create<CreateState>()(
     (set) => ({
       ...initial(),
       patch: (p) => set(p),
-      // Keep the prompt and remembered LoRA modes; everything else returns to the workflow defaults.
-      reset: () => set((s) => ({ ...initial(), prompt: s.prompt, loraLastMode: s.loraLastMode, variant: s.variant })),
+      // Keep the prompt, style and remembered LoRA modes; everything else returns to the workflow defaults.
+      reset: () => set((s) => ({ ...initial(), prompt: s.prompt, style: s.style, loraLastMode: s.loraLastMode, variant: s.variant })),
     }),
     {
       name: "accio.create",

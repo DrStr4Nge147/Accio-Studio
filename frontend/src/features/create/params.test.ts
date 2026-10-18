@@ -136,3 +136,10 @@ describe("reuseJob", () => {
     expect(s.seeds).toEqual({ main: null, pass2: null, variance: null });
   });
 });
+
+describe("style", () => {
+  it("combines the manual prompt with the style text", () => {
+    expect(buildParams(state(), defaults, "Soft watercolor.").prompt).toBe("a fox. Soft watercolor.");
+    expect(buildParams(state(), defaults).prompt).toBe("a fox");
+  });
+});

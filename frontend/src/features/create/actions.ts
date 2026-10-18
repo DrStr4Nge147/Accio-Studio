@@ -7,6 +7,7 @@ import { useUi } from "../../store/ui";
 import type { Job } from "../../api/types";
 import { buildParams, reuseJob, validate } from "./params";
 import { useCreate } from "./store";
+import { loadStyles, splitStyle } from "./styles";
 
 interface SubmitState {
   busy: boolean;
@@ -24,7 +25,8 @@ export async function generate() {
   if (problem) return submit.setError(problem);
   useSubmit.setState({ busy: true, error: null });
   try {
-    const job = await submitJob(buildParams(s, useServer.getState().catalog?.defaults ?? null));
+    const styleText = s.style ? (await loadStyles()).find((x) => x.id === s.style!.id)?.descriptor : undefined;
+    const job = await submitJob(buildParams(s, useServer.getState().catalog?.defaults ?? null, styleText));
     const jobs = useJobs.getState();
     // Generate takes you to the new job's card, queued or not. The one exception: you are watching a running job's card
     // right now, and queueing another must not pull you away from it.
@@ -48,6 +50,13 @@ export function reuseSettings(job: Job, keepSeed = true) {
   reuseJob(job, useServer.getState().catalog?.defaults ?? null, keepSeed);
   useJobs.getState().select(null);
   useUi.getState().set({ viewerOpen: false });
+  // The job's prompt has its style baked in; split it back out so the style stays a separate pick.
+  void loadStyles().then((styles) => {
+    const cur = useCreate.getState();
+    if (cur.prompt !== (job.params.prompt ?? "")) return; // the user already moved on
+    const { prompt, style } = splitStyle(cur.prompt, styles);
+    if (style) cur.patch({ prompt, style: { id: style.id, name: style.name } });
+  });
 }
 
 /** Ask the server to cancel a job. The UI shows "cancelling" until the job's status actually changes. */

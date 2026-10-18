@@ -1,6 +1,7 @@
 import type { Catalog, Job, SamplerDefaults } from "../../api/types";
 import { ASPECTS, CUSTOM, MAX_DIM, MIN_DIM } from "../../lib/aspects";
 import { useCreate, type CreateState, type LoraSel, type Variant } from "./store";
+import { withStyle } from "./styles";
 
 type Defaults = Catalog["defaults"];
 
@@ -18,12 +19,12 @@ export function validate(s: CreateState): string | null {
 }
 
 /** The request body for POST /api/jobs. Only values the user changed are sent as overrides. */
-export function buildParams(s: CreateState, d: Defaults | null): Record<string, unknown> {
+export function buildParams(s: CreateState, d: Defaults | null, styleText?: string): Record<string, unknown> {
   const { w, h } = s.sizes[s.variant];
   const p: Record<string, unknown> = {
     mode: "create",
     variant: s.variant,
-    prompt: s.prompt.trim(),
+    prompt: withStyle(s.prompt, styleText),
     width: w,
     height: h,
     batch: s.batch,
@@ -86,6 +87,7 @@ export function reuseJob(job: Job, d: Defaults | null, keepSeed = true) {
   useCreate.getState().patch({
     variant,
     prompt: p.prompt ?? "",
+    style: null,
     sizes: { ...cur.sizes, [variant]: { aspect: match?.key ?? CUSTOM, w, h } },
     batch: p.batch ?? 1,
     seedVariance: !!p.seed_variance,
