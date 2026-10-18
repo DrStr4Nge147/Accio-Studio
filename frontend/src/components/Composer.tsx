@@ -280,7 +280,7 @@ export function Composer({
 
   if (dock) {
     return (
-      <div className="safe-b relative z-10 flex-none rounded-t-[24px] border-t border-line bg-surface px-3.5 pb-3 pt-2 [@media(max-height:700px)]:pb-2 shadow-[0_-10px_30px_rgba(0,0,0,0.25)]">
+      <div className="relative z-10 flex-none rounded-t-[24px] border-t border-line bg-surface px-3.5 pb-3 pt-2 [@media(max-height:700px)]:pb-2 shadow-[0_-10px_30px_rgba(0,0,0,0.25)]">
         {handle}
         <div className={collapse ? "space-y-2" : undefined}>{promptBlock}</div>
         {controls}
