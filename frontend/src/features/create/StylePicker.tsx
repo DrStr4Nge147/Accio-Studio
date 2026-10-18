@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Palette, Search, X } from "lucide-react";
-import { Chip, Label } from "../../components/ui/controls";
+import { Chip } from "../../components/ui/controls";
 import { Sheet } from "../../components/ui/Sheet";
 import { useCreate } from "./store";
 import { loadStyles, type StyleDef } from "./styles";
@@ -116,36 +116,35 @@ export function StyleChip() {
   );
 }
 
-/** Desktop row for the left pane. */
-export function StyleField() {
+/** Desktop: a small pill inside the prompt box, bottom-left. */
+export function StyleButton() {
   const style = useCreate((s) => s.style);
   const patch = useCreate((s) => s.patch);
   const sheet = useStyleSheet();
   return (
-    <div>
-      <div className="mb-1.5">
-        <Label tip="Added after your prompt when you generate">Style</Label>
-      </div>
-      <div className="flex gap-1.5">
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        onClick={sheet.show}
+        aria-label={style ? `Style: ${style.name}. Change` : "Pick a style"}
+        data-tip="Add a style to your prompt"
+        className={`hover-wash flex h-8 min-w-0 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] transition-colors ${
+          style ? "border-gold/55 bg-gold-wash text-gold-text" : "border-line-strong text-text-2 hover:border-text-3 hover:text-text"
+        }`}
+      >
+        <Palette size={14} strokeWidth={1.7} className="flex-none" aria-hidden />
+        <span className="max-w-[11rem] truncate">{style?.name ?? "Style"}</span>
+      </button>
+      {style && (
         <button
           type="button"
-          onClick={sheet.show}
-          className="hover-wash flex h-11 min-w-0 flex-1 items-center gap-2 rounded-m border border-line px-3 text-left text-[14px] transition-colors hover:border-line-strong"
+          aria-label="Remove style"
+          onClick={() => patch({ style: null })}
+          className="hover-wash flex h-8 w-8 flex-none items-center justify-center rounded-full text-text-3 transition-colors hover:text-text"
         >
-          <Palette size={16} strokeWidth={1.7} className={style ? "flex-none text-gold-text" : "flex-none text-text-3"} aria-hidden />
-          <span className={`truncate ${style ? "text-text" : "text-text-3"}`}>{style?.name ?? "No style"}</span>
+          <X size={14} strokeWidth={1.7} />
         </button>
-        {style && (
-          <button
-            type="button"
-            aria-label="Remove style"
-            onClick={() => patch({ style: null })}
-            className="hover-wash flex h-11 w-11 flex-none items-center justify-center rounded-m border border-line text-text-2 transition-colors hover:border-line-strong hover:text-text"
-          >
-            <X size={16} strokeWidth={1.7} />
-          </button>
-        )}
-      </div>
+      )}
       <StyleSheet open={sheet.open} onClose={sheet.close} />
     </div>
   );

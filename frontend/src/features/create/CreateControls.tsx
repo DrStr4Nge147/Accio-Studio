@@ -3,7 +3,7 @@ import { Chip, ChipRow, Label, Segmented, Toggle } from "../../components/ui/con
 import { useUi } from "../../store/ui";
 import { AspectPicker } from "./AspectPicker";
 import { CreateAdvanced } from "./CreateAdvanced";
-import { StyleChip, StyleField } from "./StylePicker";
+import { StyleChip } from "./StylePicker";
 import { TIPS } from "./tips";
 import { useCreate, type Variant } from "./store";
 
@@ -78,7 +78,6 @@ export function CreateToggles() {
       <Segmented<Variant> label="Mode" value={s.variant} options={VARIANTS} onChange={(variant) => s.patch({ variant })} />
       {s.variant === "detailed" && <DetailedNote />}
       <AspectPicker />
-      <StyleField />
       <div>
         <Toggle on={s.seedVariance} onChange={(seedVariance) => s.patch({ seedVariance })} label="Seed variance" tip={TIPS.seedVariance} />
         <Toggle on={s.sharpen} onChange={(sharpen) => s.patch({ sharpen })} label="Sharpen" tip={TIPS.sharpen} />

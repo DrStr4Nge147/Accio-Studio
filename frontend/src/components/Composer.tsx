@@ -31,6 +31,7 @@ export function Composer({
   above,
   tags,
   fieldHeader,
+  promptTool,
   collapse,
   loraCount = 0,
   generateIcon =<Sparkles size={20} strokeWidth={1.7} />,
@@ -56,6 +57,8 @@ export function Composer({
   tags?: ImageTag[];
   /** shown just above the prompt box (e.g. the switch between your prompt and the enhanced one) */
   fieldHeader?: ReactNode;
+  /** pane only: a small control that sits inside the prompt box, bottom-left (e.g. Create's style picker) */
+  promptTool?: ReactNode;
   /** makes the prompt (and its header) foldable; folded, a one-line row stands in for it */
   collapse?: { collapsed: boolean; onToggle: () => void; label: string; hint: string };
   /** number of LoRAs that will be applied; when above 0 a glowing "LoRA enabled" note sits under the prompt box */
@@ -123,8 +126,9 @@ export function Composer({
     </div>
   );
 
+  const tool = dock ? null : promptTool;
   const field = (
-    <div className="relative">
+    <div className={`relative ${tool ? "rounded-m border border-line bg-raised focus-within:border-gold" : ""}`}>
       <textarea
         ref={area}
         value={prompt}
@@ -141,8 +145,9 @@ export function Composer({
         aria-label={collapse?.label ?? "Prompt"}
         aria-autocomplete={tags ? "list" : undefined}
         maxLength={8000}
-        className="w-full resize-none rounded-m border border-line bg-raised px-3 py-2.5 text-[15px] leading-snug text-text outline-none focus:border-gold"
+        className={`w-full resize-none px-3 py-2.5 text-[15px] leading-snug text-text outline-none ${tool ? "rounded-t-m bg-transparent" : "rounded-m border border-line bg-raised focus:border-gold"}`}
       />
+      {tool && <div className="px-2 pb-2">{tool}</div>}
       {open && (
         <ul role="listbox" aria-label="Images to refer to" className={`absolute inset-x-0 z-30 max-h-56 overflow-y-auto rounded-m border border-line-strong bg-overlay p-1 shadow-xl ${dock ? "bottom-full mb-1.5" : "top-full mt-1"}`}>
           {options.map((o, i) => (
