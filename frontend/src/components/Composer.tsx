@@ -72,6 +72,7 @@ export function Composer({
   const [trig, setTrig] = useState<TagTrigger | null>(null);
   const [active, setActive] = useState(0);
   const [focused, setFocused] = useState(false);
+  const [boxH, setBoxH] = useState(0); // dock: current (animated-to) height of the prompt box
   const [slot, setSlot] = useState(0); // dock: height the prompt keeps in the layout; typing past it grows the box upward over the stage
   const options = trig && tags ? tags.filter((t) => String(t.n).startsWith(trig.digits)) : [];
   const open = options.length > 0;
@@ -105,11 +106,17 @@ export function Composer({
   useEffect(() => {
     const el = area.current;
     if (!el) return;
+    const prev = el.offsetHeight;
+    el.style.transition = "none"; // measure without animating through "auto"
     el.style.height = "auto";
     const rest = dock ? (short ? 44 : 64) : 220; // long prompts scroll inside the box instead of squeezing the image
     const cap = dock && focused ? Math.max(rest, Math.min(window.innerHeight * 0.4, 320)) : rest;
     const h = Math.min(el.scrollHeight, cap);
+    el.style.height = `${prev}px`;
+    void el.offsetHeight; // commit the old height so the next change animates from it
+    el.style.transition = "";
     el.style.height = `${h}px`;
+    setBoxH(h);
     el.style.overflowY = el.scrollHeight > cap ? "auto" : "hidden";
     if (dock) setSlot(Math.min(el.scrollHeight, rest)); // the layout slot ignores the focus growth, so nothing above moves
   }, [prompt, dock, short, focused, collapse?.collapsed]);
@@ -154,9 +161,9 @@ export function Composer({
         aria-label={collapse?.label ?? "Prompt"}
         aria-autocomplete={tags ? "list" : undefined}
         maxLength={8000}
-        className={`w-full resize-none px-3 py-2.5 text-[15px] leading-snug text-text outline-none ${dock ? `absolute inset-x-0 bottom-0 ${focused ? "z-20 shadow-[0_-8px_24px_rgba(0,0,0,0.35)]" : ""}` : ""} ${tool ? "rounded-t-m bg-transparent" : "rounded-m border border-line bg-raised focus:border-gold"}`}
+        className={`w-full resize-none px-3 py-2.5 text-[15px] leading-snug text-text outline-none ${dock ? `absolute inset-x-0 bottom-0 transition-[height,box-shadow] duration-200 ease-out motion-reduce:transition-none ${focused ? "z-20 shadow-[0_-8px_24px_rgba(0,0,0,0.35)]" : ""}` : ""} ${tool ? "rounded-t-m bg-transparent" : "rounded-m border border-line bg-raised focus:border-gold"}`}
       />
-      {dock && focused && (
+      {dock && (
         <button
           type="button"
           // mouse down, not click: keeps the textarea's focus until we blur it ourselves
@@ -166,10 +173,12 @@ export function Composer({
           }}
           aria-label="Collapse prompt"
           data-tip="Collapse prompt"
-          className="absolute right-1.5 z-30 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-overlay text-text-2"
-          style={{ bottom: Math.max(slot, area.current?.offsetHeight ?? 0) - 36 }}
+          tabIndex={focused ? 0 : -1}
+          aria-hidden={!focused}
+          className={`absolute right-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-[#b3261e] text-white shadow-[0_2px_10px_rgba(179,38,30,0.5)] transition-[bottom,opacity,transform] duration-200 ease-out motion-reduce:transition-none ${focused ? "" : "pointer-events-none scale-75 opacity-0"}`}
+          style={{ bottom: Math.max(slot, boxH) - 36 }}
         >
-          <ChevronDown size={16} strokeWidth={1.7} />
+          <ChevronDown size={18} strokeWidth={2.2} />
         </button>
       )}
       {tool && <div className="px-2 pb-2">{tool}</div>}
