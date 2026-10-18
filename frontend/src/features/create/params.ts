@@ -24,7 +24,7 @@ export function buildParams(s: CreateState, d: Defaults | null, styleText?: stri
   const p: Record<string, unknown> = {
     mode: "create",
     variant: s.variant,
-    prompt: withStyle(s.prompt, styleText),
+    prompt: withStyle(s.prompt, styleText, s.styleOpts.first),
     width: w,
     height: h,
     batch: s.batch,

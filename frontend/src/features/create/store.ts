@@ -5,6 +5,7 @@ import { ASPECTS, CUSTOM } from "../../lib/aspects";
 import type { LoraSel } from "../../components/LoraList";
 import type { LoraMode } from "../../lib/loras";
 import { GRAIN_DEFAULT } from "../edit/grain";
+import { STYLE_OPTS, type StyleOpts } from "./styles";
 
 export type { LoraSel, LoraTarget } from "../../components/LoraList";
 
@@ -27,6 +28,7 @@ export interface CreateState {
   prompt: string;
   /** a style from the library; its descriptor is appended to the prompt when generating */
   style: { id: string; name: string } | null;
+  styleOpts: StyleOpts;
   sizes: Record<Variant, SizeSel>;
   batch: number;
   seedVariance: boolean;
@@ -62,6 +64,7 @@ const initial = (): Omit<CreateState, "patch" | "reset"> => ({
   variant: "standard",
   prompt: "",
   style: null,
+  styleOpts: STYLE_OPTS,
   sizes: { standard: preset("9:16"), detailed: preset("16:9") },
   batch: 1,
   seedVariance: true,
@@ -88,11 +91,13 @@ export const useCreate = create<CreateState>()(
       ...initial(),
       patch: (p) => set(p),
       // Keep the prompt, style and remembered LoRA modes; everything else returns to the workflow defaults.
-      reset: () => set((s) => ({ ...initial(), prompt: s.prompt, style: s.style, loraLastMode: s.loraLastMode, variant: s.variant })),
+      reset: () => set((s) => ({ ...initial(), prompt: s.prompt, style: s.style, styleOpts: s.styleOpts, loraLastMode: s.loraLastMode, variant: s.variant })),
     }),
     {
       name: "accio.create",
-      version: 1,
+      version: 2,
+      // v2: styleOpts lost its "name" option and compact style text became the default
+      migrate: (state) => ({ ...(state as object), styleOpts: STYLE_OPTS }) as CreateState,
       partialize: ({ patch: _p, reset: _r, ...rest }) => rest,
     },
   ),

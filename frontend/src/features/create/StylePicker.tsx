@@ -1,21 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Palette, Search, X } from "lucide-react";
-import { Chip } from "../../components/ui/controls";
+import { Chip, Toggle, useScrollFade } from "../../components/ui/controls";
 import { Sheet } from "../../components/ui/Sheet";
 import { useCreate } from "./store";
-import { loadStyles, type StyleDef } from "./styles";
+import { loadStyles, styleText, type StyleDef } from "./styles";
 
 const ALL = "All";
+/** Tagged on most drawn or painted styles, so as a filter it only duplicates the specific categories. */
+const HIDDEN_CATEGORIES = new Set(["Illustration"]);
 
 /** The sheet that lists the style library; picking a row sets the style and closes it. */
 function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const style = useCreate((s) => s.style);
   const patch = useCreate((s) => s.patch);
+  const opts = useCreate((s) => s.styleOpts);
   const [styles, setStyles] = useState<StyleDef[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(ALL);
+  const fade = useScrollFade<HTMLDivElement>(styles); // phones: one scrolling row whose edge fades while more is hidden
 
   useEffect(() => {
     if (!open || styles) return;
@@ -25,14 +29,14 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   const categories = useMemo(() => {
     const count = new Map<string, number>();
-    for (const s of styles ?? []) for (const c of s.categories) count.set(c, (count.get(c) ?? 0) + 1);
+    for (const s of styles ?? []) for (const c of s.categories) if (!HIDDEN_CATEGORIES.has(c)) count.set(c, (count.get(c) ?? 0) + 1);
     return [ALL, ...[...count.keys()].sort((a, b) => count.get(b)! - count.get(a)!)];
   }, [styles]);
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (styles ?? []).filter(
-      (s) => (category === ALL || s.categories.includes(category)) && (!q || s.name.toLowerCase().includes(q) || s.descriptor.toLowerCase().includes(q)),
+      (s) => (category === ALL || s.categories.includes(category)) && (!q || s.name.toLowerCase().includes(q) || s.descriptor.toLowerCase().includes(q) || s.compact.toLowerCase().includes(q)),
     );
   }, [styles, query, category]);
 
@@ -44,7 +48,11 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   // Portaled to <body>: inside the composer dock (its own stacking context, clipped chip row) the sheet rendered half-hidden on phones.
   return createPortal(
     <Sheet open={open} onClose={onClose} title="Style" height="88%" desktopModalWidth={640}>
-      <p className="mb-3 text-[13px] leading-snug text-text-2">The style is added after your prompt when you generate. Your own words stay in charge of the subject.</p>
+      <p className="text-[13px] leading-snug text-text-2">The style text is added to your prompt when you generate.</p>
+      <div className="mb-2 mt-1 divide-y divide-line">
+        <Toggle on={opts.compact} onChange={(compact) => patch({ styleOpts: { ...opts, compact } })} label="Compact style text" sub="Short concrete cues instead of the long description" />
+        <Toggle on={opts.first} onChange={(first) => patch({ styleOpts: { ...opts, first } })} label="Put the style first" sub="Before your prompt instead of after it" />
+      </div>
       <div className="relative">
         <Search size={16} strokeWidth={1.7} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-3" aria-hidden />
         <input
@@ -56,7 +64,7 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           className="h-11 w-full rounded-m border border-line-strong bg-raised pl-9 pr-3 text-[15px] text-text outline-none placeholder:text-text-3 focus:border-gold"
         />
       </div>
-      <div className="no-scrollbar -mx-1 mt-2 flex gap-1.5 overflow-x-auto px-1 py-1">
+      <div ref={fade.ref} style={fade.style} className="no-scrollbar -mx-1 mt-2 flex gap-x-1.5 overflow-x-auto px-1 py-1 lg:flex-wrap lg:overflow-visible">
         {categories.map((c) => (
           <Chip key={c} toggle={false} onClick={() => setCategory(c)} label={`Category: ${c}`}>
             <span className={c === category ? "text-gold-text" : undefined}>{c}</span>
@@ -71,7 +79,7 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
         {styles && shown.length === 0 && <li className="py-6 text-center text-[13px] text-text-3">No styles match.</li>}
         {shown.map((s) => (
           <li key={s.id}>
-            <Row active={style?.id === s.id} title={s.name} text={s.descriptor} onClick={() => pick(s)} />
+            <Row active={style?.id === s.id} title={s.name} text={styleText(s, opts.compact)} onClick={() => pick(s)} />
           </li>
         ))}
       </ul>
