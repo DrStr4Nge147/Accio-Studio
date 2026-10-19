@@ -403,6 +403,12 @@ async def system_info(request: Request):
     return {**hw, "engine_cuda": sysinfo.torch_cuda(pytorch), "pytorch": pytorch}
 
 
+@app.get("/api/system/temps")
+async def system_temps():
+    """Live GPU and CPU temperatures in degrees C; a value is null when this PC has no readable sensor for it."""
+    return await asyncio.to_thread(sysinfo.temperatures)
+
+
 @app.get("/api/update")
 async def update_status(request: Request, refresh: bool = False):
     """Installed and newest version. `can_apply` is true only for the browser on the PC that runs Accio."""

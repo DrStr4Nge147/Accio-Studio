@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { fetchSystem, type SystemInfo } from "../../api/endpoints";
+import { fetchSystem, fetchTemps, type SystemInfo, type SystemTemps } from "../../api/endpoints";
 import { Label } from "../../components/ui/controls";
 
+const TEMP_POLL_MS = 4000;
 const gb = (mb: number) => `${Math.round(mb / 1024)} GB`;
+const deg = (c: number | null | undefined) => (c == null ? "Unavailable" : `${c} °C`);
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
@@ -17,6 +19,7 @@ function Row({ k, v }: { k: string; v: string }) {
 export function SystemSection({ open }: { open: boolean }) {
   const [info, setInfo] = useState<SystemInfo | null>(null);
   const [failed, setFailed] = useState(false);
+  const [temps, setTemps] = useState<SystemTemps | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -24,7 +27,19 @@ export function SystemSection({ open }: { open: boolean }) {
     fetchSystem().then(setInfo).catch(() => setFailed(true));
   }, [open]);
 
-  const nvidia = !!info?.driver_cuda || !!info?.gpus.some((g) => /nvidia/i.test(g.name));
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    const poll = () => fetchTemps().then((t) => alive && setTemps(t)).catch(() => {});
+    poll();
+    const id = setInterval(poll, TEMP_POLL_MS);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [open]);
+
+  const nvidia =!!info?.driver_cuda || !!info?.gpus.some((g) => /nvidia/i.test(g.name));
   const cuda = (v: string | null) => v ?? (nvidia ? "Not available" : "Not applicable");
 
   if (!info) return failed ? <p className="text-[13px] text-text-3">Can't read this PC's hardware right now.</p> : null;
@@ -44,7 +59,17 @@ export function SystemSection({ open }: { open: boolean }) {
         <Row k="CUDA (driver supports)" v={cuda(info.driver_cuda)} />
         <Row k="CUDA (engine built for)" v={cuda(info.engine_cuda)} />
         <Row k="RAM" v={info.ram_mb ? gb(info.ram_mb) : "Unknown"} />
+        {temps &&
+          (temps.gpus.length ? (
+            temps.gpus.map((c, i) => <Row key={i} k={temps.gpus.length > 1 ? `Graphics card ${i + 1} temperature` : "Graphics card temperature"} v={deg(c)} />)
+          ) : (
+            <Row k="Graphics card temperature" v="Unavailable" />
+          ))}
+        {temps && <Row k="CPU temperature" v={deg(temps.cpu)} />}
       </div>
+      {temps && temps.cpu == null && (
+        <p className="mt-1.5 text-[12px] text-text-3">Windows doesn't report CPU temperature. Run LibreHardwareMonitor to see it here.</p>
+      )}
     </div>
   );
 }

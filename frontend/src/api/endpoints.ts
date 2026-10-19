@@ -90,6 +90,14 @@ export interface SystemInfo {
 }
 export const fetchSystem = () => get<SystemInfo>("/api/system");
 
+export interface SystemTemps {
+  /** Degrees C, one per Nvidia card (null = unreadable). */
+  gpus: (number | null)[];
+  /** Degrees C; null when no sensor is readable (needs LibreHardwareMonitor on Windows). */
+  cpu: number | null;
+}
+export const fetchTemps = () => get<SystemTemps>("/api/system/temps");
+
 export interface ModelPathField {
   kind: "diffusion_models" | "text_encoders" | "vae" | "loras";
   label: string;

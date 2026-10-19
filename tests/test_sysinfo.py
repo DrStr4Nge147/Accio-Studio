@@ -63,3 +63,21 @@ def test_system_survives_an_offline_backend(authed, monkeypatch):
 def test_system_needs_login(session_token):
     client.cookies.clear()
     assert client.get("/api/system").status_code in (401, 403)
+
+
+# --------------------------------------------------------------------------- temperatures
+
+def test_pick_cpu_temp_prefers_package_sensor():
+    assert sysinfo.pick_cpu_temp("Core #1|60\nCPU Package|72.4\nCore #2|65") == 72
+    assert sysinfo.pick_cpu_temp("Core (Tctl/Tdie)|55\nCore #1|70") == 55
+
+
+def test_pick_cpu_temp_falls_back_to_hottest_and_drops_junk():
+    assert sysinfo.pick_cpu_temp("Core #1|60\nCore #2|66.6") == 67
+    assert sysinfo.pick_cpu_temp("ACPI|-273.15\nbad|x") is None
+    assert sysinfo.pick_cpu_temp("") is None
+
+
+def test_temps_endpoint(authed, monkeypatch):
+    monkeypatch.setattr(sysinfo, "temperatures", lambda: {"gpus": [70], "cpu": None})
+    assert client.get("/api/system/temps").json() == {"gpus": [70], "cpu": None}
