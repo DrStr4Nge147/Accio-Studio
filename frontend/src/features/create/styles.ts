@@ -23,8 +23,10 @@ export interface StyleOpts {
 }
 export const STYLE_OPTS: StyleOpts = { compact: true, first: false };
 
-/** What gets added to the prompt for a style: the compact cues, or the full descriptor. */
-export const styleText = (s: StyleDef, compact = true) => (compact ? s.compact : s.descriptor);
+const LABEL = "Art style: ";
+
+/** What gets added to the prompt for a style: the compact cues or the full descriptor, labeled so the model reads it as how to render rather than what to draw. */
+export const styleText = (s: StyleDef, compact = true) => LABEL + (compact ? s.compact : s.descriptor);
 
 const END_PUNCT = /[.!?,;:]$/;
 
@@ -37,11 +39,13 @@ export function withStyle(prompt: string, text: string | undefined, first = fals
   return `${p}${END_PUNCT.test(p) ? " " : ". "}${text}`;
 }
 
-// Each form a style can have been written in; "Name. descriptor" is the older wording, still recognized on reuse.
+// Each form a style can have been written in; the unlabeled and "Name. descriptor" wordings are older, still recognized on reuse.
 const VARIANTS: { compact: boolean; text: (s: StyleDef) => string }[] = [
-  { compact: false, text: (s) => `${s.name}. ${s.descriptor}` },
-  { compact: false, text: (s) => s.descriptor },
+  { compact: true, text: (s) => styleText(s, true) },
+  { compact: false, text: (s) => styleText(s, false) },
   { compact: true, text: (s) => s.compact },
+  { compact: false, text: (s) => `${s.name}. ${s.descriptor}` }, // before the bare descriptor, which it ends with
+  { compact: false, text: (s) => s.descriptor },
 ];
 
 /** Inverse of withStyle, for "Reuse settings": the prompt without the style, and which style (and options) it was. */

@@ -17,8 +17,14 @@ describe("withStyle", () => {
 describe("styleText", () => {
   it("is the compact text by default and the full descriptor on request", async () => {
     const s = (await loadStyles())[0]!;
-    expect(styleText(s)).toBe(s.compact);
-    expect(styleText(s, false)).toBe(s.descriptor);
+    expect(styleText(s)).toBe(`Art style: ${s.compact}`);
+    expect(styleText(s, false)).toBe(`Art style: ${s.descriptor}`);
+  });
+  it("still recognizes the older unlabeled wordings on reuse", async () => {
+    const styles = await loadStyles();
+    const s = styles[0]!;
+    expect(splitStyle(`a fox. ${s.compact}`, styles)).toMatchObject({ prompt: "a fox", style: s, opts: { compact: true } });
+    expect(splitStyle(`a fox. ${s.descriptor}`, styles)).toMatchObject({ prompt: "a fox", style: s, opts: { compact: false } });
   });
   it("still recognizes the older name-prefixed wording on reuse", async () => {
     const styles = await loadStyles();
