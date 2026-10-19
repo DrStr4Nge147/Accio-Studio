@@ -6,7 +6,7 @@ import { continueFromResult, sendToEdit } from "../../features/edit/actions";
 import { showEnhanced } from "../../features/edit/enhanced";
 import type { EditMode } from "../../features/edit/store";
 import { useBeforeUrl, useMaskPreviewUrl } from "../../features/edit/useBefore";
-import { loadStyles, splitStyle } from "../../features/create/styles";
+import { loadStyles, splitEditStyle, splitStyle } from "../../features/create/styles";
 import { reuseAny } from "../../features/reuse";
 import { enhancedText, formatDuration, jobSize } from "../../lib/jobView";
 import { canShareFiles, shareImage } from "../../lib/share";
@@ -266,7 +266,9 @@ export function Details({ job, w, h, bar, always }: { job: Job; w: number; h: nu
   const [styleName, setStyleName] = useState<string>();
   useEffect(() => {
     let live = true;
-    void loadStyles().then((styles) => live && setStyleName(splitStyle(job.params.prompt, styles).style?.name));
+    const prompt: string = job.params.prompt ?? ""; // some Edit modes (the character sheet) have none
+    const split = job.mode === "multiedit" ? splitEditStyle : splitStyle; // Multi-edit carries the style as an instruction
+    void loadStyles().then((styles) => live && setStyleName(prompt ? split(prompt, styles).style?.name : undefined));
     return () => {
       live = false;
     };

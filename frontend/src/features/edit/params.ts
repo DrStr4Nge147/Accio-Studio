@@ -2,6 +2,7 @@ import type { Job, SamplerDefaults } from "../../api/types";
 import { isKleinModel, KLEIN_MAX_IMAGES } from "./klein";
 import { BOX_RULE } from "./presets";
 import { useEdit, type CropKey, type EditMode, type EditSettings } from "./store";
+import { withStyle } from "../create/styles";
 import type { Op } from "./maskOps";
 import { boxesOf, hasMaskOps } from "./maskOps";
 import { BASE_SIZES, initialSheet, renderCount, sheetSizeHint, sheetSizes, sizeProblem, type Size } from "./sheet";
@@ -34,7 +35,7 @@ export function editBlocker(
     if (slots.some((x) => x.status === "uploading")) return "Uploading images…";
     if (!klein && s.multi.preset && slots.length < 2) return "Head and body swap need a second image: the head or body to use.";
     if (s.multi.manualSize && (!isMultiple8(s.multi.manualW) || !isMultiple8(s.multi.manualH))) return "Output width and height must be multiples of 8, from 64 to 8192.";
-    if (!s.prompts.multiedit.trim()) return "Describe the edit first.";
+    if (!s.prompts.multiedit.trim() && !s.style) return "Describe the edit first, or pick a style.";
     return null;
   }
   if (mode === "inpaint") {
@@ -92,12 +93,13 @@ function multiSizeHint(s: EditSettings, first: Slot | undefined, baseMp: number)
   return [Math.max(1, Math.round(first.w * k)), Math.max(1, Math.round(first.h * k))];
 }
 
-export function multiParams(s: EditSettings, slots: Slot[], baseMp = 1): Record<string, unknown> {
+/** `styleText` is the chosen style's instruction (editStyleText), added to the request in the order the style options ask for. */
+export function multiParams(s: EditSettings, slots: Slot[], baseMp = 1, styleText?: string): Record<string, unknown> {
   const m = s.multi;
   const klein = isKleinModel(s.model);
   const p: Record<string, unknown> = {
     mode: "multiedit",
-    prompt: s.prompts.multiedit.trim(),
+    prompt: withStyle(s.prompts.multiedit, styleText, s.styleOpts.first),
     images: slots.map((x) => ({ file: x.file, name: x.name.slice(0, 200) })),
     prompt_enhancer: s.enhancer.multiedit,
     keep_original_resolution: m.keepOriginal && !klein,

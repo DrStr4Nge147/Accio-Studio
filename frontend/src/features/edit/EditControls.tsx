@@ -3,6 +3,7 @@ import { Chip, ChipRow, Label, Segmented, Toggle } from "../../components/ui/con
 import { useUi } from "../../store/ui";
 import { selectEditMode, togglePreset } from "./actions";
 import { OptionsChip } from "../create/CreateControls";
+import { StyleChip } from "../create/StylePicker";
 import { EditAdvanced } from "./EditAdvanced";
 import { isKleinModel } from "./klein";
 import { PaddingFields } from "./PaddingFields";
@@ -36,6 +37,7 @@ export function EditChips() {
   const klein = isKleinModel(s.model);
   return (
     <ChipRow end={<OptionsChip />}>
+      {mode === "multiedit" && <StyleChip target="edit" />}
       {presetsFor(mode, klein).map((id) => (
         <Chip key={id} on={active === id} onClick={() => togglePreset(id)} tip={PRESETS[id].tip}>
           {PRESETS[id].label}

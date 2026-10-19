@@ -26,11 +26,22 @@ export interface StyleOpts {
   first: boolean;
 }
 export const STYLE_OPTS: StyleOpts = { compact: true, first: false };
+/** Edit starts on the full wording: its template was written around the long description. */
+export const EDIT_STYLE_OPTS: StyleOpts = { compact: false, first: false };
 
 const LABEL = "Art style: ";
 
 /** What gets added to the prompt for a style: the compact cues or the full descriptor, labeled so the model reads it as how to render rather than what to draw. */
 export const styleText = (s: StyleDef, compact = true) => LABEL + (compact ? s.compact : s.descriptor);
+
+const EDIT_HEAD =
+  "Preserve the original subject identity, recognizable facial features, key objects, pose, body proportions, composition, camera angle, framing, and spatial layout unless the user's edit request explicitly asks to change them. Re-render all visible elements consistently with these visual characteristics: ";
+const EDIT_TAIL =
+  " Keep the result visually coherent and faithful to the source image. Do not introduce unrelated objects, text, logos, extra limbs, altered anatomy, or major structural changes unless specifically requested.";
+
+/** The instruction Edit (Qwen Image Edit 2.1, Klein) gets for a style: restyle the whole image, keep what is in it. */
+export const editStyleText = (s: StyleDef, compact = false) =>
+  `Transform the entire input image into ${s.name}. ${EDIT_HEAD}${compact ? `${s.compact}.` : s.descriptor}${EDIT_TAIL}`;
 
 const END_PUNCT = /[.!?,;:]$/;
 
@@ -44,7 +55,7 @@ export function withStyle(prompt: string, text: string | undefined, first = fals
 }
 
 // Each form a style can have been written in; the unlabeled and "Name. descriptor" wordings are older, still recognized on reuse.
-const VARIANTS: { compact: boolean; text: (s: StyleDef) => string }[] = [
+const VARIANTS: Variant[] = [
   { compact: true, text: (s) => styleText(s, true) },
   { compact: false, text: (s) => styleText(s, false) },
   { compact: true, text: (s) => s.compact },
@@ -52,10 +63,11 @@ const VARIANTS: { compact: boolean; text: (s: StyleDef) => string }[] = [
   { compact: false, text: (s) => s.descriptor },
 ];
 
-/** Inverse of withStyle, for "Reuse settings": the prompt without the style, and which style (and options) it was. */
-export function splitStyle(prompt: string, styles: StyleDef[]): { prompt: string; style: StyleDef | null; opts: StyleOpts } {
+type Variant = { compact: boolean; text: (s: StyleDef) => string };
+
+function splitWith(prompt: string, styles: StyleDef[], variants: Variant[], fallback: StyleOpts) {
   for (const s of styles) {
-    for (const v of VARIANTS) {
+    for (const v of variants) {
       const text = v.text(s);
       const lead = `${text}${END_PUNCT.test(text) ? "" : "."} `;
       if (prompt === text) return { prompt: "", style: s, opts: { compact: v.compact, first: false } };
@@ -67,5 +79,16 @@ export function splitStyle(prompt: string, styles: StyleDef[]): { prompt: string
       }
     }
   }
-  return { prompt, style: null, opts: STYLE_OPTS };
+  return { prompt, style: null as StyleDef | null, opts: fallback };
 }
+
+/** Inverse of withStyle, for "Reuse settings": the prompt without the style, and which style (and options) it was. */
+export const splitStyle = (prompt: string, styles: StyleDef[]) => splitWith(prompt, styles, VARIANTS, STYLE_OPTS);
+
+const EDIT_VARIANTS: Variant[] = [
+  { compact: false, text: (s) => editStyleText(s, false) },
+  { compact: true, text: (s) => editStyleText(s, true) },
+];
+
+/** Same for an Edit prompt: the template, whichever order and wording it was written in. */
+export const splitEditStyle = (prompt: string, styles: StyleDef[]) => splitWith(prompt, styles, EDIT_VARIANTS, EDIT_STYLE_OPTS);

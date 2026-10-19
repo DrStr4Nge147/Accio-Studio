@@ -3,18 +3,38 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown, Palette, Search, SlidersHorizontal, X } from "lucide-react";
 import { Chip, Toggle } from "../../components/ui/controls";
 import { Sheet } from "../../components/ui/Sheet";
+import { isKleinModel } from "../edit/klein";
+import { useEdit } from "../edit/store";
 import { useCreate } from "./store";
-import { loadStyles, stylePreviewUrl, styleText, type StyleDef } from "./styles";
+import { loadStyles, stylePreviewUrl, styleText, type StyleDef, type StyleOpts } from "./styles";
+
+/** Which composer the picker works for: Create adds the style to its prompt, Edit sends it as a restyle instruction. */
+export type StyleTarget = "create" | "edit";
+
+function useStyleTarget(target: StyleTarget) {
+  const createStyle = useCreate((s) => s.style);
+  const createOpts = useCreate((s) => s.styleOpts);
+  const editStyle = useEdit((s) => s.style);
+  const editOpts = useEdit((s) => s.styleOpts);
+  const edit = target === "edit";
+  return {
+    style: edit ? editStyle : createStyle,
+    opts: edit ? editOpts : createOpts,
+    setStyle: (style: { id: string; name: string } | null) => (edit ? useEdit.getState().patch({ style }) : useCreate.getState().patch({ style })),
+    setOpts: (styleOpts: StyleOpts) => (edit ? useEdit.getState().patch({ styleOpts }) : useCreate.getState().patch({ styleOpts })),
+  };
+}
 
 const ALL = "All";
 /** Tagged on most drawn or painted styles, so as a filter it only duplicates the specific categories. */
 const HIDDEN_CATEGORIES = new Set(["Illustration"]);
 
 /** The sheet that lists the style library; picking a row sets the style and closes it. */
-function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const style = useCreate((s) => s.style);
-  const patch = useCreate((s) => s.patch);
-  const opts = useCreate((s) => s.styleOpts);
+function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => void; target: StyleTarget }) {
+  const { style, opts, setStyle, setOpts } = useStyleTarget(target);
+  const edit = target === "edit";
+  // Edit's Prompt enhancer rewrites the whole prompt, template included (Klein has none)
+  const enhancerOn = useEdit((s) => s.enhancer.multiedit && !isKleinModel(s.model));
   const [styles, setStyles] = useState<StyleDef[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
@@ -66,7 +86,7 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   }, [styles, query, category]);
 
   const pick = (next: StyleDef | null) => {
-    patch({ style: next && { id: next.id, name: next.name } });
+    setStyle(next && { id: next.id, name: next.name });
     onClose();
   };
 
@@ -106,15 +126,20 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           <ChevronDown size={16} strokeWidth={1.7} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-3" aria-hidden />
         </div>
         <div className="lg:hidden">
-          <OptionsButton />
+          <OptionsButton target={target} />
         </div>
         </div>
         <div className="hidden flex-none items-center gap-5 lg:flex">
-          <MiniToggle on={opts.compact} onChange={(compact) => patch({ styleOpts: { ...opts, compact } })} label="Compact text" tip="Short concrete cues instead of the long description" />
-          <MiniToggle on={opts.first} onChange={(first) => patch({ styleOpts: { ...opts, first } })} label="Style first" tip="Put the style before your prompt instead of after it" />
+          <MiniToggle on={opts.compact} onChange={(compact) => setOpts({ ...opts, compact })} label="Compact text" tip="Short concrete cues instead of the long description" />
+          <MiniToggle on={opts.first} onChange={(first) => setOpts({ ...opts, first })} label="Style first" tip={edit ? "Put the style instruction before your request instead of after it" : "Put the style before your prompt instead of after it"} />
         </div>
       </div>
       </div>
+      {edit && enhancerOn && (
+        <p role="note" className="mt-2 rounded-s border border-line px-3 py-2 text-[12.5px] leading-snug text-text-2">
+          The Prompt enhancer is on, so it will rewrite the style instruction too. Turn it off in the controls to send it word for word.
+        </p>
+      )}
       <ul ref={list} className="mt-2 grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
         <li>
           <Row active={!style} title="No style" onClick={() => pick(null)} />
@@ -123,7 +148,7 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
         {styles && shown.length === 0 && <li className="col-span-full py-6 text-center text-[13px] text-text-3">No styles match.</li>}
         {shown.map((s) => (
           <li key={s.id}>
-            <Row active={style?.id === s.id} title={s.name} text={styleText(s, opts.compact)} thumb={s.preview ? stylePreviewUrl(s.id) : undefined} onClick={() => pick(s)} />
+            <Row active={style?.id === s.id} title={s.name} text={edit ? (opts.compact ? s.compact : s.descriptor) : styleText(s, opts.compact)} thumb={s.preview ? stylePreviewUrl(s.id) : undefined} onClick={() => pick(s)} />
           </li>
         ))}
       </ul>
@@ -133,11 +158,11 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 /** Below lg: one button beside the category dropdown that opens the two switches in a small popover. */
-function OptionsButton() {
-  const opts = useCreate((s) => s.styleOpts);
-  const patch = useCreate((s) => s.patch);
+function OptionsButton({ target }: { target: StyleTarget }) {
+  const { opts, setOpts } = useStyleTarget(target);
+  const edit = target === "edit";
   const [open, setOpen] = useState(false);
-  const changed = !opts.compact || opts.first;
+  const changed = edit ? opts.compact || opts.first : !opts.compact || opts.first; // the dot marks a move off the mode's defaults
 
   useEffect(() => {
     if (!open) return;
@@ -170,10 +195,10 @@ function OptionsButton() {
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} aria-hidden />
           <div className="absolute right-0 top-full z-20 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-m border border-line-strong bg-overlay p-3 shadow-xl">
-            <p className="mb-1 text-[12.5px] leading-snug text-text-3">The style text is added to your prompt when you generate.</p>
+            <p className="mb-1 text-[12.5px] leading-snug text-text-3">{edit ? "The style is sent as an instruction to restyle the whole image." : "The style text is added to your prompt when you generate."}</p>
             <div className="divide-y divide-line">
-              <Toggle on={opts.compact} onChange={(compact) => patch({ styleOpts: { ...opts, compact } })} label="Compact style text" sub="Short concrete cues instead of the long description" />
-              <Toggle on={opts.first} onChange={(first) => patch({ styleOpts: { ...opts, first } })} label="Put the style first" sub="Before your prompt instead of after it" />
+              <Toggle on={opts.compact} onChange={(compact) => setOpts({ ...opts, compact })} label="Compact style text" sub="Short concrete cues instead of the long description" />
+              <Toggle on={opts.first} onChange={(first) => setOpts({ ...opts, first })} label="Put the style first" sub={edit ? "Before your request instead of after it" : "Before your prompt instead of after it"} />
             </div>
           </div>
         </>
@@ -232,8 +257,8 @@ const useStyleSheet = () => {
 };
 
 /** Mobile chip: shows the chosen style (or "Style") and opens the library. */
-export function StyleChip() {
-  const style = useCreate((s) => s.style);
+export function StyleChip({ target = "create" }: { target?: StyleTarget }) {
+  const { style } = useStyleTarget(target);
   const sheet = useStyleSheet();
   return (
     <>
@@ -241,15 +266,14 @@ export function StyleChip() {
         <Palette size={15} strokeWidth={1.7} className={style ? "text-gold-text" : undefined} />
         <span className="max-w-[9rem] truncate">{style?.name ?? "Style"}</span>
       </Chip>
-      <StyleSheet open={sheet.open} onClose={sheet.close} />
+      <StyleSheet open={sheet.open} onClose={sheet.close} target={target} />
     </>
   );
 }
 
 /** Desktop: a small pill inside the prompt box, bottom-left. */
-export function StyleButton() {
-  const style = useCreate((s) => s.style);
-  const patch = useCreate((s) => s.patch);
+export function StyleButton({ target = "create" }: { target?: StyleTarget }) {
+  const { style, setStyle } = useStyleTarget(target);
   const sheet = useStyleSheet();
   return (
     <div className="flex items-center gap-1">
@@ -269,13 +293,13 @@ export function StyleButton() {
         <button
           type="button"
           aria-label="Remove style"
-          onClick={() => patch({ style: null })}
+          onClick={() => setStyle(null)}
           className="hover-wash flex h-8 w-8 flex-none items-center justify-center rounded-full text-text-3 transition-colors hover:text-text"
         >
           <X size={14} strokeWidth={1.7} />
         </button>
       )}
-      <StyleSheet open={sheet.open} onClose={sheet.close} />
+      <StyleSheet open={sheet.open} onClose={sheet.close} target={target} />
     </div>
   );
 }

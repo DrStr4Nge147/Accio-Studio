@@ -12,6 +12,7 @@ import { paddedBefore } from "../../lib/paddedBefore";
 import { editBlocker, inpaintParams, multiParams, outpaintParams, reuseEditSettings, sheetParams } from "./params";
 import { PRESETS, type PresetId } from "./presets";
 import { useEdit, type EditMode } from "./store";
+import { editStyleText, loadStyles, splitEditStyle } from "../create/styles";
 import { giveFilesToMode, loadSource, replaceBaseSlot, restoreSlots, setPads, setInpaintSource, setOutpaintSource, setSheetSource, useWorkspace } from "./workspace";
 
 interface SubmitState {
@@ -40,7 +41,8 @@ export async function generateEdit() {
     let before: string | undefined;
     let afterJob: ((jobId: string) => void) | undefined; // previews for the running view, built from what is already in the browser
     if (mode === "multiedit") {
-      params = multiParams(s, ws.slots, def?.multiedit.base_megapixels ?? 1);
+      const styleDef = s.style ? (await loadStyles()).find((x) => x.id === s.style!.id) : undefined;
+      params = multiParams(s, ws.slots, def?.multiedit.base_megapixels ?? 1, styleDef && editStyleText(styleDef, s.styleOpts.compact));
       before = ws.slots[0]?.url;
     } else if (mode === "charsheet") {
       params = sheetParams(s, { file: ws.sheet.upload.file!, name: ws.sheet.src!.name });
@@ -165,6 +167,14 @@ export async function reuseEdit(job: Job, keepSeed = true) {
   useEditSubmit.getState().setError(null);
   const p = job.params;
   if (p.mode === "multiedit") {
+    // The job's prompt has the style template baked in; split it back out so the style stays a separate pick.
+    const styles = await loadStyles().catch(() => null);
+    const cur = useEdit.getState();
+    if (styles && cur.prompts.multiedit === (p.prompt ?? "")) {
+      const { prompt, style, opts } = splitEditStyle(cur.prompts.multiedit, styles);
+      cur.patch({ style: style && { id: style.id, name: style.name }, ...(style ? { styleOpts: opts } : {}) });
+      if (style) cur.setPrompt("multiedit", prompt);
+    }
     restoreSlots(p.images as { file: string; name?: string }[], (f) => inputUrl("media", f));
   } else if (p.mode === "inpaint") {
     // Only the untouched original was kept (p.image is the masked export), so the source comes back but the mask has to be repainted.

@@ -6,6 +6,7 @@ import type { LoraMode } from "../../lib/loras";
 import { GRAIN_DEFAULT } from "./grain";
 import { isKleinModel } from "./klein";
 import { initialSheet, type SheetState } from "./sheet";
+import { EDIT_STYLE_OPTS, type StyleOpts } from "../create/styles";
 
 export type EditMode = "multiedit" | "inpaint" | "outpaint" | "charsheet";
 export type Seam = "classic" | "blend in";
@@ -68,6 +69,9 @@ export interface EditSettings {
   /** sampler settings saved per model name, restored when that model is chosen again */
   modelPresets: Record<string, Record<EditMode, Partial<SamplerDefaults>>>;
   prompts: Record<EditMode, string>;
+  /** a library style for Multi-edit: sent as an instruction to restyle the whole image, with your request */
+  style: { id: string; name: string } | null;
+  styleOpts: StyleOpts;
   enhancer: { multiedit: boolean; inpaint: boolean };
   multi: MultiState;
   inpaint: InpaintState;
@@ -122,6 +126,8 @@ const initial = (): EditSettings => ({
   grain: { on: false, strength: GRAIN_DEFAULT },
   modelPresets: {},
   prompts: { multiedit: "", inpaint: "", outpaint: "", charsheet: "" }, // charsheet: optional notes about the character
+  style: null,
+  styleOpts: EDIT_STYLE_OPTS,
   enhancer: { multiedit: true, inpaint: true },
   multi: initialMulti(),
   inpaint: initialInpaint(),
@@ -195,6 +201,8 @@ export const useEdit = create<EditSettings & EditActions>()(
         model: s.model,
         modelPresets: s.modelPresets,
         prompts: s.prompts,
+        style: s.style,
+        styleOpts: s.styleOpts,
         enhancer: s.enhancer,
         multi: s.multi,
         inpaint: s.inpaint,
