@@ -23,14 +23,28 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   const list = useRef<HTMLUListElement>(null);
 
-  // Each time the sheet opens: clear any leftover filter and bring the current pick into view.
+  // Each time the sheet opens: clear any leftover filter, then bring the current pick into view. The scroll waits until
+  // the unfiltered list is actually on screen (scrolling earlier lands short once the list grows) and repeats after the
+  // open animation, when the final layout settles.
+  const scrollPending = useRef(false);
   useEffect(() => {
     if (!open || !styles) return;
+    scrollPending.current = true;
     setQuery("");
     setCategory(ALL);
-    const frame = requestAnimationFrame(() => list.current?.querySelector('[data-picked="true"]')?.scrollIntoView({ block: "center" }));
-    return () => cancelAnimationFrame(frame);
   }, [open, styles]);
+
+  useEffect(() => {
+    if (!open || !styles || !scrollPending.current || query !== "" || category !== ALL) return;
+    scrollPending.current = false;
+    const toPick = () => list.current?.querySelector('[data-picked="true"]')?.scrollIntoView({ block: "center" });
+    const frame = requestAnimationFrame(toPick);
+    const later = window.setTimeout(toPick, 250);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(later);
+    };
+  }, [open, styles, query, category]);
 
   useEffect(() => {
     if (!open || styles) return;
