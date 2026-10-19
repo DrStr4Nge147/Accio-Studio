@@ -1,8 +1,8 @@
-import { Check, CheckSquare, Loader2, Trash2, X } from "lucide-react";
+import { Check, CheckSquare, Download, Loader2, Share2, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { deleteJob, fetchDoneJobs } from "../../api/endpoints";
-import { ApiError } from "../../api/http";
+import { ApiError, imageUrl } from "../../api/http";
 import type { Job } from "../../api/types";
 import { openContextMenu } from "../../components/ui/ContextMenu";
 import { Segmented } from "../../components/ui/controls";
@@ -11,7 +11,8 @@ import { jobGroup, shortLabel, type JobGroup } from "../../lib/jobView";
 import { useServer } from "../../store/health";
 import { useJobs } from "../../store/jobs";
 import { jobMenuItems } from "../history/jobMenu";
-import { Thumb } from "../history/Thumb";
+import { coverIndex, Thumb } from "../history/Thumb";
+import { canShareFiles, downloadImages, shareImages } from "../../lib/share";
 import { GalleryViewer } from "./GalleryViewer";
 
 type Filter = "all" | JobGroup;
@@ -154,6 +155,28 @@ export function Gallery() {
     stopSelecting();
   };
 
+  const pickedImages = () =>
+    items
+      .filter((j) => picked.has(j.id))
+      .map((j) => {
+        const i = coverIndex(j);
+        return { url: imageUrl(j.id, i), filename: `accio-${j.seeds.main ?? j.seeds.pass1 ?? "image"}-${i + 1}.png` };
+      });
+  const downloadPicked = async () => {
+    setBusy(true);
+    await downloadImages(pickedImages());
+    setBusy(false);
+  };
+  const sharePicked = async () => {
+    setBusy(true);
+    try {
+      if (!(await shareImages(pickedImages()))) setError("Your browser can't share this many images at once.");
+    } catch {
+      /* the share sheet was dismissed */
+    }
+    setBusy(false);
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-none flex-wrap items-center gap-2 px-3.5 pb-2.5 pt-1 lg:px-4">
@@ -183,6 +206,27 @@ export function Gallery() {
                   {canDelete ? `Delete ${picked.size} permanently` : `Remove ${picked.size} from history`}
                 </button>
               ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={!picked.size || busy}
+                    onClick={() => void downloadPicked()}
+                    className="hover-wash flex h-11 items-center gap-1.5 rounded-full border border-line-strong px-3.5 text-[13px] text-text-2 hover:text-text disabled:opacity-40"
+                  >
+                    <Download size={16} strokeWidth={1.7} />
+                    Download
+                  </button>
+                  {canShareFiles() && (
+                    <button
+                      type="button"
+                      disabled={!picked.size || busy}
+                      onClick={() => void sharePicked()}
+                      className="hover-wash flex h-11 items-center gap-1.5 rounded-full border border-line-strong px-3.5 text-[13px] text-text-2 hover:text-text disabled:opacity-40"
+                    >
+                      <Share2 size={16} strokeWidth={1.7} />
+                      Share
+                    </button>
+                  )}
                 <button
                   type="button"
                   disabled={!picked.size}
@@ -192,6 +236,7 @@ export function Gallery() {
                   <Trash2 size={16} strokeWidth={1.7} />
                   {canDelete ? "Delete" : "Remove"}
                 </button>
+                </>
               )}
               <button type="button" aria-label="Stop selecting" data-tip="Stop selecting" onClick={stopSelecting} className="hover-wash grid h-11 w-11 place-items-center rounded-full text-text-2 hover:text-text">
                 <X size={18} strokeWidth={1.7} />

@@ -1,9 +1,10 @@
 import { createElement } from "react";
-import { Copy, Download, ExternalLink, Pencil, RotateCcw, Trash2, WandSparkles, X } from "lucide-react";
+import { Copy, Download, ExternalLink, Pencil, RotateCcw, Share2, Trash2, WandSparkles, X } from "lucide-react";
 import { deleteJob } from "../../api/endpoints";
 import { imageUrl } from "../../api/http";
 import type { Job } from "../../api/types";
 import type { MenuItem } from "../../components/ui/ContextMenu";
+import { canShareFiles, shareImage } from "../../lib/share";
 import { requestCancel } from "../create/actions";
 import { sendToEdit } from "../edit/actions";
 import type { EditMode } from "../edit/store";
@@ -50,12 +51,14 @@ export function jobMenuItems(job: Job, outputIndex = coverIndex(job)): MenuItem[
   const canDelete = useServer.getState().health?.can_delete_files === true;
   const prompt = String(job.params.prompt ?? "").trim();
   const url = imageUrl(job.id, outputIndex);
+  const filename = `accio-${job.seeds.main ?? job.seeds.pass1 ?? "image"}-${outputIndex + 1}.png`;
   return [
     { label: "Open", icon: icon(ExternalLink), onSelect: () => openJob(job) },
     { label: "Reuse settings", icon: icon(RotateCcw), onSelect: () => reuseAny(job) },
     ...SEND.map((t, i) => ({ label: t.label, icon: icon(i ? Pencil : WandSparkles), separated: i === 0, onSelect: () => void sendToEdit(job, outputIndex, t.mode) })),
     ...(prompt ? [{ label: "Copy prompt", icon: icon(Copy), separated: true, onSelect: () => void navigator.clipboard?.writeText(prompt).catch(() => undefined) }] : []),
-    { label: "Download", icon: icon(Download), onSelect: () => void saveImage(url, `accio-${job.seeds.main ?? job.seeds.pass1 ?? "image"}-${outputIndex + 1}.png`) },
+    { label: "Download", icon: icon(Download), onSelect: () => void saveImage(url, filename) },
+    ...(canShareFiles() ? [{ label: "Share", icon: icon(Share2), onSelect: () => void shareImage(url, filename).catch(() => undefined) }] : []),
     {
       label: canDelete ? "Delete…" : "Remove from history…",
       confirm: canDelete ? "Click again to delete files" : "Click again to remove",
