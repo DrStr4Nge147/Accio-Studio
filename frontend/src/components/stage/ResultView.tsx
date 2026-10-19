@@ -6,6 +6,7 @@ import { continueFromResult, sendToEdit } from "../../features/edit/actions";
 import { showEnhanced } from "../../features/edit/enhanced";
 import type { EditMode } from "../../features/edit/store";
 import { useBeforeUrl, useMaskPreviewUrl } from "../../features/edit/useBefore";
+import { loadStyles, splitStyle } from "../../features/create/styles";
 import { reuseAny } from "../../features/reuse";
 import { enhancedText, formatDuration, jobSize } from "../../lib/jobView";
 import { canShareFiles, shareImage } from "../../lib/share";
@@ -262,6 +263,14 @@ export function PromptUsed({ job, open, onOpen: setOpen, bar, always }: { job: J
 
 export function Details({ job, w, h, bar, always }: { job: Job; w: number; h: number; bar?: boolean; always?: boolean }) {
   const seeds = Object.entries(job.seeds);
+  const [styleName, setStyleName] = useState<string>();
+  useEffect(() => {
+    let live = true;
+    void loadStyles().then((styles) => live && setStyleName(splitStyle(job.params.prompt, styles).style?.name));
+    return () => {
+      live = false;
+    };
+  }, [job.params.prompt]);
   return (
     <div className={`${bar ? `absolute inset-x-0 bottom-full z-[4] mb-2 max-h-[45vh] rounded-m border border-white/10 bg-[rgba(10,9,14,0.96)] ${always ? "" : "lg:hidden"}` : "absolute inset-x-0 bottom-0 z-[4] hidden max-h-[70%] bg-[rgba(10,9,14,0.88)] lg:block"} overflow-y-auto p-3.5 text-[12px] leading-snug text-[#f1eadb] backdrop-blur-md`}>
       <div className="font-medium">
@@ -271,6 +280,11 @@ export function Details({ job, w, h, bar, always }: { job: Job; w: number; h: nu
       {job.finished_at && (
         <div className="mt-1 text-[#b9b2a3]" data-tip="From pressing Generate to the finished image, including any wait in the queue">
           Time taken {formatDuration(job.finished_at - job.created_at)}
+        </div>
+      )}
+      {styleName && (
+        <div className="mt-1 text-[#b9b2a3]" data-tip="A prompt style was added to your prompt">
+          Style {styleName}
         </div>
       )}
       <p className="mt-1.5 text-[#b9b2a3]">{job.params.prompt}</p>
