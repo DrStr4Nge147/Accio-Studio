@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Palette, Search, X } from "lucide-react";
 import { Chip, Toggle, useScrollFade } from "../../components/ui/controls";
@@ -20,6 +20,17 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(ALL);
   const fade = useScrollFade<HTMLDivElement>(styles); // phones: one scrolling row whose edge fades while more is hidden
+
+  const list = useRef<HTMLUListElement>(null);
+
+  // Each time the sheet opens: clear any leftover filter and bring the current pick into view.
+  useEffect(() => {
+    if (!open || !styles) return;
+    setQuery("");
+    setCategory(ALL);
+    const frame = requestAnimationFrame(() => list.current?.querySelector('[data-picked="true"]')?.scrollIntoView({ block: "center" }));
+    return () => cancelAnimationFrame(frame);
+  }, [open, styles]);
 
   useEffect(() => {
     if (!open || styles) return;
@@ -74,7 +85,7 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
         ))}
       </div>
       </div>
-      <ul className="mt-2 grid gap-1.5 lg:grid-cols-2 lg:gap-2 xl:grid-cols-3">
+      <ul ref={list} className="mt-2 grid gap-1.5 lg:grid-cols-2 lg:gap-2 xl:grid-cols-3">
         <li>
           <Row active={!style} title="No style" onClick={() => pick(null)} />
         </li>
@@ -97,6 +108,7 @@ function Row({ active, title, text, onClick }: { active: boolean; title: string;
       type="button"
       onClick={onClick}
       aria-pressed={active}
+      data-picked={active && !!text}
       className={`hover-wash flex h-full w-full items-start gap-2 rounded-m border px-3 py-2.5 text-left transition-colors ${
         active ? "border-gold/55 bg-gold-wash" : "border-line hover:border-line-strong"
       }`}
