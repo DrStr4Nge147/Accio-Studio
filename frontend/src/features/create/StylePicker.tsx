@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Palette, Search, X } from "lucide-react";
-import { Chip, Toggle, useScrollFade } from "../../components/ui/controls";
+import { Check, ChevronDown, Palette, Search, SlidersHorizontal, X } from "lucide-react";
+import { Chip, Toggle } from "../../components/ui/controls";
 import { Sheet } from "../../components/ui/Sheet";
 import { useCreate } from "./store";
-import { loadStyles, styleText, type StyleDef } from "./styles";
+import { loadStyles, stylePreviewUrl, styleText, type StyleDef } from "./styles";
 
 const ALL = "All";
 /** Tagged on most drawn or painted styles, so as a filter it only duplicates the specific categories. */
@@ -19,7 +19,6 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(ALL);
-  const fade = useScrollFade<HTMLDivElement>(styles); // phones: one scrolling row whose edge fades while more is hidden
 
   const list = useRef<HTMLUListElement>(null);
 
@@ -55,7 +54,8 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const categories = useMemo(() => {
     const count = new Map<string, number>();
     for (const s of styles ?? []) for (const c of s.categories) if (!HIDDEN_CATEGORIES.has(c)) count.set(c, (count.get(c) ?? 0) + 1);
-    return [ALL, ...[...count.keys()].sort((a, b) => count.get(b)! - count.get(a)!)];
+    const named = [...count].sort((a, b) => b[1] - a[1]).map(([name, n]) => ({ name, n }));
+    return [{ name: ALL, n: styles?.length ?? 0 }, ...named];
   }, [styles]);
 
   const shown = useMemo(() => {
@@ -73,33 +73,49 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   // Portaled to <body>: inside the composer dock (its own stacking context, clipped chip row) the sheet rendered half-hidden on phones.
   return createPortal(
     <Sheet open={open} onClose={onClose} title="Style" height="88%" desktopModalWidth={1120}>
-      <p className="text-[13px] leading-snug text-text-2">The style text is added to your prompt when you generate.</p>
-      <div className="mb-2 mt-1 divide-y divide-line lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0">
-        <Toggle on={opts.compact} onChange={(compact) => patch({ styleOpts: { ...opts, compact } })} label="Compact style text" sub="Short concrete cues instead of the long description" />
-        <Toggle on={opts.first} onChange={(first) => patch({ styleOpts: { ...opts, first } })} label="Put the style first" sub="Before your prompt instead of after it" />
-      </div>
-      {/* search and categories stay put while the long list scrolls under them */}
+      {/* search, category and the two switches (below lg: an options popover) stay put while the long list scrolls under them */}
       <div className="sticky top-0 z-10 -mx-4 bg-surface px-4 pb-1 pt-1 lg:-top-5 lg:-mx-6 lg:px-6 lg:pt-6">
-      <div className="relative">
-        <Search size={16} strokeWidth={1.7} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-3" aria-hidden />
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search styles…"
-          aria-label="Search styles"
-          className="h-11 w-full rounded-m border border-line-strong bg-raised pl-9 pr-3 text-[15px] text-text outline-none placeholder:text-text-3 focus:border-gold"
-        />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative min-w-0 flex-1">
+          <Search size={16} strokeWidth={1.7} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-3" aria-hidden />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search styles…"
+            aria-label="Search styles"
+            className="h-11 w-full rounded-m border border-line-strong bg-raised pl-9 pr-3 text-[15px] text-text outline-none placeholder:text-text-3 focus:border-gold"
+          />
+        </div>
+        <div className="flex items-center gap-2 sm:flex-none">
+        <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            aria-label="Category"
+            className={`h-11 w-full cursor-pointer appearance-none rounded-m border bg-raised pl-3 pr-9 text-[15px] outline-none focus:border-gold ${
+              category === ALL ? "border-line-strong text-text-2" : "border-gold/55 text-gold-text"
+            }`}
+          >
+            {categories.map((c) => (
+              <option key={c.name} value={c.name}>
+                {c.name === ALL ? `All categories (${c.n})` : `${c.name} (${c.n})`}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={16} strokeWidth={1.7} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-3" aria-hidden />
+        </div>
+        <div className="lg:hidden">
+          <OptionsButton />
+        </div>
+        </div>
+        <div className="hidden flex-none items-center gap-5 lg:flex">
+          <MiniToggle on={opts.compact} onChange={(compact) => patch({ styleOpts: { ...opts, compact } })} label="Compact text" tip="Short concrete cues instead of the long description" />
+          <MiniToggle on={opts.first} onChange={(first) => patch({ styleOpts: { ...opts, first } })} label="Style first" tip="Put the style before your prompt instead of after it" />
+        </div>
       </div>
-      <div ref={fade.ref} style={fade.style} className="no-scrollbar -mx-1 mt-2 flex gap-x-1.5 overflow-x-auto px-1 py-1 lg:flex-wrap lg:overflow-visible">
-        {categories.map((c) => (
-          <Chip key={c} toggle={false} onClick={() => setCategory(c)} label={`Category: ${c}`}>
-            <span className={c === category ? "text-gold-text" : undefined}>{c}</span>
-          </Chip>
-        ))}
       </div>
-      </div>
-      <ul ref={list} className="mt-2 grid gap-1.5 lg:grid-cols-2 lg:gap-2 xl:grid-cols-3">
+      <ul ref={list} className="mt-2 grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
         <li>
           <Row active={!style} title="No style" onClick={() => pick(null)} />
         </li>
@@ -107,7 +123,7 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
         {styles && shown.length === 0 && <li className="col-span-full py-6 text-center text-[13px] text-text-3">No styles match.</li>}
         {shown.map((s) => (
           <li key={s.id}>
-            <Row active={style?.id === s.id} title={s.name} text={styleText(s, opts.compact)} onClick={() => pick(s)} />
+            <Row active={style?.id === s.id} title={s.name} text={styleText(s, opts.compact)} thumb={s.preview ? stylePreviewUrl(s.id) : undefined} onClick={() => pick(s)} />
           </li>
         ))}
       </ul>
@@ -116,22 +132,96 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
-function Row({ active, title, text, onClick }: { active: boolean; title: string; text?: string; onClick: () => void }) {
+/** Below lg: one button beside the category dropdown that opens the two switches in a small popover. */
+function OptionsButton() {
+  const opts = useCreate((s) => s.styleOpts);
+  const patch = useCreate((s) => s.patch);
+  const [open, setOpen] = useState(false);
+  const changed = !opts.compact || opts.first;
+
+  useEffect(() => {
+    if (!open) return;
+    // Esc closes just the popover, not the whole sheet (the sheet listens on window in the bubble phase)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setOpen(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [open]);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label="Style options"
+        data-tip="Style options"
+        className={`hover-wash relative flex h-11 w-11 items-center justify-center rounded-m border transition-colors ${
+          open || changed ? "border-gold/55 text-gold-text" : "border-line-strong text-text-2"
+        }`}
+      >
+        <SlidersHorizontal size={18} strokeWidth={1.7} />
+        {changed && <i className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-gold-ui" aria-hidden />}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} aria-hidden />
+          <div className="absolute right-0 top-full z-20 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-m border border-line-strong bg-overlay p-3 shadow-xl">
+            <p className="mb-1 text-[12.5px] leading-snug text-text-3">The style text is added to your prompt when you generate.</p>
+            <div className="divide-y divide-line">
+              <Toggle on={opts.compact} onChange={(compact) => patch({ styleOpts: { ...opts, compact } })} label="Compact style text" sub="Short concrete cues instead of the long description" />
+              <Toggle on={opts.first} onChange={(first) => patch({ styleOpts: { ...opts, first } })} label="Put the style first" sub="Before your prompt instead of after it" />
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** A small inline switch for the pinned desktop header. */
+function MiniToggle({ on, onChange, label, tip }: { on: boolean; onChange: (v: boolean) => void; label: string; tip: string }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} data-tip={tip} onClick={() => onChange(!on)} className="flex h-11 flex-none items-center gap-2 whitespace-nowrap text-[13.5px] text-text-2">
+      {label}
+      <span className={`relative h-[22px] w-[38px] flex-none rounded-full transition-colors ${on ? "bg-gold-ui" : "bg-track"}`}>
+        <span className={`absolute left-[3px] top-[3px] h-4 w-4 rounded-full transition-transform ${on ? "translate-x-4 bg-on-gold-ui" : "bg-white"}`} />
+      </span>
+    </button>
+  );
+}
+
+function Row({ active, title, text, thumb, onClick }: { active: boolean; title: string; text?: string; thumb?: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
       data-picked={active && !!text}
-      className={`hover-wash flex h-full w-full items-start gap-2 rounded-m border px-3 py-2.5 text-left transition-colors ${
+      className={`hover-wash relative flex h-full w-full flex-col items-start gap-2.5 rounded-m border px-3 py-2.5 text-left transition-colors ${
         active ? "border-gold/55 bg-gold-wash" : "border-line hover:border-line-strong"
       }`}
     >
-      <span className="min-w-0 flex-1">
+      {thumb && (
+        <img
+          src={thumb}
+          alt=""
+          width={512}
+          height={512}
+          loading="lazy"
+          decoding="async"
+          onError={(e) => (e.currentTarget.style.display = "none")}
+          className="aspect-square w-full flex-none rounded-s bg-raised object-cover"
+        />
+      )}
+      <span className="min-w-0 w-full flex-1">
         <span className={`block text-[14px] ${active ? "text-gold-text" : "text-text"}`}>{title}</span>
         {text && <span className="mt-0.5 line-clamp-3 block text-[12px] leading-snug text-text-3">{text}</span>}
       </span>
-      {active && <Check size={16} strokeWidth={1.9} className="mt-0.5 flex-none text-gold-text" aria-hidden />}
+      {active && <Check size={16} strokeWidth={1.9} className="absolute right-4 top-4 box-content text-gold-text rounded-full bg-black/60 p-1" aria-hidden />}
     </button>
   );
 }

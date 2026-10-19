@@ -5,7 +5,11 @@ export interface StyleDef {
   /** short concrete visual cues for few-step models */
   compact: string;
   categories: string[];
+  /** a thumbnail exists at stylePreviewUrl(id) */
+  preview?: boolean;
 }
+
+export const stylePreviewUrl = (id: string) => `/style-previews/${id}.webp`;
 
 let cache: Promise<StyleDef[]> | null = null;
 
