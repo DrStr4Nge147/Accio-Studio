@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight, Columns2, Download, Info, Loader2, Repeat, RotateCcw, Share2, TextQuote, Trash2, WandSparkles, X } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+import { ChevronLeft, ChevronRight, Columns2, Download, Info, Layers, Loader2, Repeat, RotateCcw, Share2, TextQuote, Trash2, WandSparkles, X } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import { imageUrl } from "../../api/http";
 import type { Job } from "../../api/types";
 import { Compare } from "../../components/stage/Compare";
@@ -31,7 +31,9 @@ function useChrome(locked: boolean) {
   return { visible, poke, toggle };
 }
 
-type Panel = "details" | "prompt" | "send" | "delete" | null;
+const outLabel = (o: Job["outputs"][number], n: number) => o.label ?? (o.role === "final" ? `Image ${n + 1}` : "First pass");
+
+type Panel = "outputs" | "details" | "prompt" | "send" | "delete" | null;
 
 /** One image with its action bar and panels. Keyed by job, so its state (output, compare, panel) resets on every swipe. */
 function ViewerFrame({
@@ -53,6 +55,8 @@ function ViewerFrame({
   const [panel, setPanel] = useState<Panel>(null);
   const [compare, setCompare] = useState(false);
   const [outIndex, setOutIndex] = useState(0);
+  const wrap = useRef<HTMLDivElement>(null);
+  const [anchorX, setAnchorX] = useState(0); // centre of the button that opened a menu, relative to the bar
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const canDelete = useServer((s) => s.health?.can_delete_files === true);
@@ -73,6 +77,13 @@ function ViewerFrame({
   const canCompare = !!before && !firstPass;
   const { w, h } = jobSize(job);
   const toggle = (p: Exclude<Panel, null>) => setPanel((cur) => (cur === p ? null : p));
+  /** Open a small menu above the clicked button, kept inside the bar's width. */
+  const toggleAt = (p: "outputs" | "send", e: ReactMouseEvent<HTMLButtonElement>, width: number) => {
+    const box = wrap.current?.getBoundingClientRect();
+    const r = e.currentTarget.getBoundingClientRect();
+    if (box) setAnchorX(Math.max(0, Math.min(r.left + r.width / 2 - box.left - width / 2, box.width - width)));
+    toggle(p);
+  };
   const btn = "hover-wash grid h-11 w-11 flex-none place-items-center rounded-full";
   const alt = String(job.params.prompt ?? "Generated image");
 
@@ -94,23 +105,6 @@ function ViewerFrame({
         )}
       </div>
 
-      {outs.length > 1 && (
-        <div data-no-swipe className={`absolute left-1/2 top-16 z-[5] flex -translate-x-1/2 gap-1.5 transition-opacity duration-200 ${chrome ? "opacity-100" : "pointer-events-none opacity-0"}`} role="tablist" aria-label="Outputs">
-          {outs.map((it, n) => (
-            <button
-              key={it.i}
-              type="button"
-              role="tab"
-              aria-selected={n === outIndex}
-              onClick={() => setOutIndex(n)}
-              className={`${glass} h-9 rounded-full px-3.5 text-[12px] ${n === outIndex ? "!border-gold !text-gold-hi" : ""}`}
-            >
-              {it.o.label ?? (it.o.role === "final" ? `Image ${n + 1}` : "First pass")}
-            </button>
-          ))}
-        </div>
-      )}
-
       {notice && (
         <p role="alert" data-no-swipe className="absolute inset-x-3 top-16 z-[6] mx-auto w-fit max-w-[85%] rounded-full bg-[rgba(10,9,14,0.9)] px-3.5 py-2 text-[13px] text-danger">
           {notice}
@@ -124,9 +118,27 @@ function ViewerFrame({
         data-no-swipe
         className={`safe-b absolute inset-x-0 bottom-0 z-[5] flex justify-center px-3 pb-3 transition-opacity duration-200 ${chrome ? "opacity-100" : "pointer-events-none opacity-0"}`}
       >
-        <div className="relative w-full max-w-xl">
+        <div ref={wrap} className="relative w-full max-w-xl">
+          {panel === "outputs" && (
+            <div role="listbox" aria-label="Outputs" style={{ left: anchorX }} className={`${glass} absolute bottom-full z-[4] mb-2 flex gap-2 rounded-m p-2`}>
+              {outs.map((it, n) => (
+                <button
+                  key={it.i}
+                  type="button"
+                  role="option"
+                  aria-selected={n === outIndex}
+                  aria-label={outLabel(it.o, n)}
+                  onClick={() => setOutIndex(n)}
+                  className={`relative h-20 w-16 flex-none overflow-hidden rounded-lg border-2 ${n === outIndex ? "border-gold" : "border-white/20"}`}
+                >
+                  <img src={imageUrl(job.id, it.i)} alt="" loading="lazy" decoding="async" draggable={false} className="h-full w-full object-cover" />
+                  <span className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-center text-[10px]">{it.o.role === "final" ? outLabel(it.o, n) : "1st pass"}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {panel === "send" && (
-            <div role="menu" aria-label="Send to Edit" className={`${glass} absolute bottom-full right-0 z-[4] mb-2 w-44 rounded-m p-1`}>
+            <div role="menu" aria-label="Send to Edit" style={{ left: anchorX }} className={`${glass} absolute bottom-full z-[4] mb-2 w-44 rounded-m p-1`}>
               <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-[#b9b2a3]">Send to Edit</p>
               {SEND_TARGETS.map((t) => (
                 <button key={t.mode} type="button" role="menuitem" onClick={() => void doSend(t.mode)} className="hover-wash flex h-11 w-full items-center rounded-lg px-3 text-left text-[14px]">
@@ -164,6 +176,11 @@ function ViewerFrame({
             <a href={url} download={filename} aria-label="Download" data-tip="Download" className={btn}>
               <Download size={20} strokeWidth={1.7} />
             </a>
+            {outs.length > 1 && (
+              <button type="button" aria-label="Switch image / first pass" data-tip="Images" aria-expanded={panel === "outputs"} className={`${btn} ${panel === "outputs" ? "text-gold-hi" : ""}`} onClick={(e) => toggleAt("outputs", e, outs.length * 72 + 8)}>
+                <Layers size={20} strokeWidth={1.7} />
+              </button>
+            )}
             {canShareFiles() && (
               <button type="button" aria-label="Share" data-tip="Share" className={btn} onClick={() => void shareImage(url, filename).catch(() => undefined)}>
                 <Share2 size={20} strokeWidth={1.7} />
@@ -174,7 +191,7 @@ function ViewerFrame({
                 <Repeat size={20} strokeWidth={1.7} />
               </button>
             )}
-            <button type="button" aria-label="Send to Edit" data-tip="Send to Edit" aria-expanded={panel === "send"} className={btn} onClick={() => toggle("send")}>
+            <button type="button" aria-label="Send to Edit" data-tip="Send to Edit" aria-expanded={panel === "send"} className={btn} onClick={(e) => toggleAt("send", e, 176)}>
               <WandSparkles size={20} strokeWidth={1.7} />
             </button>
             {canCompare && (
