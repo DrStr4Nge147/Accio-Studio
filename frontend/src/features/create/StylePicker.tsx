@@ -20,7 +20,12 @@ function useStyleTarget(target: StyleTarget) {
   return {
     style: edit ? editStyle : createStyle,
     opts: edit ? editOpts : createOpts,
-    setStyle: (style: { id: string; name: string } | null) => (edit ? useEdit.getState().patch({ style }) : useCreate.getState().patch({ style })),
+    setStyle: (style: { id: string; name: string } | null) => {
+      if (!edit) return useCreate.getState().patch({ style });
+      const ed = useEdit.getState();
+      // Picking a style turns Edit's Prompt enhancer off so the instruction goes out as written; it can be turned back on.
+      ed.patch(style ? { style, enhancer: { ...ed.enhancer, multiedit: false } } : { style });
+    },
     setOpts: (styleOpts: StyleOpts) => (edit ? useEdit.getState().patch({ styleOpts }) : useCreate.getState().patch({ styleOpts })),
   };
 }
@@ -33,7 +38,7 @@ const HIDDEN_CATEGORIES = new Set(["Illustration"]);
 function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => void; target: StyleTarget }) {
   const { style, opts, setStyle, setOpts } = useStyleTarget(target);
   const edit = target === "edit";
-  // Edit's Prompt enhancer rewrites the whole prompt, template included (Klein has none)
+  // Edit's Prompt enhancer would rewrite the template (Klein has none)
   const enhancerOn = useEdit((s) => s.enhancer.multiedit && !isKleinModel(s.model));
   const [styles, setStyles] = useState<StyleDef[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -85,8 +90,9 @@ function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => v
     );
   }, [styles, query, category]);
 
-  const pick = (next: StyleDef | null) => {
-    setStyle(next && { id: next.id, name: next.name });
+  // Tapping the selected style again takes it off; there is no separate "no style" card.
+  const pick = (next: StyleDef) => {
+    setStyle(next.id === style?.id ? null : { id: next.id, name: next.name });
     onClose();
   };
 
@@ -137,13 +143,10 @@ function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => v
       </div>
       {edit && enhancerOn && (
         <p role="note" className="mt-2 rounded-s border border-line px-3 py-2 text-[12.5px] leading-snug text-text-2">
-          The Prompt enhancer is on, so it will rewrite the style instruction too. Turn it off in the controls to send it word for word.
+          Picking a style turns the Prompt enhancer off so the style instruction is sent as written. You can turn it back on in the controls.
         </p>
       )}
       <ul ref={list} className="mt-2 grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
-        <li>
-          <Row active={!style} title="No style" onClick={() => pick(null)} />
-        </li>
         {styles === null && <li className="col-span-full py-6 text-center text-[13px] text-text-3">{failed ? "Couldn't load the styles." : "Loading styles…"}</li>}
         {styles && shown.length === 0 && <li className="col-span-full py-6 text-center text-[13px] text-text-3">No styles match.</li>}
         {shown.map((s) => (
@@ -258,7 +261,7 @@ const useStyleSheet = () => {
 
 /** Mobile chip: shows the chosen style (or "Style") and opens the library. */
 export function StyleChip({ target = "create" }: { target?: StyleTarget }) {
-  const { style } = useStyleTarget(target);
+  const { style, setStyle } = useStyleTarget(target);
   const sheet = useStyleSheet();
   return (
     <>
@@ -266,6 +269,11 @@ export function StyleChip({ target = "create" }: { target?: StyleTarget }) {
         <Palette size={15} strokeWidth={1.7} className={style ? "text-gold-text" : undefined} />
         <span className="max-w-[9rem] truncate">{style?.name ?? "Style"}</span>
       </Chip>
+      {style && (
+        <button type="button" aria-label="Remove style" onClick={() => setStyle(null)} className="-ml-1.5 flex h-9 w-9 flex-none items-center justify-center rounded-full text-text-3 hover:text-text">
+          <X size={15} strokeWidth={1.7} />
+        </button>
+      )}
       <StyleSheet open={sheet.open} onClose={sheet.close} target={target} />
     </>
   );
