@@ -47,12 +47,14 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   // Portaled to <body>: inside the composer dock (its own stacking context, clipped chip row) the sheet rendered half-hidden on phones.
   return createPortal(
-    <Sheet open={open} onClose={onClose} title="Style" height="88%" desktopModalWidth={640}>
+    <Sheet open={open} onClose={onClose} title="Style" height="88%" desktopModalWidth={1120}>
       <p className="text-[13px] leading-snug text-text-2">The style text is added to your prompt when you generate.</p>
-      <div className="mb-2 mt-1 divide-y divide-line">
+      <div className="mb-2 mt-1 divide-y divide-line lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0">
         <Toggle on={opts.compact} onChange={(compact) => patch({ styleOpts: { ...opts, compact } })} label="Compact style text" sub="Short concrete cues instead of the long description" />
         <Toggle on={opts.first} onChange={(first) => patch({ styleOpts: { ...opts, first } })} label="Put the style first" sub="Before your prompt instead of after it" />
       </div>
+      {/* search and categories stay put while the long list scrolls under them */}
+      <div className="sticky top-0 z-10 -mx-4 bg-surface px-4 pb-1 pt-1 lg:-top-5 lg:-mx-6 lg:px-6 lg:pt-6">
       <div className="relative">
         <Search size={16} strokeWidth={1.7} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-3" aria-hidden />
         <input
@@ -71,12 +73,13 @@ function StyleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           </Chip>
         ))}
       </div>
-      <ul className="mt-2 space-y-1.5">
+      </div>
+      <ul className="mt-2 grid gap-1.5 lg:grid-cols-2 lg:gap-2 xl:grid-cols-3">
         <li>
           <Row active={!style} title="No style" onClick={() => pick(null)} />
         </li>
-        {styles === null && <li className="py-6 text-center text-[13px] text-text-3">{failed ? "Couldn't load the styles." : "Loading styles…"}</li>}
-        {styles && shown.length === 0 && <li className="py-6 text-center text-[13px] text-text-3">No styles match.</li>}
+        {styles === null && <li className="col-span-full py-6 text-center text-[13px] text-text-3">{failed ? "Couldn't load the styles." : "Loading styles…"}</li>}
+        {styles && shown.length === 0 && <li className="col-span-full py-6 text-center text-[13px] text-text-3">No styles match.</li>}
         {shown.map((s) => (
           <li key={s.id}>
             <Row active={style?.id === s.id} title={s.name} text={styleText(s, opts.compact)} onClick={() => pick(s)} />
@@ -94,13 +97,13 @@ function Row({ active, title, text, onClick }: { active: boolean; title: string;
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`hover-wash flex w-full items-start gap-2 rounded-m border px-3 py-2.5 text-left transition-colors ${
+      className={`hover-wash flex h-full w-full items-start gap-2 rounded-m border px-3 py-2.5 text-left transition-colors ${
         active ? "border-gold/55 bg-gold-wash" : "border-line hover:border-line-strong"
       }`}
     >
       <span className="min-w-0 flex-1">
         <span className={`block text-[14px] ${active ? "text-gold-text" : "text-text"}`}>{title}</span>
-        {text && <span className="mt-0.5 line-clamp-2 block text-[12px] leading-snug text-text-3">{text}</span>}
+        {text && <span className="mt-0.5 line-clamp-3 block text-[12px] leading-snug text-text-3">{text}</span>}
       </span>
       {active && <Check size={16} strokeWidth={1.9} className="mt-0.5 flex-none text-gold-text" aria-hidden />}
     </button>
