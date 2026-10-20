@@ -23,8 +23,9 @@ function useStyleTarget(target: StyleTarget) {
     setStyle: (style: { id: string; name: string } | null) => {
       if (!edit) return useCreate.getState().patch({ style });
       const ed = useEdit.getState();
-      // Picking a style turns Edit's Prompt enhancer off so the instruction goes out as written; it can be turned back on.
-      ed.patch(style ? { style, enhancer: { ...ed.enhancer, multiedit: false } } : { style });
+      // Picking a style turns Edit's Prompt enhancer off so the instruction goes out as written; clearing the style turns it
+      // back on. Either way it stays a normal switch the user can flip.
+      ed.patch({ style, enhancer: { ...ed.enhancer, multiedit: !style } });
     },
     setOpts: (styleOpts: StyleOpts) => (edit ? useEdit.getState().patch({ styleOpts }) : useCreate.getState().patch({ styleOpts })),
   };
@@ -143,7 +144,7 @@ function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => v
       </div>
       {edit && enhancerOn && (
         <p role="note" className="mt-2 rounded-s border border-line px-3 py-2 text-[12.5px] leading-snug text-text-2">
-          Picking a style turns the Prompt enhancer off so the style instruction is sent as written. You can turn it back on in the controls.
+          Picking a style turns the Prompt enhancer off so the style instruction is sent as written; removing the style turns it back on. You can flip it yourself in the controls.
         </p>
       )}
       <ul ref={list} className="mt-2 grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
