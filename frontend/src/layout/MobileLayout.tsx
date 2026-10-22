@@ -205,7 +205,8 @@ function SettingsTab() {
   const set = useUi((s) => s.set);
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-1">
-      <h1 className="serif mb-4 text-[22px] font-medium">Settings</h1>
+      <h1 className="serif mb-3 text-[22px] font-medium">Settings</h1>
+      <StatsBadge className="mb-4 !h-10 w-full justify-around" />
       <SettingsBody open />
       <button
         type="button"
@@ -233,9 +234,8 @@ export function MobileLayout() {
           <Wordmark size={24} />
         </div>
         <div className="flex items-center gap-1.5">
-          <StatsBadge compact />
           <UpdatePill />
-          <CoffeeBadge />
+          <CoffeeBadge compact />
         </div>
       </header>
       <Sheet open={consoleOpen} onClose={() => set({ consoleOpen: false })} title="Console" height="70%">

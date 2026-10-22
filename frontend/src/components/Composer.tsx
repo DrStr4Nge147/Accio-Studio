@@ -161,7 +161,7 @@ export function Composer({
         aria-label={collapse?.label ?? "Prompt"}
         aria-autocomplete={tags ? "list" : undefined}
         maxLength={8000}
-        className={`w-full resize-none px-3 py-2.5 text-[15px] leading-snug text-text outline-none ${dock ? `absolute inset-x-0 bottom-0 transition-[height,box-shadow] duration-200 ease-out motion-reduce:transition-none ${focused ? "z-20 shadow-[0_-8px_24px_rgba(0,0,0,0.35)]" : ""}` : ""} ${tool ? "rounded-t-m bg-transparent" : "rounded-m border border-line bg-raised focus:border-gold"}`}
+        className={`w-full resize-none py-2.5 pl-3 ${dock ? "pr-12" : "pr-3"} text-[15px] leading-snug text-text outline-none ${dock ? `absolute inset-x-0 bottom-0 transition-[height,box-shadow] duration-200 ease-out motion-reduce:transition-none ${focused ? "z-20 shadow-[0_-8px_24px_rgba(0,0,0,0.35)]" : ""}` : ""} ${tool ? "rounded-t-m bg-transparent" : "rounded-m border border-line bg-raised focus:border-gold"}`}
       />
       {dock && (
         <button

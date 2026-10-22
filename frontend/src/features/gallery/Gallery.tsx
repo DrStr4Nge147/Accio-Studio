@@ -183,65 +183,9 @@ export function Gallery() {
         <Segmented<Filter> label="Show" value={filter} options={FILTERS} onChange={(f) => setFilter(f)} small />
         <div className="ml-auto flex items-center gap-2">
           {selecting ? (
-            <>
-              <span className="text-[13px] text-text-2">{picked.size} selected</span>
-              {!confirm && (
-                <button
-                  type="button"
-                  onClick={toggleAll}
-                  data-tip={hasMore ? "Selects the images loaded so far (Ctrl+A)" : "Ctrl+A"}
-                  className="hover-wash h-11 rounded-full border border-line-strong px-3.5 text-[13px] text-text-2 hover:text-text"
-                >
-                  {allPicked ? "Clear" : "Select all"}
-                </button>
-              )}
-              {confirm ? (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void removePicked()}
-                  className="flex h-11 items-center gap-1.5 rounded-full bg-danger px-4 text-[13px] font-semibold text-bg disabled:opacity-60"
-                >
-                  {busy && <Loader2 size={15} className="animate-spin motion-reduce:animate-none" />}
-                  {canDelete ? `Delete ${picked.size} permanently` : `Remove ${picked.size} from history`}
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    disabled={!picked.size || busy}
-                    onClick={() => void downloadPicked()}
-                    className="hover-wash flex h-11 items-center gap-1.5 rounded-full border border-line-strong px-3.5 text-[13px] text-text-2 hover:text-text disabled:opacity-40"
-                  >
-                    <Download size={16} strokeWidth={1.7} />
-                    Download
-                  </button>
-                  {canShareFiles() && (
-                    <button
-                      type="button"
-                      disabled={!picked.size || busy}
-                      onClick={() => void sharePicked()}
-                      className="hover-wash flex h-11 items-center gap-1.5 rounded-full border border-line-strong px-3.5 text-[13px] text-text-2 hover:text-text disabled:opacity-40"
-                    >
-                      <Share2 size={16} strokeWidth={1.7} />
-                      Share
-                    </button>
-                  )}
-                <button
-                  type="button"
-                  disabled={!picked.size}
-                  onClick={() => setConfirm(true)}
-                  className="hover-wash flex h-11 items-center gap-1.5 rounded-full border border-line-strong px-3.5 text-[13px] text-text-2 hover:text-text disabled:opacity-40"
-                >
-                  <Trash2 size={16} strokeWidth={1.7} />
-                  {canDelete ? "Delete" : "Remove"}
-                </button>
-                </>
-              )}
-              <button type="button" aria-label="Stop selecting" data-tip="Stop selecting" onClick={stopSelecting} className="hover-wash grid h-11 w-11 place-items-center rounded-full text-text-2 hover:text-text">
-                <X size={18} strokeWidth={1.7} />
-              </button>
-            </>
+            <button type="button" aria-label="Stop selecting" data-tip="Stop selecting" onClick={stopSelecting} className="hover-wash grid h-11 w-11 place-items-center rounded-full text-text-2 hover:text-text">
+              <X size={18} strokeWidth={1.7} />
+            </button>
           ) : (
             <button
               type="button"
@@ -255,6 +199,65 @@ export function Gallery() {
           )}
         </div>
       </div>
+      {selecting && (
+        <div className="flex flex-none items-center gap-2 px-3.5 pb-2.5 lg:px-4">
+          <span className="min-w-0 flex-1 truncate text-[13px] text-text-2">{picked.size} selected</span>
+          {confirm ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void removePicked()}
+              className="flex h-11 items-center gap-1.5 rounded-full bg-danger px-4 text-[13px] font-semibold text-bg disabled:opacity-60"
+            >
+              {busy && <Loader2 size={15} className="animate-spin motion-reduce:animate-none" />}
+              {canDelete ? `Delete ${picked.size}` : `Remove ${picked.size}`}
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={toggleAll}
+                data-tip={hasMore ? "Selects the images loaded so far (Ctrl+A)" : "Ctrl+A"}
+                className="hover-wash h-11 flex-none rounded-full border border-line-strong px-3.5 text-[13px] text-text-2 hover:text-text"
+              >
+                {allPicked ? "Clear" : "All"}
+              </button>
+              <button
+                type="button"
+                aria-label="Download"
+                data-tip="Download"
+                disabled={!picked.size || busy}
+                onClick={() => void downloadPicked()}
+                className="hover-wash grid h-11 w-11 flex-none place-items-center rounded-full border border-line-strong text-text-2 hover:text-text disabled:opacity-40"
+              >
+                <Download size={18} strokeWidth={1.7} />
+              </button>
+              {canShareFiles() && (
+                <button
+                  type="button"
+                  aria-label="Share"
+                  data-tip="Share"
+                  disabled={!picked.size || busy}
+                  onClick={() => void sharePicked()}
+                  className="hover-wash grid h-11 w-11 flex-none place-items-center rounded-full border border-line-strong text-text-2 hover:text-text disabled:opacity-40"
+                >
+                  <Share2 size={18} strokeWidth={1.7} />
+                </button>
+              )}
+              <button
+                type="button"
+                aria-label={canDelete ? "Delete" : "Remove"}
+                data-tip={canDelete ? "Delete" : "Remove from history"}
+                disabled={!picked.size}
+                onClick={() => setConfirm(true)}
+                className="hover-wash grid h-11 w-11 flex-none place-items-center rounded-full border border-line-strong text-text-2 hover:text-danger disabled:opacity-40"
+              >
+                <Trash2 size={18} strokeWidth={1.7} />
+              </button>
+            </>
+          )}
+        </div>
+      )}
       {confirm && <p className="flex-none px-4 pb-2 text-[12px] text-text-3">{canDelete
             ? "This permanently deletes the images from your computer's output folder and from the gallery. It can't be undone."
             : "This removes them from Accio's history only. The image files stay where the backend saved them."}</p>}
