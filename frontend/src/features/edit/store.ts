@@ -6,7 +6,7 @@ import type { LoraMode } from "../../lib/loras";
 import { GRAIN_DEFAULT } from "./grain";
 import { isKleinModel } from "./klein";
 import { initialSheet, type SheetState } from "./sheet";
-import { EDIT_STYLE_OPTS, type StyleOpts } from "../create/styles";
+import { STYLE_OPTS, type StyleOpts } from "../create/styles";
 
 export type EditMode = "multiedit" | "inpaint" | "outpaint" | "charsheet";
 export type Seam = "classic" | "blend in";
@@ -127,7 +127,7 @@ const initial = (): EditSettings => ({
   modelPresets: {},
   prompts: { multiedit: "", inpaint: "", outpaint: "", charsheet: "" }, // charsheet: optional notes about the character
   style: null,
-  styleOpts: EDIT_STYLE_OPTS,
+  styleOpts: STYLE_OPTS,
   enhancer: { multiedit: true, inpaint: true },
   multi: initialMulti(),
   inpaint: initialInpaint(),
@@ -193,7 +193,9 @@ export const useEdit = create<EditSettings & EditActions>()(
       merge: (saved, current) => {
         const p = (saved ?? {}) as Partial<EditSettings>;
         const fill = <K extends "prompts" | "sampler" | "lockSeed" | "seeds" | "loras">(k: K) => ({ ...current[k], ...p[k] }) as EditSettings[K];
-        return { ...current, ...p, prompts: fill("prompts"), sampler: fill("sampler"), lockSeed: fill("lockSeed"), seeds: fill("seeds"), loras: fill("loras"), sheet: { ...current.sheet, ...p.sheet } };
+        // styleOpts used to carry a "compact" flag: keep only what still exists
+        const styleOpts: StyleOpts = { ...STYLE_OPTS, first: (p.styleOpts as { first?: boolean } | undefined)?.first === true };
+        return { ...current, ...p, styleOpts, prompts: fill("prompts"), sampler: fill("sampler"), lockSeed: fill("lockSeed"), seeds: fill("seeds"), loras: fill("loras"), sheet: { ...current.sheet, ...p.sheet } };
       },
       partialize: (s) => ({
         mode: s.mode,

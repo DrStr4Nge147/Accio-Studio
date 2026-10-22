@@ -26,7 +26,7 @@ export async function generate() {
   useSubmit.setState({ busy: true, error: null });
   try {
     const def = s.style ? (await loadStyles()).find((x) => x.id === s.style!.id) : undefined;
-    const job = await submitJob(buildParams(s, useServer.getState().catalog?.defaults ?? null, def && styleText(def, s.styleOpts.compact)));
+    const job = await submitJob(buildParams(s, useServer.getState().catalog?.defaults ?? null, def && styleText(def)));
     const jobs = useJobs.getState();
     // Generate takes you to the new job's card, queued or not. The one exception: you are watching a running job's card
     // right now, and queueing another must not pull you away from it.

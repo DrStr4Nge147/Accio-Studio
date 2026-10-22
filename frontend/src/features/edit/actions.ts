@@ -42,7 +42,7 @@ export async function generateEdit() {
     let afterJob: ((jobId: string) => void) | undefined; // previews for the running view, built from what is already in the browser
     if (mode === "multiedit") {
       const styleDef = s.style ? (await loadStyles()).find((x) => x.id === s.style!.id) : undefined;
-      params = multiParams(s, ws.slots, def?.multiedit.base_megapixels ?? 1, styleDef && editStyleText(styleDef, s.styleOpts.compact));
+      params = multiParams(s, ws.slots, def?.multiedit.base_megapixels ?? 1, styleDef && editStyleText(styleDef));
       before = ws.slots[0]?.url;
     } else if (mode === "charsheet") {
       params = sheetParams(s, { file: ws.sheet.upload.file!, name: ws.sheet.src!.name });

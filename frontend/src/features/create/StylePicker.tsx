@@ -87,7 +87,7 @@ function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => v
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (styles ?? []).filter(
-      (s) => (category === ALL || s.categories.includes(category)) && (!q || s.name.toLowerCase().includes(q) || s.descriptor.toLowerCase().includes(q) || s.compact.toLowerCase().includes(q)),
+      (s) => (category === ALL || s.categories.includes(category)) && (!q || s.name.toLowerCase().includes(q) || s.compact.toLowerCase().includes(q)),
     );
   }, [styles, query, category]);
 
@@ -137,7 +137,6 @@ function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => v
         </div>
         </div>
         <div className="hidden flex-none items-center gap-5 lg:flex">
-          <MiniToggle on={opts.compact} onChange={(compact) => setOpts({ ...opts, compact })} label="Compact text" tip="Short concrete cues instead of the long description" />
           <MiniToggle on={opts.first} onChange={(first) => setOpts({ ...opts, first })} label="Style first" tip={edit ? "Put the style instruction before your request instead of after it" : "Put the style before your prompt instead of after it"} />
         </div>
       </div>
@@ -152,7 +151,7 @@ function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => v
         {styles && shown.length === 0 && <li className="col-span-full py-6 text-center text-[13px] text-text-3">No styles match.</li>}
         {shown.map((s) => (
           <li key={s.id}>
-            <Row active={style?.id === s.id} title={s.name} text={edit ? (opts.compact ? s.compact : s.descriptor) : styleText(s, opts.compact)} thumb={s.preview ? stylePreviewUrl(s.id, edit) : undefined} onClick={() => pick(s)} />
+            <Row active={style?.id === s.id} title={s.name} text={edit ? s.compact : styleText(s)} thumb={s.preview ? stylePreviewUrl(s.id, edit) : undefined} onClick={() => pick(s)} />
           </li>
         ))}
       </ul>
@@ -166,7 +165,7 @@ function OptionsButton({ target }: { target: StyleTarget }) {
   const { opts, setOpts } = useStyleTarget(target);
   const edit = target === "edit";
   const [open, setOpen] = useState(false);
-  const changed = edit ? opts.compact || opts.first : !opts.compact || opts.first; // the dot marks a move off the mode's defaults
+  const changed = opts.first; // the dot marks a move off the default
 
   useEffect(() => {
     if (!open) return;
@@ -201,7 +200,6 @@ function OptionsButton({ target }: { target: StyleTarget }) {
           <div className="absolute right-0 top-full z-20 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-m border border-line-strong bg-overlay p-3 shadow-xl">
             <p className="mb-1 text-[12.5px] leading-snug text-text-3">{edit ? "The style is sent as an instruction to restyle the whole image." : "The style text is added to your prompt when you generate."}</p>
             <div className="divide-y divide-line">
-              <Toggle on={opts.compact} onChange={(compact) => setOpts({ ...opts, compact })} label="Compact style text" sub="Short concrete cues instead of the long description" />
               <Toggle on={opts.first} onChange={(first) => setOpts({ ...opts, first })} label="Put the style first" sub={edit ? "Before your request instead of after it" : "Before your prompt instead of after it"} />
             </div>
           </div>

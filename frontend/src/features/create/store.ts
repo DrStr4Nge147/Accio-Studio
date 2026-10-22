@@ -26,7 +26,7 @@ export interface Seeds {
 export interface CreateState {
   variant: Variant;
   prompt: string;
-  /** a style from the library; its descriptor is appended to the prompt when generating */
+  /** a style from the library; its compact text is appended to the prompt when generating */
   style: { id: string; name: string } | null;
   styleOpts: StyleOpts;
   sizes: Record<Variant, SizeSel>;
@@ -95,9 +95,12 @@ export const useCreate = create<CreateState>()(
     }),
     {
       name: "accio.create",
-      version: 2,
-      // v2: styleOpts lost its "name" option and compact style text became the default
-      migrate: (state) => ({ ...(state as object), styleOpts: STYLE_OPTS }) as CreateState,
+      version: 3,
+      // v2: styleOpts lost its "name" option. v3: it lost "compact" too (the compact text is the only one), keeping just "first".
+      migrate: (state) => {
+        const old = state as { styleOpts?: { first?: boolean } };
+        return { ...(state as object), styleOpts: { ...STYLE_OPTS, first: old.styleOpts?.first === true } } as CreateState;
+      },
       partialize: ({ patch: _p, reset: _r, ...rest }) => rest,
     },
   ),

@@ -1,8 +1,7 @@
 export interface StyleDef {
   id: string;
   name: string;
-  descriptor: string;
-  /** short concrete visual cues for few-step models */
+  /** short concrete visual cues for few-step models; this is the only style text Create and Edit send */
   compact: string;
   categories: string[];
   /** a thumbnail exists at stylePreviewUrl(id), for both Create and Edit */
@@ -14,26 +13,22 @@ export const stylePreviewUrl = (id: string, edit = false) => `/style-previews${e
 
 let cache: Promise<StyleDef[]> | null = null;
 
-/** The style library is ~220 KB, so it loads on first use instead of weighing down the main bundle. */
+/** The style library is ~100 KB, so it loads on first use instead of weighing down the main bundle. */
 export function loadStyles(): Promise<StyleDef[]> {
   cache ??= import("./styles.json").then((m) => m.default as StyleDef[]);
   return cache;
 }
 
 export interface StyleOpts {
-  /** the short, concrete cue list instead of the full descriptor (usually works better for few-step models) */
-  compact: boolean;
   /** put the style before your prompt instead of after it */
   first: boolean;
 }
-export const STYLE_OPTS: StyleOpts = { compact: true, first: false };
-/** Edit starts on the full wording: its template was written around the long description. */
-export const EDIT_STYLE_OPTS: StyleOpts = { compact: false, first: false };
+export const STYLE_OPTS: StyleOpts = { first: false };
 
 const LABEL = "Art style: ";
 
-/** What gets added to the prompt for a style: the compact cues or the full descriptor, labeled so the model reads it as how to render rather than what to draw. */
-export const styleText = (s: StyleDef, compact = true) => LABEL + (compact ? s.compact : s.descriptor);
+/** What gets added to the prompt for a style: its compact cues, labeled so the model reads them as how to render rather than what to draw. */
+export const styleText = (s: StyleDef) => LABEL + s.compact;
 
 const EDIT_HEAD =
   "Preserve the original subject identity, recognizable facial features, key objects, pose, body proportions, composition, camera angle, framing, and spatial layout unless the user's edit request explicitly asks to change them. Re-render all visible elements consistently with these visual characteristics: ";
@@ -41,8 +36,7 @@ const EDIT_TAIL =
   " Keep the result visually coherent and faithful to the source image. Do not introduce unrelated objects, text, logos, extra limbs, altered anatomy, or major structural changes unless specifically requested.";
 
 /** The instruction Edit (Qwen Image Edit 2.1, Klein) gets for a style: restyle the whole image, keep what is in it. */
-export const editStyleText = (s: StyleDef, compact = false) =>
-  `Transform the entire input image into ${s.name}. ${EDIT_HEAD}${compact ? `${s.compact}.` : s.descriptor}${EDIT_TAIL}`;
+export const editStyleText = (s: StyleDef) => `Transform the entire input image into ${s.name}. ${EDIT_HEAD}${s.compact}.${EDIT_TAIL}`;
 
 const END_PUNCT = /[.!?,;:]$/;
 
@@ -55,28 +49,22 @@ export function withStyle(prompt: string, text: string | undefined, first = fals
   return `${p}${END_PUNCT.test(p) ? " " : ". "}${text}`;
 }
 
-// Each form a style can have been written in; the unlabeled and "Name. descriptor" wordings are older, still recognized on reuse.
-const VARIANTS: Variant[] = [
-  { compact: true, text: (s) => styleText(s, true) },
-  { compact: false, text: (s) => styleText(s, false) },
-  { compact: true, text: (s) => s.compact },
-  { compact: false, text: (s) => `${s.name}. ${s.descriptor}` }, // before the bare descriptor, which it ends with
-  { compact: false, text: (s) => s.descriptor },
-];
+// Each form a style can have been written in; the unlabeled wording is older, still recognized on reuse. (Jobs made with the long descriptor, which no longer exists, are not recognized.)
+const VARIANTS: Variant[] = [{ text: (s) => styleText(s) }, { text: (s) => s.compact }];
 
-type Variant = { compact: boolean; text: (s: StyleDef) => string };
+type Variant = { text: (s: StyleDef) => string };
 
 function splitWith(prompt: string, styles: StyleDef[], variants: Variant[], fallback: StyleOpts) {
   for (const s of styles) {
     for (const v of variants) {
       const text = v.text(s);
       const lead = `${text}${END_PUNCT.test(text) ? "" : "."} `;
-      if (prompt === text) return { prompt: "", style: s, opts: { compact: v.compact, first: false } };
-      if (prompt.startsWith(lead)) return { prompt: prompt.slice(lead.length), style: s, opts: { compact: v.compact, first: true } };
+      if (prompt === text) return { prompt: "", style: s, opts: { first: false } };
+      if (prompt.startsWith(lead)) return { prompt: prompt.slice(lead.length), style: s, opts: { first: true } };
       if (prompt.endsWith(text)) {
         const head = prompt.slice(0, prompt.length - text.length);
-        if (head.endsWith(". ")) return { prompt: head.slice(0, -2), style: s, opts: { compact: v.compact, first: false } };
-        if (head.endsWith(" ") && END_PUNCT.test(head.trimEnd())) return { prompt: head.trimEnd(), style: s, opts: { compact: v.compact, first: false } };
+        if (head.endsWith(". ")) return { prompt: head.slice(0, -2), style: s, opts: { first: false } };
+        if (head.endsWith(" ") && END_PUNCT.test(head.trimEnd())) return { prompt: head.trimEnd(), style: s, opts: { first: false } };
       }
     }
   }
@@ -86,10 +74,7 @@ function splitWith(prompt: string, styles: StyleDef[], variants: Variant[], fall
 /** Inverse of withStyle, for "Reuse settings": the prompt without the style, and which style (and options) it was. */
 export const splitStyle = (prompt: string, styles: StyleDef[]) => splitWith(prompt, styles, VARIANTS, STYLE_OPTS);
 
-const EDIT_VARIANTS: Variant[] = [
-  { compact: false, text: (s) => editStyleText(s, false) },
-  { compact: true, text: (s) => editStyleText(s, true) },
-];
+const EDIT_VARIANTS: Variant[] = [{ text: (s) => editStyleText(s) }];
 
 /** Same for an Edit prompt: the template, whichever order and wording it was written in. */
-export const splitEditStyle = (prompt: string, styles: StyleDef[]) => splitWith(prompt, styles, EDIT_VARIANTS, EDIT_STYLE_OPTS);
+export const splitEditStyle = (prompt: string, styles: StyleDef[]) => splitWith(prompt, styles, EDIT_VARIANTS, STYLE_OPTS);

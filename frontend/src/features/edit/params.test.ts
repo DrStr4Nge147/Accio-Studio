@@ -16,7 +16,7 @@ const noWs = {
 const state = () => useEdit.getState();
 beforeEach(() => {
   for (const m of ["multiedit", "inpaint", "outpaint", "charsheet"] as const) state().reset(m);
-  state().patch({ style: null, styleOpts: { compact: false, first: false } });
+  state().patch({ style: null, styleOpts: { first: false } });
   state().patch({ mode: "multiedit", model: undefined, modelPresets: {}, grain: { on: false, strength: 0.04 }, prompts: { multiedit: "", inpaint: "", outpaint: "", charsheet: "" } });
 });
 
@@ -24,7 +24,7 @@ describe("multi-edit style", () => {
   it("adds the style instruction after the request, or before it when asked", () => {
     state().setPrompt("multiedit", "make her smile");
     expect(multiParams(state(), [slot()], 1, "Transform the image.").prompt).toBe("make her smile. Transform the image.");
-    state().patch({ styleOpts: { compact: false, first: true } });
+    state().patch({ styleOpts: { first: true } });
     expect(multiParams(state(), [slot()], 1, "Transform the image.").prompt).toBe("Transform the image. make her smile");
     expect(multiParams(state(), [slot()]).prompt).toBe("make her smile");
   });
