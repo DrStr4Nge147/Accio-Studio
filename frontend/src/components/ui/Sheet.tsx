@@ -1,7 +1,25 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { useIsDesktop } from "../../lib/useMedia";
 import { IconButton } from "./controls";
+
+/** How far the on-screen keyboard covers the bottom of the page, and how tall the visible area is (phones keep the page height when it opens). */
+function useKeyboard(active: boolean) {
+  const [kb, setKb] = useState({ lift: 0, visible: 0 });
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!active || !vv) return;
+    const measure = () => setKb({ lift: Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)), visible: vv.height });
+    measure();
+    vv.addEventListener("resize", measure);
+    vv.addEventListener("scroll", measure);
+    return () => {
+      vv.removeEventListener("resize", measure);
+      vv.removeEventListener("scroll", measure);
+    };
+  }, [active]);
+  return kb;
+}
 
 /** Modal bottom sheet (mobile) with scrim, Esc, focus handling and drag-down-to-close on the handle. */
 export function Sheet({
@@ -23,6 +41,7 @@ export function Sheet({
   const modal = useIsDesktop() && desktopModalWidth !== undefined;
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number } | null>(null);
+  const kb = useKeyboard(open && !modal);
 
   useEffect(() => {
     if (!open) return;
@@ -70,7 +89,8 @@ export function Sheet({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        style={{ maxHeight: height }}
+        // With the keyboard up the sheet rides above it and never grows taller than the visible area
+        style={{ maxHeight: kb.lift ? Math.min(kb.visible - 8, (parseFloat(height) / 100) * window.innerHeight) : height, bottom: kb.lift || undefined }}
         className="sheet-in safe-b absolute inset-x-0 bottom-0 flex flex-col rounded-t-[24px] border-t border-line-strong bg-surface shadow-float outline-none lg:inset-x-auto lg:bottom-6 lg:left-1/2 lg:w-[480px] lg:-translate-x-1/2 lg:rounded-[24px] lg:border"
       >
         <div

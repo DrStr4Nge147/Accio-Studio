@@ -111,7 +111,7 @@ function TemplateSheet({ open, onClose, target }: { open: boolean; onClose: () =
               placeholder={prompt.trim() ? "Name for the current prompt" : "Write a prompt first, then name it"}
               aria-label="Template name"
               maxLength={60}
-              className={`${FIELD} h-11 min-w-0 flex-1`}
+              className={`${FIELD} h-11 min-w-0 flex-none sm:flex-1`}
             />
             <div className="flex gap-2">
               <button
