@@ -4,6 +4,7 @@ import { useUi } from "../../store/ui";
 import { selectEditMode, togglePreset } from "./actions";
 import { OptionsChip } from "../create/CreateControls";
 import { StyleChip } from "../create/StylePicker";
+import { TemplateChip } from "../create/TemplatePicker";
 import { EditAdvanced } from "./EditAdvanced";
 import { isKleinModel } from "./klein";
 import { PaddingFields } from "./PaddingFields";
@@ -38,6 +39,7 @@ export function EditChips() {
   return (
     <ChipRow end={<OptionsChip />}>
       {mode === "multiedit" && <StyleChip target="edit" />}
+      {mode === "multiedit" && <TemplateChip target="edit" />}
       {presetsFor(mode, klein).map((id) => (
         <Chip key={id} on={active === id} onClick={() => togglePreset(id)} tip={PRESETS[id].tip}>
           {PRESETS[id].label}

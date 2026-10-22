@@ -4,6 +4,7 @@ import { useUi } from "../../store/ui";
 import { AspectPicker } from "./AspectPicker";
 import { CreateAdvanced } from "./CreateAdvanced";
 import { StyleChip } from "./StylePicker";
+import { TemplateChip } from "./TemplatePicker";
 import { TIPS } from "./tips";
 import { useCreate, type Variant } from "./store";
 
@@ -57,6 +58,7 @@ export function CreateChips() {
         {s.variant === "standard" ? "Standard" : "Detailed"}
       </Chip>
       <StyleChip />
+      <TemplateChip />
       <Chip toggle={false} onClick={openAdvanced} label="Aspect ratio" tip="Pick an aspect ratio or a custom size in Advanced">
         {size.aspect === "custom" ? `${size.w}×${size.h}` : size.aspect}
       </Chip>

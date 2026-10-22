@@ -6,6 +6,7 @@ import { useUi } from "../../store/ui";
 import { cancelCurrent, generate, useSubmit } from "./actions";
 import { CreateChips, CreateToggles } from "./CreateControls";
 import { StyleButton } from "./StylePicker";
+import { TemplateButton } from "./TemplatePicker";
 import { useCreate } from "./store";
 
 /** Create's instance of the shared composer, in the layout the viewport asks for. */
@@ -26,7 +27,12 @@ export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; abo
       prompt={prompt}
       onPrompt={(prompt) => patch({ prompt })}
       loraCount={loraCount}
-      promptTool={<StyleButton />}
+      promptTool={
+        <div className="flex items-center gap-1.5">
+          <StyleButton />
+          <TemplateButton />
+        </div>
+      }
       placeholder="Describe what to create…"
       controls={layout === "dock" ? <CreateChips /> : <CreateToggles />}
       running={running}

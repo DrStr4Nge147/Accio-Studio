@@ -11,6 +11,7 @@ import { editBlocker } from "./params";
 import { useEdit } from "./store";
 import { useWorkspace } from "./workspace";
 import { StyleButton } from "../create/StylePicker";
+import { TemplateButton } from "../create/TemplatePicker";
 
 const PLACEHOLDERS = {
   multiedit: "Say what to change, e.g. “replace the jacket in <image1> with the one from <image2>”. Keep what should stay.",
@@ -51,7 +52,14 @@ export function EditComposer({ layout, above }: { layout: "dock" | "pane"; above
       }
       tags={mode === "multiedit" ? ws.slots.map((s, i) => ({ n: i + 1, name: s.name, thumb: s.url })) : undefined}
       loraCount={edit.loras[mode].filter((l) => l.on).length}
-      promptTool={mode === "multiedit" ? <StyleButton target="edit" /> : undefined}
+      promptTool={
+        mode === "multiedit" ? (
+          <div className="flex items-center gap-1.5">
+            <StyleButton target="edit" />
+            <TemplateButton target="edit" />
+          </div>
+        ) : undefined
+      }
       prompt={prompt}
       onPrompt={(v) => edit.setPrompt(mode, v)}
       placeholder={PLACEHOLDERS[mode]}
