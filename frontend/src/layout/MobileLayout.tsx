@@ -1,6 +1,7 @@
 import { ArrowRight, ChevronLeft, ChevronRight, LayoutGrid, Maximize2, Settings as GearIcon, Sparkles, Terminal, WandSparkles } from "lucide-react";
 import type { Job } from "../api/types";
 import { CoffeeBadge } from "../components/CoffeeBadge";
+import { TempBadge } from "../components/TempBadge";
 import { UpdatePill } from "../components/UpdatePill";
 import { Wordmark } from "../components/Wordmark";
 import { HealthBanner } from "../components/HealthBanner";
@@ -232,6 +233,7 @@ export function MobileLayout() {
           <Wordmark size={24} />
         </div>
         <div className="flex items-center gap-1.5">
+          <TempBadge />
           <UpdatePill />
           <CoffeeBadge />
         </div>
