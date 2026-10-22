@@ -5,11 +5,12 @@ export interface StyleDef {
   /** short concrete visual cues for few-step models */
   compact: string;
   categories: string[];
-  /** a thumbnail exists at stylePreviewUrl(id) */
+  /** a thumbnail exists at stylePreviewUrl(id), for both Create and Edit */
   preview?: boolean;
 }
 
-export const stylePreviewUrl = (id: string) => `/style-previews/${id}.webp`;
+/** Create and Edit have their own thumbnails: the same sample photo, generated through each mode. */
+export const stylePreviewUrl = (id: string, edit = false) => `/style-previews${edit ? "-edit" : ""}/${id}.webp`;
 
 let cache: Promise<StyleDef[]> | null = null;
 

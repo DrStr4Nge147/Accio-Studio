@@ -152,7 +152,7 @@ function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => v
         {styles && shown.length === 0 && <li className="col-span-full py-6 text-center text-[13px] text-text-3">No styles match.</li>}
         {shown.map((s) => (
           <li key={s.id}>
-            <Row active={style?.id === s.id} title={s.name} text={edit ? (opts.compact ? s.compact : s.descriptor) : styleText(s, opts.compact)} thumb={s.preview ? stylePreviewUrl(s.id) : undefined} onClick={() => pick(s)} />
+            <Row active={style?.id === s.id} title={s.name} text={edit ? (opts.compact ? s.compact : s.descriptor) : styleText(s, opts.compact)} thumb={s.preview ? stylePreviewUrl(s.id, edit) : undefined} onClick={() => pick(s)} />
           </li>
         ))}
       </ul>
