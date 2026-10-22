@@ -409,6 +409,12 @@ async def system_temps():
     return await asyncio.to_thread(sysinfo.temperatures)
 
 
+@app.get("/api/system/live")
+async def system_live():
+    """Live load for the header badge: per-card temperature, load and VRAM, CPU load, RAM use. Any value may be null."""
+    return await asyncio.to_thread(sysinfo.live)
+
+
 @app.get("/api/update")
 async def update_status(request: Request, refresh: bool = False):
     """Installed and newest version. `can_apply` is true only for the browser on the PC that runs Accio."""

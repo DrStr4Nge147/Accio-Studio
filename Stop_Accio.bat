@@ -68,6 +68,12 @@ if exist "!TS_EXE!" (
 if !STOP_RC! equ 2 (
     echo.
     echo Something else is using those ports. Close it, or run this again.
+    echo.
+    pause
+    exit /b 2
 )
+:: Success: leave the result on screen for a moment, then end the script so its window closes by itself (no key needed).
 echo.
-pause
+echo Closing this window ...
+ping -n 3 127.0.0.1 >nul
+exit /b 0

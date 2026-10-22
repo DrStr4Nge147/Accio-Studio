@@ -81,3 +81,35 @@ def test_pick_cpu_temp_falls_back_to_hottest_and_drops_junk():
 def test_temps_endpoint(authed, monkeypatch):
     monkeypatch.setattr(sysinfo, "temperatures", lambda: {"gpus": [70], "cpu": None})
     assert client.get("/api/system/temps").json() == {"gpus": [70], "cpu": None}
+
+
+# --------------------------------------------------------------------------- live load
+
+def test_parse_gpu_live():
+    cards = sysinfo.parse_gpu_live("65, 40, 5120, 8192" + chr(10) + "70, [N/A], 100, 24576" + chr(10) + "broken line")
+    assert cards == [
+        {"temp": 65, "util": 40, "vram_used_mb": 5120, "vram_total_mb": 8192},
+        {"temp": 70, "util": None, "vram_used_mb": 100, "vram_total_mb": 24576},
+    ]
+    assert sysinfo.parse_gpu_live("") == []
+
+
+def test_cpu_busy_percent():
+    # idle 25 of 100 total (kernel includes idle) -> 75 % busy
+    assert sysinfo.cpu_busy_percent((0, 0, 0), (25, 60, 40)) == 75
+    assert sysinfo.cpu_busy_percent((10, 20, 30), (10, 20, 30)) is None
+    assert sysinfo.cpu_busy_percent((0, 0, 0), (200, 100, 0)) == 0
+
+
+def test_live_shape_on_this_pc():
+    live = sysinfo.live()
+    assert set(live) == {"gpus", "cpu", "ram"}
+    assert set(live["cpu"]) == {"percent"}
+    assert live["cpu"]["percent"] is None or 0 <= live["cpu"]["percent"] <= 100
+    assert live["ram"] is None or (0 <= live["ram"]["percent"] <= 100 and live["ram"]["used_mb"] <= live["ram"]["total_mb"])
+
+
+def test_live_endpoint(authed, monkeypatch):
+    payload = {"gpus": [{"temp": 60, "util": 10, "vram_used_mb": 1, "vram_total_mb": 2}], "cpu": {"percent": 5}, "ram": None}
+    monkeypatch.setattr(sysinfo, "live", lambda: payload)
+    assert client.get("/api/system/live").json() == payload

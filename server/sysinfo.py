@@ -5,6 +5,8 @@ import ctypes
 import re
 import subprocess
 import sys
+import threading
+import time
 from functools import lru_cache
 from typing import Any
 
@@ -41,24 +43,29 @@ def _other_cards() -> list[dict[str, Any]]:
     return [{"name": n.strip(), "vram_mb": None, "driver": None} for n in out.splitlines() if n.strip()]
 
 
-def _ram_mb() -> int | None:
+class _MemStatus(ctypes.Structure):
+    _fields_ = [
+        ("length", ctypes.c_ulong), ("load", ctypes.c_ulong),
+        ("total_phys", ctypes.c_ulonglong), ("avail_phys", ctypes.c_ulonglong),
+        ("total_page", ctypes.c_ulonglong), ("avail_page", ctypes.c_ulonglong),
+        ("total_virt", ctypes.c_ulonglong), ("avail_virt", ctypes.c_ulonglong),
+        ("avail_ext", ctypes.c_ulonglong),
+    ]
+
+
+def _mem_status() -> _MemStatus | None:
     if sys.platform != "win32":
         return None
-
-    class Status(ctypes.Structure):
-        _fields_ = [
-            ("length", ctypes.c_ulong), ("load", ctypes.c_ulong),
-            ("total_phys", ctypes.c_ulonglong), ("avail_phys", ctypes.c_ulonglong),
-            ("total_page", ctypes.c_ulonglong), ("avail_page", ctypes.c_ulonglong),
-            ("total_virt", ctypes.c_ulonglong), ("avail_virt", ctypes.c_ulonglong),
-            ("avail_ext", ctypes.c_ulonglong),
-        ]
-
-    st = Status()
-    st.length = ctypes.sizeof(Status)
+    st = _MemStatus()
+    st.length = ctypes.sizeof(_MemStatus)
     if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(st)):  # type: ignore[attr-defined]
         return None
-    return int(st.total_phys // (1024 * 1024))
+    return st
+
+
+def _ram_mb() -> int | None:
+    st = _mem_status()
+    return None if st is None else int(st.total_phys // (1024 * 1024))
 
 
 def torch_cuda(pytorch_version: str | None) -> str | None:
@@ -129,3 +136,79 @@ def hardware() -> dict[str, Any]:
         "driver_cuda": driver_cuda,
         "ram_mb": _ram_mb(),
     }
+
+
+# --------------------------------------------------------------------------- live load (header badge)
+
+def parse_gpu_live(out: str) -> list[dict[str, int | None]]:
+    """Rows of "temp, utilization %, vram used MB, vram total MB" from nvidia-smi into one dict per card (None where unreadable)."""
+    cards: list[dict[str, int | None]] = []
+    for line in out.strip().splitlines():
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) != 4:
+            continue
+
+        def num(v: str) -> int | None:
+            try:
+                return int(float(v))
+            except ValueError:
+                return None
+
+        cards.append({"temp": num(parts[0]), "util": num(parts[1]), "vram_used_mb": num(parts[2]), "vram_total_mb": num(parts[3])})
+    return cards
+
+
+def _gpu_live() -> list[dict[str, int | None]]:
+    out = _run(["nvidia-smi", "--query-gpu=temperature.gpu,utilization.gpu,memory.used,memory.total", "--format=csv,noheader,nounits"], 10)
+    return parse_gpu_live(out)
+
+
+def cpu_busy_percent(prev: tuple[int, int, int], cur: tuple[int, int, int]) -> int | None:
+    """CPU busy percent between two (idle, kernel, user) samples; kernel time includes idle time, as GetSystemTimes reports it."""
+    idle = cur[0] - prev[0]
+    total = (cur[1] - prev[1]) + (cur[2] - prev[2])
+    if total <= 0:
+        return None
+    return max(0, min(100, round(100 * (1 - idle / total))))
+
+
+def _cpu_times() -> tuple[int, int, int] | None:
+    if sys.platform != "win32":
+        return None
+
+    class FileTime(ctypes.Structure):
+        _fields_ = [("low", ctypes.c_ulong), ("high", ctypes.c_ulong)]
+
+    idle, kernel, user = FileTime(), FileTime(), FileTime()
+    if not ctypes.windll.kernel32.GetSystemTimes(ctypes.byref(idle), ctypes.byref(kernel), ctypes.byref(user)):  # type: ignore[attr-defined]
+        return None
+    return tuple((f.high << 32) | f.low for f in (idle, kernel, user))  # type: ignore[return-value]
+
+
+_cpu_lock = threading.Lock()
+_cpu_last: tuple[int, int, int] | None = None
+
+
+def _cpu_percent() -> int | None:
+    """CPU busy percent since the previous call (the first call measures over a short pause)."""
+    global _cpu_last
+    with _cpu_lock:
+        cur = _cpu_times()
+        if cur is None:
+            return None
+        prev = _cpu_last
+        if prev is None:
+            time.sleep(0.25)
+            prev, cur = cur, _cpu_times() or cur
+        _cpu_last = cur
+        return cpu_busy_percent(prev, cur)
+
+
+def live() -> dict[str, Any]:
+    """Everything the header badge shows: per-card temperature, load and VRAM, plus CPU load and RAM use."""
+    mem = _mem_status()
+    ram = None
+    if mem is not None:
+        total = int(mem.total_phys // (1024 * 1024))
+        ram = {"percent": int(mem.load), "used_mb": total - int(mem.avail_phys // (1024 * 1024)), "total_mb": total}
+    return {"gpus": _gpu_live(), "cpu": {"percent": _cpu_percent()}, "ram": ram}

@@ -98,6 +98,14 @@ export interface SystemTemps {
 }
 export const fetchTemps = () => get<SystemTemps>("/api/system/temps");
 
+export interface SystemLive {
+  /** One entry per Nvidia card; any field is null when it can't be read. */
+  gpus: { temp: number | null; util: number | null; vram_used_mb: number | null; vram_total_mb: number | null }[];
+  cpu: { percent: number | null };
+  ram: { percent: number; used_mb: number; total_mb: number } | null;
+}
+export const fetchLive = () => get<SystemLive>("/api/system/live");
+
 export interface ModelPathField {
   kind: "diffusion_models" | "text_encoders" | "vae" | "loras";
   label: string;

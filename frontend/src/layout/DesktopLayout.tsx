@@ -2,7 +2,7 @@ import { LayoutGrid, Settings as GearIcon, Sparkles, WandSparkles } from "lucide
 import { CoffeeBadge } from "../components/CoffeeBadge";
 import { HealthBanner } from "../components/HealthBanner";
 import { IconButton } from "../components/ui/controls";
-import { TempBadge } from "../components/TempBadge";
+import { StatsBadge } from "../components/StatsBadge";
 import { UpdatePill } from "../components/UpdatePill";
 import { SelectedStage } from "../components/stage/Stage";
 import { Wordmark } from "../components/Wordmark";
@@ -114,7 +114,7 @@ export function DesktopLayout() {
         <HealthBanner />
         <div className="flex h-14 flex-none items-center justify-between gap-3 px-4">
           <ContextLine />
-          <TempBadge />
+          <StatsBadge />
         </div>
         <div className="min-h-0 flex-1 px-4 pb-4">{tab === "create" ? <SelectedStage /> : tab === "edit" ? <EditCanvas /> : <LazyGallery />}</div>
         {tab !== "gallery" && <RecentStrip group={tab === "edit" ? "edit" : "create"} />}
