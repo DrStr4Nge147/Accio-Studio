@@ -39,7 +39,7 @@ export function EditChips() {
   return (
     <ChipRow end={<OptionsChip />}>
       {mode === "multiedit" && <StyleChip target="edit" />}
-      {mode === "multiedit" && <TemplateChip target="edit" />}
+      <TemplateChip target="edit" />
       {presetsFor(mode, klein).map((id) => (
         <Chip key={id} on={active === id} onClick={() => togglePreset(id)} tip={PRESETS[id].tip}>
           {PRESETS[id].label}

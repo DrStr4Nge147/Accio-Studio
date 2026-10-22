@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { BookmarkPlus, FilePlus2, FileText, Pencil, Trash2 } from "lucide-react";
 import { Chip } from "../../components/ui/controls";
 import { Sheet } from "../../components/ui/Sheet";
+import { useServer } from "../../store/health";
 import { useEdit } from "../edit/store";
 import { useCreate } from "./store";
 import { useTemplates, type TemplateTarget } from "./templates";
@@ -10,7 +11,9 @@ import { useTemplates, type TemplateTarget } from "./templates";
 /** The prompt the composer for this target is showing, and how to replace it. */
 function usePromptTarget(target: TemplateTarget) {
   const createPrompt = useCreate((s) => s.prompt);
-  const editPrompt = useEdit((s) => s.prompts[s.mode]);
+  // Outpaint shows a built-in prompt while its own is empty, so that is what "current" means there
+  const defaultOutpaint = useServer((s) => s.catalog?.defaults.edit.outpaint.prompt) ?? "";
+  const editPrompt = useEdit((s) => s.prompts[s.mode] || (s.mode === "outpaint" ? defaultOutpaint : ""));
   const edit = target === "edit";
   return {
     prompt: edit ? editPrompt : createPrompt,

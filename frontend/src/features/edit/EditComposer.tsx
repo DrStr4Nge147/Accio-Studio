@@ -53,12 +53,10 @@ export function EditComposer({ layout, above }: { layout: "dock" | "pane"; above
       tags={mode === "multiedit" ? ws.slots.map((s, i) => ({ n: i + 1, name: s.name, thumb: s.url })) : undefined}
       loraCount={edit.loras[mode].filter((l) => l.on).length}
       promptTool={
-        mode === "multiedit" ? (
-          <div className="flex items-center gap-1.5">
-            <StyleButton target="edit" />
-            <TemplateButton target="edit" />
-          </div>
-        ) : undefined
+        <div className="flex items-center gap-1.5">
+          {mode === "multiedit" && <StyleButton target="edit" />}
+          <TemplateButton target="edit" />
+        </div>
       }
       prompt={prompt}
       onPrompt={(v) => edit.setPrompt(mode, v)}
