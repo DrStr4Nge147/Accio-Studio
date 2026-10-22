@@ -128,7 +128,7 @@ export function SlotGrid() {
             <li className="grid aspect-square place-items-center rounded-m border border-dashed border-line-strong p-2">
               <div className="text-center">
                 <Plus size={22} strokeWidth={1.7} className="mx-auto text-text-3" />
-                <PickButtons multiple onFiles={(f) => void receiveFiles("multiedit", f)} label="Add" compact />
+                <PickButtons mode="multiedit" multiple onFiles={(f) => void receiveFiles("multiedit", f)} label="Add" compact />
               </div>
             </li>
           )}

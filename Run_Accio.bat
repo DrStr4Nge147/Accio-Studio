@@ -41,6 +41,7 @@ for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py
 for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py comfy_dir`) do set "COMFY_DIR=%%a"
 for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py launch_flags`) do set "COMFY_FLAGS=%%a"
 for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py external`) do set "COMFY_EXTERNAL=%%a"
+for /f "usebackq delims=" %%a in (`env\Scripts\python.exe server\settings_cli.py uploads_dir`) do set "UPLOADS_DIR=%%a"
 
 :: Step 1: ComfyUI (bundled; reuse it if it is already running)
 echo [1/3] Checking the backend at %COMFY_URL% ...
@@ -68,7 +69,7 @@ echo       Starting the backend... ^(hidden; its console is in the app, log file
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
 set "COMFY_LOG=%~dp0data\logs\comfyui.log"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$q=[char]34; Start-Process -FilePath cmd.exe -WorkingDirectory $env:COMFY_DIR -WindowStyle Hidden -ArgumentList ('/c ' + $q + '.\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port ' + $env:COMFY_PORT + ' --disable-auto-launch ' + $env:COMFY_FLAGS + ' > ' + $q + $env:COMFY_LOG + $q + ' 2>&1' + $q)"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$q=[char]34; Start-Process -FilePath cmd.exe -WorkingDirectory $env:COMFY_DIR -WindowStyle Hidden -ArgumentList ('/c ' + $q + '.\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 127.0.0.1 --port ' + $env:COMFY_PORT + ' --disable-auto-launch --input-directory ' + $q + $env:UPLOADS_DIR + $q + ' ' + $env:COMFY_FLAGS + ' > ' + $q + $env:COMFY_LOG + $q + ' 2>&1' + $q)"
 set /a WAITED=0
 
 :wait_comfy

@@ -6,6 +6,7 @@ import { ConnectionSection } from "../features/settings/ConnectionSection";
 import { InstallApp } from "../features/settings/InstallApp";
 import { ModelFoldersSection } from "../features/settings/ModelFoldersSection";
 import { SystemSection } from "../features/settings/SystemSection";
+import { UploadsSection } from "../features/settings/UploadsSection";
 import { UpdateSection } from "../features/settings/UpdateSection";
 import { useUi, type Theme } from "../store/ui";
 import { useIsDesktop } from "../lib/useMedia";
@@ -135,6 +136,9 @@ export function SettingsBody({ open }: { open: boolean }) {
         </div>
         <div className="order-5">
           <SystemSection open={open} />
+        </div>
+        <div className="order-6">
+          <UploadsSection />
         </div>
       </div>
       <div className="order-10 lg:col-span-2">

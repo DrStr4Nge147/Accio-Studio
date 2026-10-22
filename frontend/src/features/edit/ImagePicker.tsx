@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
-import { Camera, ImagePlus, Upload } from "lucide-react";
+import { Camera, History, ImagePlus, Upload } from "lucide-react";
 import { giveFilesToMode } from "./workspace";
 import { useEditSubmit } from "./actions";
+import { EarlierUploads } from "./EarlierUploads";
 import type { EditMode } from "./store";
 
 const ACCEPT = "image/*";
 const hasTouch = () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
 
 /** Hidden file inputs behind two buttons: pick from the gallery / disk, or (touch screens) take a photo. */
-export function PickButtons({ multiple, onFiles, label = "Choose an image", compact }: { multiple?: boolean; onFiles: (f: File[]) => void; label?: string; compact?: boolean }) {
+export function PickButtons({ multiple, onFiles, label = "Choose an image", compact, mode }: { multiple?: boolean; onFiles: (f: File[]) => void; label?: string; compact?: boolean; mode?: EditMode }) {
+  const [earlier, setEarlier] = useState(false);
   const pick = useRef<HTMLInputElement>(null);
   const cam = useRef<HTMLInputElement>(null);
   const take = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,6 +27,14 @@ export function PickButtons({ multiple, onFiles, label = "Choose an image", comp
       <button type="button" onClick={() => pick.current?.click()} className={cls}>
         <ImagePlus size={20} strokeWidth={1.7} /> {label}
       </button>
+      {mode && (
+        <>
+          <button type="button" onClick={() => setEarlier(true)} className={`hover-wash flex ${compact ? "h-11 px-3" : "h-12 px-4"} items-center gap-2 whitespace-nowrap rounded-full border border-line-strong text-[14px] font-medium text-text-2 hover:text-text`}>
+            <History size={20} strokeWidth={1.7} /> {compact ? "Earlier" : "Earlier uploads"}
+          </button>
+          <EarlierUploads mode={mode} open={earlier} onClose={() => setEarlier(false)} />
+        </>
+      )}
       {hasTouch() && (
         <button type="button" onClick={() => cam.current?.click()} className={`hover-wash flex ${compact ? "h-11 px-3" : "h-12 px-4"} items-center gap-2 whitespace-nowrap rounded-full border border-line-strong text-[14px] font-medium text-text-2 hover:text-text`}>
           <Camera size={20} strokeWidth={1.7} /> {compact ? "Camera" : "Take a photo"}
@@ -90,7 +100,7 @@ export function EmptyPicker({ mode, title, text, icon }: { mode: EditMode; title
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-raised text-text-2 [@media(max-height:700px)]:hidden">{icon ?? <Upload size={22} strokeWidth={1.7} />}</div>
         <h2 className="serif mt-4 text-[20px] font-medium leading-tight sm:text-[22px] [@media(max-height:700px)]:mt-0">{title}</h2>
         <div className="mt-4">
-          <PickButtons multiple={mode === "multiedit"} onFiles={(f) => void receiveFiles(mode, f)} label={mode === "multiedit" ? "Choose images" : "Choose an image"} />
+          <PickButtons mode={mode} multiple={mode === "multiedit"} onFiles={(f) => void receiveFiles(mode, f)} label={mode === "multiedit" ? "Choose images" : "Choose an image"} />
         </div>
         <p className="mx-auto mt-4 max-w-xs text-[13px] text-text-2 sm:text-[14px]">{text}</p>
         <p className="mt-3 text-[12px] text-text-3 [@media(pointer:coarse)]:hidden">You can also drop a file here or paste one with Ctrl+V.</p>

@@ -14,6 +14,7 @@ SETTINGS_FILE = ROOT / "settings.json"
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 MANIFEST_FILE = TEMPLATES_DIR / "manifest.json"
 DATA_DIR = ROOT / "data"
+UPLOADS_DIR = DATA_DIR / "uploads"  # the one folder for uploaded source images; the bundled ComfyUI reads its input from here
 INSTALL_STATE_FILE = DATA_DIR / "install.json"
 FRONTEND_DIST = ROOT / "frontend" / "dist"
 BUNDLED_COMFY_DIR = ROOT / "comfyui"

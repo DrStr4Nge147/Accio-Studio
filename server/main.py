@@ -34,6 +34,7 @@ import updates
 from auth import Auth
 from authapi import GuardMiddleware, local_trusted, router as auth_router
 from modelpathsapi import router as model_paths_router
+from uploads import INPUT_NAME, UPLOAD_KINDS, UPLOADS_DIR, local_copy, migrate_legacy_input, router as uploads_router
 from userdata import router as userdata_router
 from comfy import ComfyClient, ComfyError
 from config import DATA_DIR, FRONTEND_DIST, ROOT, comfy_dir, comfy_url, load_manifest, load_settings, template_files
@@ -52,9 +53,6 @@ for _m in MANIFEST["models"]:
     if _m["required"]:
         REQUIRED_MODELS.setdefault(_m["folder"], []).append(_m["file"])
 THUMBS_DIR = DATA_DIR / "thumbs"
-UPLOADS_DIR = DATA_DIR / "uploads"  # our own copy of every upload, so previews never wait on the busy backend
-INPUT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
-UPLOAD_KINDS = {"media": engine.MEDIA_SUBFOLDER, "image": engine.UPLOAD_SUBFOLDER, "mask": engine.UPLOAD_SUBFOLDER}
 
 
 def sniff_image(head: bytes) -> tuple[str, str] | None:
@@ -69,13 +67,15 @@ def sniff_image(head: bytes) -> tuple[str, str] | None:
 
 
 def save_upload_copy(subfolder: str, name: str, data: bytes) -> None:
-    """Best effort: a failed copy only means the preview falls back to the backend's own file."""
+    """Only needed when the backend does not write into data/uploads itself (an external one). Best effort: a failed copy only
+    means the preview falls back to the backend's own file."""
     try:
         if not INPUT_NAME.fullmatch(name):
             return
         folder = UPLOADS_DIR / subfolder
         folder.mkdir(parents=True, exist_ok=True)
-        (folder / name).write_bytes(data)
+        if not (folder / name).exists():
+            (folder / name).write_bytes(data)
     except OSError:
         log.warning("could not keep a copy of an upload")
 
@@ -109,6 +109,8 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     app.state.comfy = ComfyClient(comfy_url(settings))
     app.state.history = History(DATA_DIR / "history.db")
+    if not str(settings["external_comfy_url"]).strip():
+        await asyncio.to_thread(migrate_legacy_input, comfy_dir(settings) / "ComfyUI" / "input")
     app.state.jobs = JobManager(app.state.comfy, app.state.history)
     out_dir = outputs.output_dir(comfy_dir(settings)) if outputs.can_delete(settings, comfy_dir(settings)) else None
     app.state.sheets = SheetManager(app.state.jobs, app.state.history, app.state.comfy, out_dir)
@@ -151,6 +153,7 @@ app.add_middleware(SkipImageGZip)
 app.add_middleware(GuardMiddleware)  # added last = outermost: nothing private runs before the session check
 app.include_router(auth_router)
 app.include_router(model_paths_router)
+app.include_router(uploads_router)
 app.include_router(userdata_router)
 
 
@@ -489,7 +492,7 @@ async def upload(request: Request, kind: str):
     ext, mime = sniffed
     if kind == "mask" and not (ext == "png" and png_has_alpha(bytes(data[:32]))):
         raise HTTPException(422, "The mask upload must be an RGBA PNG.")
-    name = f"{uuid.uuid4().hex}.{ext}"
+    name = f"{'mask-' if kind == 'mask' else ''}{uuid.uuid4().hex}.{ext}"
     res = await request.app.state.comfy.upload_image(bytes(data), name, UPLOAD_KINDS[kind], mime)
     await asyncio.to_thread(save_upload_copy, UPLOAD_KINDS[kind], res["name"], bytes(data))
     return {"file": res["name"], "kind": kind}
@@ -500,8 +503,8 @@ async def input_image(kind: str, file: str, request: Request):
     """Serve back an image this app uploaded (compare slider, reuse). Only our own upload folders, validated names."""
     if kind not in ("media", "image") or not INPUT_NAME.fullmatch(file):
         raise HTTPException(404, "Image not found.")
-    local = UPLOADS_DIR / UPLOAD_KINDS[kind] / file
-    if local.is_file():
+    local = local_copy(file, UPLOAD_KINDS[kind])  # a photo uploaded for another mode is the same file
+    if local:
         return FileResponse(local, headers={"Cache-Control": "private, max-age=31536000, immutable"})
     comfy: ComfyClient = request.app.state.comfy
     upstream = await comfy.send(comfy.view_stream(file, UPLOAD_KINDS[kind], "input"), stream=True)

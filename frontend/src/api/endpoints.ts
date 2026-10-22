@@ -137,3 +137,19 @@ export const browseFolders = (path: string) => get<FolderListing>(`/api/model-pa
 export const pickFolder = (start: string) => post<{ path: string | null }>("/api/model-paths/pick", { start });
 export const fetchModelPaths = () => get<ModelPaths>("/api/model-paths");
 export const saveModelPaths = (paths: ModelPathValues) => put<{ restart: ModelPaths["restart"] }>("/api/model-paths", { paths });
+
+/** Deletes every uploaded source image (our copies and the backend's input folder). */
+export const clearUploads = () => post<{ removed: number }>("/api/uploads/clear");
+
+export interface UploadedImage {
+  file: string;
+  /** which upload folder it sits in: the URL to show it is inputUrl(kind, file) */
+  kind: "media" | "image";
+  size: number;
+  /** seconds since 1970 */
+  time: number;
+}
+export const fetchUploads = () => get<{ uploads: UploadedImage[] }>("/api/uploads").then((r) => r.uploads);
+/** Makes a stored upload readable by the mode that uses this kind (no second copy on disk). */
+export const makeUploadUsable = (file: string, kind: "media" | "image") => post<{ file: string }>(`/api/uploads/${file}/use?kind=${kind}`);
+export const deleteUpload = (file: string) => del<{ ok: boolean }>(`/api/uploads/${file}`);

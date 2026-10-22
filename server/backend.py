@@ -1,12 +1,13 @@
 """Restart the bundled ComfyUI (needed after the model folders change: it reads extra_model_paths.yaml only at startup).
 
-Mirrors what Run_Accio.bat does to start it: same python, same arguments, console output to data/logs/comfyui.log.
+Mirrors what Run_Accio.bat does to start it: same python, same arguments (input folder = data/uploads), console output to data/logs/comfyui.log.
 Only a process whose program lives inside the bundled ComfyUI folder is ever stopped.
 """
 from __future__ import annotations
 
 import os
 import shlex
+import shutil
 import socket
 import subprocess
 import time
@@ -49,13 +50,31 @@ def stop(base: Path, port: int) -> None:
         raise BackendError("The backend did not stop. Close it with Stop_Accio.bat and start Accio again.")
 
 
+def clear_folder(folder: Path) -> int:
+    """Delete everything inside `folder` (the folder stays). Returns how many entries were removed; locked ones are skipped."""
+    if not folder.is_dir():
+        return 0
+    removed = 0
+    for item in folder.iterdir():
+        try:
+            if item.is_dir() and not item.is_symlink():
+                shutil.rmtree(item)
+            else:
+                item.unlink()
+            removed += 1
+        except OSError:
+            pass  # in use or locked: leave it, the next clear tries again
+    return removed
+
+
 def start(base: Path, port: int, flags: str, log_file: Path) -> None:
     py = base / "python_embeded" / "python.exe"
     if not py.is_file():
         raise BackendError("The bundled backend was not found. Run Install.bat.")
     log_file.parent.mkdir(parents=True, exist_ok=True)
+    config.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
     args = [str(py), "-s", r"ComfyUI\main.py", "--windows-standalone-build", "--listen", "127.0.0.1", "--port", str(port),
-            "--disable-auto-launch", *shlex.split(flags, posix=False)]
+            "--disable-auto-launch", "--input-directory", str(config.UPLOADS_DIR), *shlex.split(flags, posix=False)]
     env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
     with log_file.open("wb") as log:
         subprocess.Popen(args, cwd=base, env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,  # noqa: S603

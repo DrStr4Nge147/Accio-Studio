@@ -139,7 +139,7 @@ export function SheetEditor() {
               {upload.status === "uploading" ? "Uploading…" : upload.status === "error" ? (upload.error ?? "Upload failed") : `${src.w} × ${src.h}`}
             </p>
             <div className="mt-2">
-              <PickButtons compact label="Change photo" onFiles={(f) => void receiveFiles("charsheet", f)} />
+              <PickButtons mode="charsheet" compact label="Change photo" onFiles={(f) => void receiveFiles("charsheet", f)} />
             </div>
           </div>
         </div>

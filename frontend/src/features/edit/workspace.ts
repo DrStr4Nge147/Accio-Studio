@@ -11,6 +11,8 @@ export interface Source {
   w: number;
   h: number;
   name: string;
+  /** server file name when this image is already in the upload folder (picked from the earlier uploads), so it is not uploaded again */
+  uploaded?: string;
 }
 
 export interface Slot {
@@ -183,6 +185,29 @@ export function restoreSlots(images: { file: string; name?: string }[], urlOf: (
     img.onload = () => patchSlot(s.id, { w: img.naturalWidth, h: img.naturalHeight });
     img.src = s.url;
   }
+}
+
+/** Add images that are already uploaded (picked from the earlier uploads) to the tray, up to the limit. Returns how many did not fit. */
+export function addUploadedSlots(items: { file: string; url: string }[]): number {
+  const room = MAX_SLOTS - useWorkspace.getState().slots.length;
+  const take = items.slice(0, Math.max(0, room));
+  const slots = take.map((i) => ({ id: uid(), name: i.file, url: i.url, status: "ready" as const, progress: 1, file: i.file }));
+  useWorkspace.getState().setSlots((s) => [...s, ...slots]);
+  for (const s of slots) {
+    const img = new Image();
+    img.onload = () => patchSlot(s.id, { w: img.naturalWidth, h: img.naturalHeight });
+    img.src = s.url;
+  }
+  return items.length - take.length;
+}
+
+/** An upload was deleted: take it off whatever canvas still holds it. */
+export function forgetUploaded(file: string) {
+  const ws = useWorkspace.getState();
+  ws.setSlots((s) => s.filter((x) => x.file !== file));
+  if (ws.inpaint.src?.uploaded === file) ws.setInpaint({ src: null, ops: [], redo: [] });
+  if (ws.outpaint.upload.file === file) ws.setOutpaint({ src: null, pads: NO_PADS, upload: { status: "idle", progress: 0 } });
+  if (ws.sheet.upload.file === file) ws.setSheet({ src: null, upload: { status: "idle", progress: 0 } });
 }
 
 // ----------------------------------------------------------------------------- Inpaint / Outpaint sources

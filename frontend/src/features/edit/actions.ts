@@ -56,7 +56,7 @@ export async function generateEdit() {
       useEditSubmit.setState({ stage: "Uploading the mask…" });
       const file = await uploadImage("mask", png);
       // The untouched original too (a plain upload, nothing re-encoded), so the result can be compared with it later.
-      const original = await uploadImage("image", src.blob);
+      const original = src.uploaded ?? (await uploadImage("image", src.blob));
       params = inpaintParams(s, file, src, original);
       before = src.url;
       const ops = ws.inpaint.ops;
