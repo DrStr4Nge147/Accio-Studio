@@ -11,6 +11,7 @@ import { generateEdit } from "./features/edit/actions";
 import { DesktopLayout } from "./layout/DesktopLayout";
 import { MobileLayout } from "./layout/MobileLayout";
 import { useIsDesktop } from "./lib/useMedia";
+import { startUserdataSync } from "./lib/userdataSync";
 import { useServer } from "./store/health";
 import { isActive, useJobs } from "./store/jobs";
 import { useUi, type Tab } from "./store/ui";
@@ -21,6 +22,7 @@ function useStartup() {
   const connected = useJobs((s) => s.connected);
   const online = useServer((s) => s.health?.comfy_online);
   useEffect(startSocket, []);
+  useEffect(startUserdataSync, []); // templates and trigger words follow you across devices
   // Health and catalog are re-read whenever the live connection (re)appears; while ComfyUI is down, keep checking.
   useEffect(() => {
     void useServer.getState().refreshHealth();

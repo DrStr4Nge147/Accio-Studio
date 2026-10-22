@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, Plus, X } from "lucide-react";
 import { IconButton, Segmented, Slider, Toggle } from "./ui/controls";
 import { loraLabel, lorasForMode } from "../lib/loras";
+import { splitWords, useTriggerWords } from "../lib/triggerWords";
 import { useServer } from "../store/health";
 import type { LoraMode } from "../lib/loras";
 
@@ -11,6 +12,50 @@ export interface LoraSel {
   strength: number;
   on: boolean;
   target: LoraTarget;
+}
+
+/** Trigger words saved for a LoRA, shown as tags; typing `@` in the prompt box offers them. */
+function TriggerField({ lora }: { lora: string }) {
+  const words = useTriggerWords((s) => s.words[lora]) ?? [];
+  const [draft, setDraft] = useState("");
+  const save = (list: string[]) => useTriggerWords.getState().set(lora, list);
+  // Commit whatever is typed (a pasted "a, b, c" becomes three tags)
+  const commit = (text: string) => {
+    const added = splitWords(text);
+    if (added.length) save([...new Set([...words, ...added])]);
+    setDraft("");
+  };
+
+  return (
+    <div
+      data-tip="Saved on this device. Type @ in the prompt box to insert these"
+      className="mt-1 flex min-h-10 flex-wrap items-center gap-1.5 rounded-s border border-line bg-raised px-2 py-1.5 focus-within:border-gold"
+    >
+      {words.map((w) => (
+        <span key={w} className="flex max-w-full items-center gap-1 rounded-full border border-gold/45 bg-gold-wash py-0.5 pl-2.5 pr-1 text-[12.5px] text-gold-text">
+          <span className="truncate">{w}</span>
+          <button type="button" aria-label={`Remove trigger word ${w}`} onClick={() => save(words.filter((x) => x !== w))} className="flex h-5 w-5 flex-none items-center justify-center rounded-full hover:bg-black/20">
+            <X size={12} strokeWidth={2} />
+          </button>
+        </span>
+      ))}
+      <input
+        value={draft}
+        onChange={(e) => (e.target.value.includes(",") ? commit(e.target.value) : setDraft(e.target.value))}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit(draft);
+          } else if (e.key === "Backspace" && !draft && words.length) save(words.slice(0, -1));
+        }}
+        onBlur={() => commit(draft)}
+        placeholder={words.length ? "Add another" : "Trigger words: type one, press Enter or comma"}
+        aria-label={`Trigger words for ${loraLabel(lora)}`}
+        maxLength={120}
+        className="h-7 min-w-[8rem] flex-1 bg-transparent px-1 text-[13px] text-text outline-none placeholder:text-text-3"
+      />
+    </div>
+  );
 }
 
 /**
@@ -83,6 +128,7 @@ export function LoraList({
                 disabled={!l.on}
                 onChange={(strength) => update(i, { strength })}
               />
+              <TriggerField lora={l.name} />
               {passes && (
                 <Segmented<LoraTarget>
                   small

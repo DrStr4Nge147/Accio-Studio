@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ChevronDown, Loader2, Sparkles, X } from "lucide-react";
 import { useMedia } from "../lib/useMedia";
-import { applyTag, detectTagTrigger, type TagTrigger } from "../lib/tagSuggest";
+import { applyAt, applyTag, detectAtTrigger, detectTagTrigger, type AtTrigger, type TagTrigger } from "../lib/tagSuggest";
+import type { TriggerOption } from "../lib/triggerWords";
 
 /** One image the prompt can refer to as <imageN> (Multi-edit). */
 export interface ImageTag {
@@ -34,6 +35,7 @@ export function Composer({
   promptTool,
   collapse,
   loraCount = 0,
+  triggers,
   generateIcon =<Sparkles size={20} strokeWidth={1.7} />,
 }: {
   layout: "dock" | "pane";
@@ -63,6 +65,8 @@ export function Composer({
   collapse?: { collapsed: boolean; onToggle: () => void; label: string; hint: string };
   /** number of LoRAs that will be applied; when above 0 a glowing "LoRA enabled" note sits under the prompt box */
   loraCount?: number;
+  /** saved LoRA trigger words: typing `@` suggests them */
+  triggers?: TriggerOption[];
   generateIcon?: ReactNode;
 }) {
   const area = useRef<HTMLTextAreaElement>(null);
@@ -74,19 +78,27 @@ export function Composer({
   const [focused, setFocused] = useState(false);
   const [boxH, setBoxH] = useState(0); // dock: current (animated-to) height of the prompt box
   const [slot, setSlot] = useState(0); // dock: height the prompt keeps in the layout; typing past it grows the box upward over the stage
+  const [at, setAt] = useState<AtTrigger | null>(null);
   const options = trig && tags ? tags.filter((t) => String(t.n).startsWith(trig.digits)) : [];
-  const open = options.length > 0;
+  const atOptions = at && triggers ? triggers.filter((o) => !at.query || o.sub.toLowerCase().includes(at.query) || o.text.toLowerCase().includes(at.query)) : [];
+  const count = atOptions.length || options.length; // `@` and `<image` can't both be under the caret
+  const open = count > 0;
 
   const refresh = (el: HTMLTextAreaElement) => {
     setTrig(tags?.length ? detectTagTrigger(el.value, el.selectionStart) : null);
+    setAt(triggers?.length ? detectAtTrigger(el.value, el.selectionStart) : null);
     setActive(0);
   };
-  const accept = (n: number) => {
+  const accept = (i: number) => {
     const el = area.current;
-    if (!el || !trig) return;
-    const r = applyTag(el.value, trig, n);
+    if (!el) return;
+    let r: { text: string; caret: number };
+    if (atOptions.length && at) r = applyAt(el.value, at, atOptions[i]!.text);
+    else if (trig && options[i]) r = applyTag(el.value, trig, options[i]!.n);
+    else return;
     onPrompt(r.text);
     setTrig(null);
+    setAt(null);
     requestAnimationFrame(() => {
       el.focus();
       el.setSelectionRange(r.caret, r.caret);
@@ -94,10 +106,12 @@ export function Composer({
   };
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (!open) return;
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") setActive((a) => (a + (e.key === "ArrowDown" ? 1 : options.length - 1)) % options.length);
-    else if (e.key === "Enter" || e.key === "Tab") accept(options[Math.min(active, options.length - 1)]!.n);
-    else if (e.key === "Escape") setTrig(null);
-    else return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") setActive((a) => (a + (e.key === "ArrowDown" ? 1 : count - 1)) % count);
+    else if (e.key === "Enter" || e.key === "Tab") accept(Math.min(active, count - 1));
+    else if (e.key === "Escape") {
+      setTrig(null);
+      setAt(null);
+    } else return;
     e.preventDefault();
     e.stopPropagation(); // Enter would add a line, Escape would cancel the running job
   };
@@ -154,12 +168,13 @@ export function Composer({
         onFocus={() => setFocused(true)}
         onBlur={() => {
           setTrig(null);
+          setAt(null);
           setFocused(false);
         }}
         placeholder={placeholder}
         rows={dock ? (short ? 1 : 2) : 4}
         aria-label={collapse?.label ?? "Prompt"}
-        aria-autocomplete={tags ? "list" : undefined}
+        aria-autocomplete={tags || triggers?.length ? "list" : undefined}
         maxLength={8000}
         className={`w-full resize-none py-2.5 pl-3 ${dock ? "pr-12" : "pr-3"} text-[15px] leading-snug text-text outline-none ${dock ? `absolute inset-x-0 bottom-0 transition-[height,box-shadow] duration-200 ease-out motion-reduce:transition-none ${focused ? "z-20 shadow-[0_-8px_24px_rgba(0,0,0,0.35)]" : ""}` : ""} ${tool ? "rounded-t-m bg-transparent" : "rounded-m border border-line bg-raised focus:border-gold"}`}
       />
@@ -182,7 +197,27 @@ export function Composer({
         </button>
       )}
       {tool && <div className="px-2 pb-2">{tool}</div>}
-      {open && (
+      {atOptions.length > 0 && (
+        <ul role="listbox" aria-label="LoRA trigger words" className={`absolute inset-x-0 z-30 max-h-56 overflow-y-auto rounded-m border border-line-strong bg-overlay p-1 shadow-xl ${dock ? "bottom-full mb-1.5" : "top-full mt-1"}`}>
+          {atOptions.map((o, i) => (
+            <li key={o.key} role="option" aria-selected={i === active}>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  accept(i);
+                }}
+                onMouseEnter={() => setActive(i)}
+                className={`flex min-h-11 w-full flex-col justify-center rounded-lg px-2 py-1.5 text-left ${i === active ? "bg-raised text-text" : "text-text-2"}`}
+              >
+                <span className="truncate font-mono text-[13px] text-gold-text">{o.text}</span>
+                <span className="truncate text-[12px] text-text-3">{o.sub}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {options.length > 0 && !atOptions.length && (
         <ul role="listbox" aria-label="Images to refer to" className={`absolute inset-x-0 z-30 max-h-56 overflow-y-auto rounded-m border border-line-strong bg-overlay p-1 shadow-xl ${dock ? "bottom-full mb-1.5" : "top-full mt-1"}`}>
           {options.map((o, i) => (
             <li key={o.n} role="option" aria-selected={i === active}>
@@ -191,7 +226,7 @@ export function Composer({
                 // mouse down, not click: the textarea must not lose focus (its blur closes this list)
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  accept(o.n);
+                  accept(i);
                 }}
                 onMouseEnter={() => setActive(i)}
                 className={`flex min-h-11 w-full items-center gap-2.5 rounded-lg px-2 text-left ${i === active ? "bg-raised text-text" : "text-text-2"}`}

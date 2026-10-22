@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Composer } from "../../components/Composer";
+import { useTriggerOptions } from "../../lib/triggerWords";
 import { useServer } from "../../store/health";
 import { isActive, useJobs } from "../../store/jobs";
 import { useUi } from "../../store/ui";
@@ -30,6 +31,7 @@ export function EditComposer({ layout, above }: { layout: "dock" | "pane"; above
   const offline = useServer((s) => s.health?.comfy_online) === false;
   const defaultPrompt = useServer((s) => s.catalog?.defaults.edit.outpaint.prompt) ?? "";
   const mode = edit.mode;
+  const triggers = useTriggerOptions(edit.loras[mode]);
   const blocker = editBlocker(edit, ws);
   // Outpaint has a built-in prompt and Inpaint's is secondary to the mask, so both start folded (per mode, kept while switching).
   const open = useUi((s) => s.promptOpen);
@@ -52,6 +54,7 @@ export function EditComposer({ layout, above }: { layout: "dock" | "pane"; above
       }
       tags={mode === "multiedit" ? ws.slots.map((s, i) => ({ n: i + 1, name: s.name, thumb: s.url })) : undefined}
       loraCount={edit.loras[mode].filter((l) => l.on).length}
+      triggers={triggers}
       promptTool={
         <div className="flex items-center gap-1.5">
           {mode === "multiedit" && <StyleButton target="edit" />}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyTag, detectTagTrigger } from "./tagSuggest";
+import { applyAt, applyTag, detectAtTrigger, detectTagTrigger } from "./tagSuggest";
 
 describe("detectTagTrigger", () => {
   it("fires on <, <im..., and a bare im / image / imageN at the caret", () => {
@@ -35,5 +35,29 @@ describe("applyTag", () => {
     const text = "from <image>";
     const t = detectTagTrigger(text, 11)!;
     expect(applyTag(text, t, 3).text).toBe("from <image3> ");
+  });
+});
+
+describe("detectAtTrigger", () => {
+  it("finds a bare @ and a partial word at the caret", () => {
+    expect(detectAtTrigger("@", 1)).toEqual({ start: 0, end: 1, query: "" });
+    expect(detectAtTrigger("a cat, @gh", 10)).toEqual({ start: 7, end: 10, query: "gh" });
+  });
+  it("ignores an @ inside a word such as an e-mail address", () => {
+    expect(detectAtTrigger("me@site", 7)).toBeNull();
+  });
+  it("ignores an @ the caret has already left", () => {
+    expect(detectAtTrigger("@ghibli and more", 16)).toBeNull();
+  });
+});
+
+describe("applyAt", () => {
+  it("replaces the typed token with the words and a space", () => {
+    const t = detectAtTrigger("a cat, @gh", 10)!;
+    expect(applyAt("a cat, @gh", t, " ghibli style ")).toEqual({ text: "a cat, ghibli style ", caret: 20 });
+  });
+  it("keeps the text after the caret", () => {
+    const t = detectAtTrigger("@ at the end", 1)!;
+    expect(applyAt("@ at the end", t, "zz")).toEqual({ text: "zz  at the end", caret: 3 });
   });
 });
