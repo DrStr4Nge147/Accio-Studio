@@ -417,10 +417,13 @@ const UNDERAGE_WORDS = /(?<![a-z])(child|children|kid|kids|boy|girl|baby|toddler
 /** "35", "young 20", "early 30s", "42 years old" -> the words before the number, the number, and whether it was a decade ("30s"). */
 const ageParts = (t: string) => /^(.*?)\s*(\d{1,3})(s|\s*[- ]?(?:years?[- ]old|yo|y\/o))?$/i.exec(t);
 const age: CustomSpec = {
-  example: "e.g. 35, young 20, or weathered old",
+  example: "e.g. 35, 25-30, young 20, or weathered old",
   reject: (t) => UNDERAGE_WORDS.test(t) || (/\d/.test(t) && !(t.match(/\d+/g) ?? []).every((n) => Number(n) >= 18)),
   rejectNote: "Adults only: use an age of 18 or more.",
   wrap: (t) => {
+    // "25-30", "25 to 30", "25-30 years old" -> "25-to-30-year-old"
+    const r = /^(\d{2,3})\s*(?:-|–|to)\s*(\d{2,3})(?:\s*[- ]?(?:years?[- ]old|yo|y\/o))?$/i.exec(t);
+    if (r) return `${Number(r[1])}-to-${Number(r[2])}-year-old`;
     const m = ageParts(t);
     if (!m) return t;
     const [, before, n, suffix] = m;

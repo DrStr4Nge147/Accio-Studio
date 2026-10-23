@@ -112,6 +112,11 @@ describe("typed-in age", () => {
     expect(age("young 20")).toBe("Photo of a young 20-year-old woman.");
     expect(age("early 30s")).toBe("Photo of an early 30-something woman.");
   });
+  it("accepts adult age ranges and refuses ranges that dip under 18", () => {
+    expect(age("25-30")).toBe("Photo of a 25-to-30-year-old woman.");
+    expect(age("40 to 50 years old")).toBe("Photo of a 40-to-50-year-old woman.");
+    expect(age("15-25")).toBe("Photo of a woman.");
+  });
   it("refuses a young-sounding number under 18", () => {
     expect(age("young 15")).toBe("Photo of a woman.");
   });
