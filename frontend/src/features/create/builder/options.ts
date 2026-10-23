@@ -81,7 +81,6 @@ export const CHARACTER_FIELDS: BuilderField[] = [
       opt("Ponytail", "hair in a ponytail"),
       opt("Bob cut", "a sleek bob haircut"),
       opt("Buzz cut", "a buzz cut"),
-      opt("Gray", "gray hair"),
       opt("Bald", "a shaved head"),
     ],
   },
