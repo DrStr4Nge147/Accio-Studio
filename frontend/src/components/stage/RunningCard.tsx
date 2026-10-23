@@ -5,6 +5,7 @@ import { useBeforeUrl, useMaskPreviewUrl } from "../../features/edit/useBefore";
 import { formatEta, isEnhancing, jobSize, passOf, useDecodePhase, useEta } from "../../lib/jobView";
 import { useJobs } from "../../store/jobs";
 import { Ring } from "../Wordmark";
+import { LogoDust } from "./LogoDust";
 import { Box } from "./Box";
 
 // A few small bubbles, fixed so the card looks the same on every render. x = left edge in %, s = size, d = rise time.
@@ -106,7 +107,11 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
         <img src={preview} alt="" className={`absolute inset-0 h-full w-full scale-110 object-cover opacity-90 saturate-125 transition-[filter] duration-700 ${decoding ? "blur-[5px]" : "blur-[14px]"}`} />
       ) : (
         <div className="absolute inset-0 grid place-items-center text-text-3">
-          <Ring className={`h-14 w-14 motion-reduce:animate-none ${cancelling ? "animate-spin [animation-duration:1.4s]" : "animate-pulse"}`} />
+          {cancelling ? (
+            <LogoDust />
+          ) : (
+            <Ring className="h-14 w-14 animate-pulse motion-reduce:animate-none" />
+          )}
         </div>
       )}
       {cancelling ? <div className="absolute inset-0 z-[1] bg-black/35 fade-in" aria-hidden /> : staged ? null : decoding ? <Ripples /> : <Bubbles />}
