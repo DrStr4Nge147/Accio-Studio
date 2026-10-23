@@ -5,6 +5,7 @@ import { useServer } from "../../store/health";
 import { isActive, useJobs } from "../../store/jobs";
 import { useUi } from "../../store/ui";
 import { cancelCurrent, generate, useSubmit } from "./actions";
+import { BuilderButton } from "./builder/BuilderSheet";
 import { CreateChips, CreateToggles } from "./CreateControls";
 import { StyleButton } from "./StylePicker";
 import { TemplateButton } from "./TemplatePicker";
@@ -32,6 +33,7 @@ export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; abo
       triggers={triggers}
       promptTool={
         <div className="flex items-center gap-1.5">
+          <BuilderButton />
           <StyleButton />
           <TemplateButton />
         </div>
