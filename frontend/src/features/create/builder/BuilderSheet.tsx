@@ -50,6 +50,11 @@ function FieldRow({ mode, field, value, onPick }: { mode: BuilderMode; field: Bu
           }`}
         />
       )}
+      {spec && typed.trim() && spec.reject?.(typed.trim()) && (
+        <p role="alert" className="mt-1 text-[12px] text-danger">
+          {spec.rejectNote}
+        </p>
+      )}
     </div>
   );
 }

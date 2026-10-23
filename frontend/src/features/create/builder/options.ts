@@ -400,6 +400,10 @@ export interface CustomSpec {
   example: string;
   /** bare text -> the phrase that goes into the prompt (default: as typed) */
   wrap?: (text: string) => string;
+  /** true = the text is not allowed, so it is left out of the prompt (and the box says why) */
+  reject?: (text: string) => boolean;
+  /** shown under the box while the text is rejected */
+  rejectNote?: string;
 }
 
 const hasArticle = (t: string) => /^(a|an|the|some|his|her|their|two|three|several|many)\s/i.test(t);
@@ -408,15 +412,25 @@ const withArticle = (t: string) => (hasArticle(t) || /s$/i.test(t) ? t : `${/^[a
 const addTo = (t: string, re: RegExp, suffix: string) => (re.test(t) ? t : `${t} ${suffix}`);
 const startsWith = (t: string, re: RegExp, prefix: string) => (re.test(t) ? t : `${prefix} ${t}`);
 
+/** The age box is adults only, like the chips: a number under 18, or a word for a child or teenager, is refused. */
+const UNDERAGE_WORDS = /(?<![a-z])(child|children|kid|kids|boy|girl|baby|toddler|infant|teen|teens|teenage|teenager|preteen|tween|minor|juvenile|adolescent|schoolboy|schoolgirl|underage)(?![a-z])/i;
+const ageNumber = (t: string) => /^(\d{1,3})(?:\s*[- ]?(?:years?[- ]old|yo|y\/o))?$/i.exec(t)?.[1];
+const age: CustomSpec = {
+  example: "e.g. 35, or weathered old",
+  reject: (t) => UNDERAGE_WORDS.test(t) || (/\d/.test(t) && !/^\d0s$/.test(t) && !(Number(ageNumber(t) ?? "0") >= 18) ),
+  rejectNote: "Adults only: use an age of 18 or more.",
+  wrap: (t) => (ageNumber(t) ? `${Number(ageNumber(t))}-year-old` : /^(\d)0s$/.test(t) ? `${t[0]}0-something` : t),
+};
+
 const lighting: CustomSpec = { example: "e.g. warm orange sunset glow", wrap: (t) => addTo(t, /light|lit\b|glow|sun|shadow|lamp|candle|neon/i, "lighting") };
 const mood: CustomSpec = { example: "e.g. nostalgic", wrap: (t) => addTo(t, /atmosphere|mood|feel/i, "atmosphere") };
 const lens: CustomSpec = { example: "e.g. 35mm", wrap: (t) => addTo(t, /lens|depth|focus|bokeh/i, "lens") };
 
-/** Per mode and field id. `false` = no typed-in text (ages stay on the adult-only list; gender stays a choice). */
+/** Per mode and field id. `false` = no typed-in text (gender stays a choice). */
 export const CUSTOM: Record<BuilderMode, Record<string, CustomSpec | false>> = {
   character: {
     gender: false,
-    age: false,
+    age,
     ethnicity: { example: "e.g. Thai" },
     height: { example: "e.g. very tall" },
     build: { example: "e.g. broad-shouldered", wrap: (t) => (hasArticle(t) || /build|physique|frame/i.test(t) ? t : `a ${t} build`) },

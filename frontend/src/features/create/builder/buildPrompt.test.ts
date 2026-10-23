@@ -94,10 +94,24 @@ describe("typed-in text", () => {
   it("tidies spaces and trailing punctuation, and ignores empty or unsupported text", () => {
     expect(buildPrompt("character", { clothing: c("  a red   scarf. ") })).toBe("Photo of a person wearing a red scarf.");
     expect(buildPrompt("character", { clothing: c("   ") })).toBe("Photo of a person.");
-    // age and gender stay on their lists, so typed text there is ignored
-    expect(buildPrompt("character", { age: c("teenage"), gender: c("girl") })).toBe("Photo of a person.");
+    // gender stays on its list, so typed text there is ignored
+    expect(buildPrompt("character", { gender: c("girl") })).toBe("Photo of a person.");
     expect(isEmpty({ hair: c("  ") }, "", "character")).toBe(true);
     expect(isEmpty({ hair: c("red") }, "", "character")).toBe(false);
+  });
+});
+
+describe("typed-in age", () => {
+  const age = (t: string) => buildPrompt("character", { age: `custom:${t}`, gender: "woman" });
+  it("accepts adult ages and descriptions", () => {
+    expect(age("35")).toBe("Photo of a 35-year-old woman.");
+    expect(age("42 years old")).toBe("Photo of a 42-year-old woman.");
+    expect(age("18")).toBe("Photo of a 18-year-old woman.");
+    expect(age("30s")).toBe("Photo of a 30-something woman.");
+    expect(age("weathered old")).toBe("Photo of a weathered old woman.");
+  });
+  it("refuses anything under 18 or describing a child or teenager", () => {
+    for (const t of ["17", "12 years old", "0", "teenage", "a kid", "little girl", "young boy", "toddler", "5", "16-year-old", "teen"]) expect(age(t), t).toBe("Photo of a woman.");
   });
 });
 
