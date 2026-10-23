@@ -3,7 +3,7 @@ import { Chip, ChipRow, Label, Segmented, Toggle } from "../../components/ui/con
 import { useUi } from "../../store/ui";
 import { selectEditMode, togglePreset } from "./actions";
 import { OptionsChip } from "../create/CreateControls";
-import { StyleChip } from "../create/StylePicker";
+import { PromptToolsChip } from "../create/PromptToolsChip";
 import { TemplateChip } from "../create/TemplatePicker";
 import { EditAdvanced } from "./EditAdvanced";
 import { isKleinModel } from "./klein";
@@ -38,8 +38,7 @@ export function EditChips() {
   const klein = isKleinModel(s.model);
   return (
     <ChipRow end={<OptionsChip />}>
-      {mode === "multiedit" && <StyleChip target="edit" />}
-      <TemplateChip target="edit" />
+      {mode === "multiedit" && <PromptToolsChip target="edit" />}
       {presetsFor(mode, klein).map((id) => (
         <Chip key={id} on={active === id} onClick={() => togglePreset(id)} tip={PRESETS[id].tip}>
           {PRESETS[id].label}
@@ -58,6 +57,8 @@ export function EditChips() {
           {FILL_CYCLE.find((f) => f.value === s.outpaint.fillMode)?.label}
         </Chip>
       )}
+      {/* inpaint and outpaint: the mode's own chips first, Templates last */}
+      {mode !== "multiedit" && <TemplateChip target="edit" />}
     </ChipRow>
   );
 }

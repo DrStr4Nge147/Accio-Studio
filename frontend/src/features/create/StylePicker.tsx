@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, Palette, Search, SlidersHorizontal, X } from "lucide-react";
-import { Chip, Toggle } from "../../components/ui/controls";
+import { Toggle } from "../../components/ui/controls";
 import { Sheet } from "../../components/ui/Sheet";
 import { isKleinModel } from "../edit/klein";
 import { useEdit } from "../edit/store";
@@ -257,26 +257,6 @@ const useStyleSheet = () => {
   const [open, setOpen] = useState(false);
   return { open, show: () => setOpen(true), close: () => setOpen(false) };
 };
-
-/** Mobile chip: shows the chosen style (or "Style") and opens the library. */
-export function StyleChip({ target = "create" }: { target?: StyleTarget }) {
-  const { style, setStyle } = useStyleTarget(target);
-  const sheet = useStyleSheet();
-  return (
-    <>
-      <Chip toggle={false} onClick={sheet.show} label={style ? `Style: ${style.name}. Tap to change` : "Pick a style"} tip="Add a style to your prompt">
-        <Palette size={15} strokeWidth={1.7} className={style ? "text-gold-text" : undefined} />
-        <span className="max-w-[9rem] truncate">{style?.name ?? "Style"}</span>
-      </Chip>
-      {style && (
-        <button type="button" aria-label="Remove style" onClick={() => setStyle(null)} className="-ml-1.5 flex h-9 w-9 flex-none items-center justify-center rounded-full text-text-3 hover:text-text">
-          <X size={15} strokeWidth={1.7} />
-        </button>
-      )}
-      <StyleSheet open={sheet.open} onClose={sheet.close} target={target} />
-    </>
-  );
-}
 
 /** Desktop: a small pill inside the prompt box, bottom-left. */
 export function StyleButton({ target = "create" }: { target?: StyleTarget }) {
