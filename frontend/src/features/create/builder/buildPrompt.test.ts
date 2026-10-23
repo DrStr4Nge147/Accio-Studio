@@ -109,6 +109,11 @@ describe("typed-in age", () => {
     expect(age("18")).toBe("Photo of a 18-year-old woman.");
     expect(age("30s")).toBe("Photo of a 30-something woman.");
     expect(age("weathered old")).toBe("Photo of a weathered old woman.");
+    expect(age("young 20")).toBe("Photo of a young 20-year-old woman.");
+    expect(age("early 30s")).toBe("Photo of an early 30-something woman.");
+  });
+  it("refuses a young-sounding number under 18", () => {
+    expect(age("young 15")).toBe("Photo of a woman.");
   });
   it("refuses anything under 18 or describing a child or teenager", () => {
     for (const t of ["17", "12 years old", "0", "teenage", "a kid", "little girl", "young boy", "toddler", "5", "16-year-old", "teen"]) expect(age(t), t).toBe("Photo of a woman.");

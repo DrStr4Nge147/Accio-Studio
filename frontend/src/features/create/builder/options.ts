@@ -414,12 +414,18 @@ const startsWith = (t: string, re: RegExp, prefix: string) => (re.test(t) ? t : 
 
 /** The age box is adults only, like the chips: a number under 18, or a word for a child or teenager, is refused. */
 const UNDERAGE_WORDS = /(?<![a-z])(child|children|kid|kids|boy|girl|baby|toddler|infant|teen|teens|teenage|teenager|preteen|tween|minor|juvenile|adolescent|schoolboy|schoolgirl|underage)(?![a-z])/i;
-const ageNumber = (t: string) => /^(\d{1,3})(?:\s*[- ]?(?:years?[- ]old|yo|y\/o))?$/i.exec(t)?.[1];
+/** "35", "young 20", "early 30s", "42 years old" -> the words before the number, the number, and whether it was a decade ("30s"). */
+const ageParts = (t: string) => /^(.*?)\s*(\d{1,3})(s|\s*[- ]?(?:years?[- ]old|yo|y\/o))?$/i.exec(t);
 const age: CustomSpec = {
-  example: "e.g. 35, or weathered old",
-  reject: (t) => UNDERAGE_WORDS.test(t) || (/\d/.test(t) && !/^\d0s$/.test(t) && !(Number(ageNumber(t) ?? "0") >= 18) ),
+  example: "e.g. 35, young 20, or weathered old",
+  reject: (t) => UNDERAGE_WORDS.test(t) || (/\d/.test(t) && !(t.match(/\d+/g) ?? []).every((n) => Number(n) >= 18)),
   rejectNote: "Adults only: use an age of 18 or more.",
-  wrap: (t) => (ageNumber(t) ? `${Number(ageNumber(t))}-year-old` : /^(\d)0s$/.test(t) ? `${t[0]}0-something` : t),
+  wrap: (t) => {
+    const m = ageParts(t);
+    if (!m) return t;
+    const [, before, n, suffix] = m;
+    return `${before ? `${before} ` : ""}${Number(n)}${suffix?.toLowerCase() === "s" ? "-something" : "-year-old"}`;
+  },
 };
 
 const lighting: CustomSpec = { example: "e.g. warm orange sunset glow", wrap: (t) => addTo(t, /light|lit\b|glow|sun|shadow|lamp|candle|neon/i, "lighting") };
