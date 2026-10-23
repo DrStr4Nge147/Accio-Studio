@@ -7,6 +7,7 @@ import { useJobs } from "../../store/jobs";
 import { Ring } from "../Wordmark";
 import { LogoDust } from "./LogoDust";
 import { Box } from "./Box";
+import { Zoomable } from "./Zoomable";
 
 // A few small bubbles, fixed so the card looks the same on every render. x = left edge in %, s = size, d = rise time.
 const BUBBLES = [
@@ -99,10 +100,11 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
 
   return (
     <Box w={w} h={h} className={`${staged || decoding || cancelling || enhancing ? "" : "shimmer"} overflow-hidden rounded-m border border-line bg-raised`}>
-      {padded ? (
-        <PaddedPreview job={job} before={before!} w={w} h={h} />
-      ) : masked ? (
-        <MaskedPreview before={before!} mask={maskUrl!} />
+      {staged ? (
+        // The photo stays zoomable (wheel, pinch, double tap, +/-/0) while the edit runs.
+        <Zoomable hideControls>
+          {padded ? <PaddedPreview job={job} before={before!} w={w} h={h} /> : <MaskedPreview before={before!} mask={maskUrl!} />}
+        </Zoomable>
       ) : preview && job.status === "running" ? (
         <img src={preview} alt="" className={`absolute inset-0 h-full w-full scale-110 object-cover opacity-90 saturate-125 transition-[filter] duration-700 ${decoding ? "blur-[5px]" : "blur-[14px]"}`} />
       ) : (
@@ -115,7 +117,7 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
         </div>
       )}
       {cancelling ? <div className="absolute inset-0 z-[1] bg-black/35 fade-in" aria-hidden /> : staged ? null : decoding ? <Ripples /> : <Bubbles />}
-      <div className="absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-[rgba(8,7,12,0.9)] to-transparent p-3.5 pt-10 text-[#f1eadb]">
+      <div className={`absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-[rgba(8,7,12,0.9)] to-transparent p-3.5 pt-10 text-[#f1eadb] ${staged ? "pointer-events-none" : ""}`}>
         <div className="mb-2 flex items-baseline justify-between gap-3 text-[13px] font-medium">
           <span>{cancelling ? "Cancelling…" : enhancing ? "Improving your prompt…" : decoding ? "Developing the image…" : queued ? "Waiting for the GPU…" : "Summoning…"}</span>
           {cancelling ? (
@@ -164,7 +166,7 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
             type="button"
             onClick={() => void requestCancel(job.id)}
             disabled={cancelling}
-            className="-my-3 flex h-11 items-center gap-1 rounded-full px-2.5 text-[12px] text-[#f1eadb] disabled:opacity-70"
+            className="pointer-events-auto -my-3 flex h-11 items-center gap-1 rounded-full px-2.5 text-[12px] text-[#f1eadb] disabled:opacity-70"
           >
             {cancelling ? <Loader2 size={14} strokeWidth={1.7} className="animate-spin motion-reduce:animate-none" /> : <X size={14} strokeWidth={1.7} />}
             {cancelling ? "Stopping" : "Cancel"}
