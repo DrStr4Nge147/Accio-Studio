@@ -23,7 +23,7 @@ function pick(mode: BuilderMode, sel: Selection, field: string): string | undefi
   const typed = customText(sel, field)?.trim().replace(/\s+/g, " ").replace(/[.,;]+$/, "");
   if (id.startsWith(CUSTOM_PREFIX)) {
     const spec = CUSTOM[mode][field];
-    return typed && spec && !spec.reject?.(typed) ? (spec.wrap ? spec.wrap(typed) : typed) : undefined;
+    return typed && spec ? (spec.wrap ? spec.wrap(typed) : typed) : undefined;
   }
   return FIELDS[mode].find((f) => f.id === field)?.options.find((o) => o.id === id)?.text;
 }

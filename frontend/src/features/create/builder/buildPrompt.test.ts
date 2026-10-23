@@ -112,16 +112,30 @@ describe("typed-in age", () => {
     expect(age("young 20")).toBe("Photo of a young 20-year-old woman.");
     expect(age("early 30s")).toBe("Photo of an early 30-something woman.");
   });
-  it("accepts adult age ranges and refuses ranges that dip under 18", () => {
+  it("accepts age ranges, including single-digit ages", () => {
     expect(age("25-30")).toBe("Photo of a 25-to-30-year-old woman.");
     expect(age("40 to 50 years old")).toBe("Photo of a 40-to-50-year-old woman.");
-    expect(age("15-25")).toBe("Photo of a woman.");
+    expect(age("15-25")).toBe("Photo of a 15-to-25-year-old woman.");
+    expect(age("5-10")).toBe("Photo of a 5-to-10-year-old woman.");
+    expect(age("0 to 5 years old")).toBe("Photo of a 0-to-5-year-old woman.");
   });
-  it("refuses a young-sounding number under 18", () => {
-    expect(age("young 15")).toBe("Photo of a woman.");
+  it("accepts age descriptions with numbers under 18", () => {
+    expect(age("young 15")).toBe("Photo of a young 15-year-old woman.");
   });
-  it("refuses anything under 18 or describing a child or teenager", () => {
-    for (const t of ["17", "12 years old", "0", "teenage", "a kid", "little girl", "young boy", "toddler", "5", "16-year-old", "teen"]) expect(age(t), t).toBe("Photo of a woman.");
+  it("formats numeric ages without a minimum age", () => {
+    for (const [text, formatted] of [["17", "17"], ["12 years old", "12"], ["0", "0"], ["5", "5"], ["16-year-old", "16"]]) {
+      expect(age(text), text).toBe(`Photo of a ${formatted}-year-old woman.`);
+      expect(isEmpty({ age: `custom:${text}` }, "", "character"), text).toBe(false);
+    }
+  });
+  it("keeps free-form age descriptions", () => {
+    for (const text of ["teenage", "a kid", "little girl", "young boy", "toddler", "teen"]) {
+      expect(age(text), text).toContain(`${text} woman.`);
+    }
+  });
+  it("ignores blank age input", () => {
+    expect(age("  ")).toBe("Photo of a woman.");
+    expect(isEmpty({ age: "custom:  " }, "", "character")).toBe(true);
   });
 });
 
@@ -132,7 +146,7 @@ describe("options", () => {
       for (const f of FIELDS[mode]) expect(new Set(f.options.map((o) => o.id)).size, `${mode}.${f.id}`).toBe(f.options.length);
     }
   });
-  it("only describe adults", () => {
+  it("keeps the existing age presets", () => {
     const ages = FIELDS.character.find((f) => f.id === "age")!.options.map((o) => o.text);
     expect(ages).toEqual(["young", "adult", "middle-aged", "elderly"]);
   });

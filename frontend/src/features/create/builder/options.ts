@@ -26,7 +26,7 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
 const opt = (label: string, text: string): BuilderOption => ({ id: slug(label), label, text });
 
 // Wording was checked against real Krea 2 renders: concrete visual phrases are followed; "low angle" only works spelled out as
-// "from ground level looking up", and body builds work as "a <word> build". Ages are adult only.
+// "from ground level looking up", and body builds work as "a <word> build".
 export const CHARACTER_FIELDS: BuilderField[] = [
   {
     id: "gender",
@@ -400,10 +400,6 @@ export interface CustomSpec {
   example: string;
   /** bare text -> the phrase that goes into the prompt (default: as typed) */
   wrap?: (text: string) => string;
-  /** true = the text is not allowed, so it is left out of the prompt (and the box says why) */
-  reject?: (text: string) => boolean;
-  /** shown under the box while the text is rejected */
-  rejectNote?: string;
 }
 
 const hasArticle = (t: string) => /^(a|an|the|some|his|her|their|two|three|several|many)\s/i.test(t);
@@ -412,17 +408,13 @@ const withArticle = (t: string) => (hasArticle(t) || /s$/i.test(t) ? t : `${/^[a
 const addTo = (t: string, re: RegExp, suffix: string) => (re.test(t) ? t : `${t} ${suffix}`);
 const startsWith = (t: string, re: RegExp, prefix: string) => (re.test(t) ? t : `${prefix} ${t}`);
 
-/** The age box is adults only, like the chips: a number under 18, or a word for a child or teenager, is refused. */
-const UNDERAGE_WORDS = /(?<![a-z])(child|children|kid|kids|boy|girl|baby|toddler|infant|teen|teens|teenage|teenager|preteen|tween|minor|juvenile|adolescent|schoolboy|schoolgirl|underage)(?![a-z])/i;
 /** "35", "young 20", "early 30s", "42 years old" -> the words before the number, the number, and whether it was a decade ("30s"). */
 const ageParts = (t: string) => /^(.*?)\s*(\d{1,3})(s|\s*[- ]?(?:years?[- ]old|yo|y\/o))?$/i.exec(t);
 const age: CustomSpec = {
   example: "e.g. 35, 25-30, young 20, or weathered old",
-  reject: (t) => UNDERAGE_WORDS.test(t) || (/\d/.test(t) && !(t.match(/\d+/g) ?? []).every((n) => Number(n) >= 18)),
-  rejectNote: "Adults only: use an age of 18 or more.",
   wrap: (t) => {
     // "25-30", "25 to 30", "25-30 years old" -> "25-to-30-year-old"
-    const r = /^(\d{2,3})\s*(?:-|–|to)\s*(\d{2,3})(?:\s*[- ]?(?:years?[- ]old|yo|y\/o))?$/i.exec(t);
+    const r = /^(\d{1,3})\s*(?:-|–|to)\s*(\d{1,3})(?:\s*[- ]?(?:years?[- ]old|yo|y\/o))?$/i.exec(t);
     if (r) return `${Number(r[1])}-to-${Number(r[2])}-year-old`;
     const m = ageParts(t);
     if (!m) return t;
