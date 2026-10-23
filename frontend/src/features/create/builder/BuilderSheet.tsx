@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Dices, Eraser, WandSparkles } from "lucide-react";
-import { Chip, Label, Segmented } from "../../../components/ui/controls";
+import { Label, Segmented } from "../../../components/ui/controls";
 import { Sheet } from "../../../components/ui/Sheet";
 import { useCreate } from "../store";
 import { buildPrompt, CUSTOM_PREFIX, isEmpty, LONG_PROMPT_WORDS, randomSelection, wordCount } from "./buildPrompt";
@@ -60,7 +60,7 @@ function FieldRow({ mode, field, value, onPick }: { mode: BuilderMode; field: Bu
 }
 
 /** Builds a prompt from chosen options (Character or Scene) plus free details, and puts it in the Create prompt box. */
-function BuilderSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function BuilderSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { mode, selections, extra, setMode, setSelection, setExtra } = useBuilder();
   const hasPrompt = useCreate((s) => !!s.prompt.trim());
   const sel = selections[mode];
@@ -183,20 +183,6 @@ const useSheet = () => {
   const [open, setOpen] = useState(false);
   return { open, show: () => setOpen(true), close: () => setOpen(false) };
 };
-
-/** Mobile chip: opens the builder. */
-export function BuilderChip() {
-  const sheet = useSheet();
-  return (
-    <>
-      <Chip toggle={false} onClick={sheet.show} label="Prompt builder" tip="Build a prompt from options">
-        <WandSparkles size={15} strokeWidth={1.7} />
-        <span>Builder</span>
-      </Chip>
-      <BuilderSheet open={sheet.open} onClose={sheet.close} />
-    </>
-  );
-}
 
 /** Desktop: a small pill inside the prompt box, next to Style and Templates. */
 export function BuilderButton() {

@@ -2,10 +2,8 @@ import { ChevronDown, Info, SlidersHorizontal } from "lucide-react";
 import { Chip, ChipRow, Label, Segmented, Toggle } from "../../components/ui/controls";
 import { useUi } from "../../store/ui";
 import { AspectPicker } from "./AspectPicker";
-import { BuilderChip } from "./builder/BuilderSheet";
 import { CreateAdvanced } from "./CreateAdvanced";
-import { StyleChip } from "./StylePicker";
-import { TemplateChip } from "./TemplatePicker";
+import { PromptToolsChip } from "./PromptToolsChip";
 import { TIPS } from "./tips";
 import { useCreate, type Variant } from "./store";
 
@@ -58,9 +56,7 @@ export function CreateChips() {
       <Chip toggle={false} onClick={() => s.patch({ variant: next(["standard", "detailed"] as Variant[], s.variant) })} label={`Mode: ${s.variant}. Tap to switch`} tip={s.variant === "standard" ? TIPS.standard : TIPS.detailed}>
         {s.variant === "standard" ? "Standard" : "Detailed"}
       </Chip>
-      <BuilderChip />
-      <StyleChip />
-      <TemplateChip />
+      <PromptToolsChip />
       <Chip toggle={false} onClick={openAdvanced} label="Aspect ratio" tip="Pick an aspect ratio or a custom size in Advanced">
         {size.aspect === "custom" ? `${size.w}×${size.h}` : size.aspect}
       </Chip>

@@ -35,7 +35,7 @@ interface Draft {
 const FIELD = "w-full rounded-m border border-line-strong bg-raised px-3 text-[15px] text-text outline-none placeholder:text-text-3 focus:border-gold";
 const BTN = "hover-wash flex h-11 flex-none items-center justify-center gap-2 rounded-m border px-4 text-[14px] transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 
-function TemplateSheet({ open, onClose, target }: { open: boolean; onClose: () => void; target: TemplateTarget }) {
+export function TemplateSheet({ open, onClose, target }: { open: boolean; onClose: () => void; target: TemplateTarget }) {
   const { prompt, setPrompt } = usePromptTarget(target);
   const items = useTemplates((s) => s.items).filter((i) => i.target === target);
   const [name, setName] = useState("");

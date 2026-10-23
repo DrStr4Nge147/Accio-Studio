@@ -36,7 +36,7 @@ const ALL = "All";
 const HIDDEN_CATEGORIES = new Set(["Illustration"]);
 
 /** The sheet that lists the style library; picking a row sets the style and closes it. */
-function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => void; target: StyleTarget }) {
+export function StyleSheet({ open, onClose, target }: { open: boolean; onClose: () => void; target: StyleTarget }) {
   const { style, opts, setStyle, setOpts } = useStyleTarget(target);
   const edit = target === "edit";
   // Edit's Prompt enhancer would rewrite the template (Klein has none)
