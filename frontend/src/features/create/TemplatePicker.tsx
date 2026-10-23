@@ -202,9 +202,9 @@ export function TemplateButton({ target = "create" }: { target?: TemplateTarget 
         onClick={() => setOpen(true)}
         aria-label="Prompt templates"
         data-tip="Save and reuse prompts"
-        className="hover-wash flex h-8 min-w-0 items-center gap-1.5 rounded-full border border-line-strong px-2.5 text-[12.5px] text-text-2 transition-colors hover:border-text-3 hover:text-text"
+        className="hover-wash flex h-8 flex-none items-center gap-1 whitespace-nowrap rounded-full border border-line-strong px-2 text-[12px] text-text-2 transition-colors hover:border-text-3 hover:text-text"
       >
-        <FileText size={14} strokeWidth={1.7} className="flex-none" aria-hidden />
+        <FileText size={13} strokeWidth={1.7} className="flex-none" aria-hidden />
         <span>Templates</span>
       </button>
       <TemplateSheet open={open} onClose={() => setOpen(false)} target={target} />

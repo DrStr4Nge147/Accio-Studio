@@ -289,12 +289,12 @@ export function StyleButton({ target = "create" }: { target?: StyleTarget }) {
         onClick={sheet.show}
         aria-label={style ? `Style: ${style.name}. Change` : "Pick a style"}
         data-tip="Add a style to your prompt"
-        className={`hover-wash flex h-8 min-w-0 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] transition-colors ${
+        className={`hover-wash flex h-8 min-w-0 items-center gap-1 rounded-full border px-2 text-[12px] transition-colors ${
           style ? "border-gold/55 bg-gold-wash text-gold-text" : "border-line-strong text-text-2 hover:border-text-3 hover:text-text"
         }`}
       >
-        <Palette size={14} strokeWidth={1.7} className="flex-none" aria-hidden />
-        <span className="max-w-[11rem] truncate">{style?.name ?? "Style"}</span>
+        <Palette size={13} strokeWidth={1.7} className="flex-none" aria-hidden />
+        <span className="max-w-[9rem] truncate">{style?.name ?? "Style"}</span>
       </button>
       {style && (
         <button

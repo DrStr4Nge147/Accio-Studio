@@ -32,7 +32,7 @@ export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; abo
       loraCount={loraCount}
       triggers={triggers}
       promptTool={
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-1.5">
           <BuilderButton />
           <StyleButton />
           <TemplateButton />
