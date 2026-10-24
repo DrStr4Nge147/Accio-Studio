@@ -180,6 +180,9 @@ def choose_build(gpu: dict, interactive: bool) -> tuple[str, str]:
         build = build_for_driver("nvidia" if major * 10 + minor >= 75 else "nvidia_cu126", gpu)
         if gpu["vram_mb"] <= 8300:
             flags = "--disable-cuda-malloc --reserve-vram 1"
+        if gpu["vram_mb"] < 6000:
+            say("\n  [NOTE] Accio Studio is built for graphics cards with 6 GB of VRAM or more. With less it may run very slowly\n"
+                "         or run out of memory. Installing continues anyway.\n")
     else:
         say(f"  Detected: {gpu['name']}")
         build = {"nvidia": "nvidia", "amd": "amd", "intel": "intel"}.get(gpu["vendor"], "")
