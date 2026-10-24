@@ -114,6 +114,8 @@ export function togglePreset(id: PresetId) {
     if (st.prompts[pr.mode] === pr.prompt) st.setPrompt(pr.mode, ""); // untouched preset text goes away with it
   } else {
     st.setPrompt(pr.mode, pr.prompt);
+    // Presets ship a fixed prompt their LoRA expects; the enhancer would rewrite it.
+    st.patch({ enhancer: { ...st.enhancer, [pr.mode]: false } });
   }
   useEditSubmit.getState().setError(null);
 }
