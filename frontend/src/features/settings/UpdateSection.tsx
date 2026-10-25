@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { applyUpdate, fetchUpdate, type UpdateInfo } from "../../api/endpoints";
 import { ApiError } from "../../api/http";
-import { Label } from "../../components/ui/controls";
+import { SectionTitle } from "../../components/ui/SettingsCard";
 import { updateView } from "../../lib/updateView";
 
 const btn = "hover-wash h-11 rounded-full border border-line-strong px-4 text-[14px] text-text-2 hover:text-text disabled:opacity-50";
@@ -47,8 +47,8 @@ export function UpdateSection({ open }: { open: boolean }) {
 
   return (
     <div>
-      <Label>Updates</Label>
-      <div className="mt-1.5 rounded-m border border-line p-3">
+      <SectionTitle>Updates</SectionTitle>
+      <div className="mt-1.5 rounded-m border border-line p-3 [[data-card-body]_&]:mt-0 [[data-card-body]_&]:rounded-none [[data-card-body]_&]:border-0 [[data-card-body]_&]:p-0">
         <p className="text-[14px] text-text">{view.title}</p>
         {started ? (
           <p className="mt-2 text-[12px] text-text-3">

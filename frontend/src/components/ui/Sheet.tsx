@@ -29,6 +29,7 @@ export function Sheet({
   children,
   height = "78%",
   desktopModalWidth,
+  flush,
   footer,
 }: {
   open: boolean;
@@ -38,6 +39,8 @@ export function Sheet({
   height?: string;
   /** Desktop only: render as a centered modal of this width (px) instead of a floating bottom sheet. */
   desktopModalWidth?: number;
+  /** Desktop modal only: no padding or scrolling around the content, which then lays itself out edge to edge. */
+  flush?: boolean;
   /** Pinned under the scrolling content (action buttons). */
   footer?: ReactNode;
 }) {
@@ -78,7 +81,7 @@ export function Sheet({
               <X size={20} strokeWidth={1.7} />
             </IconButton>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
+          <div className={flush ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "min-h-0 flex-1 overflow-y-auto px-6 py-5"}>{children}</div>
           {footer && <div className="border-t border-line px-6 py-4">{footer}</div>}
         </div>
       </div>

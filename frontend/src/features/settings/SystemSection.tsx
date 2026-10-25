@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchSystem, fetchTemps, type SystemInfo, type SystemTemps } from "../../api/endpoints";
-import { Label } from "../../components/ui/controls";
+import { SectionTitle } from "../../components/ui/SettingsCard";
 
 const TEMP_POLL_MS = 4000;
 const gb = (mb: number) => `${Math.round(mb / 1024)} GB`;
@@ -46,8 +46,8 @@ export function SystemSection({ open }: { open: boolean }) {
 
   return (
     <div>
-      <Label>This PC</Label>
-      <div className="mt-1.5 divide-y divide-line rounded-m border border-line px-3">
+      <SectionTitle>This PC</SectionTitle>
+      <div className="mt-1.5 divide-y divide-line rounded-m border border-line px-3 [[data-card-body]_&]:mt-0 [[data-card-body]_&]:rounded-none [[data-card-body]_&]:border-0 [[data-card-body]_&]:px-0">
         {info.gpus.length ? (
           info.gpus.map((g, i) => (
             <Row key={`${g.name}-${i}`} k={info.gpus.length > 1 ? `Graphics card ${i + 1}` : "Graphics card"} v={g.vram_mb ? `${g.name} · ${gb(g.vram_mb)}` : g.name} />

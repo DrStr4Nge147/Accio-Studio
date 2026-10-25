@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchConnection, type Connection } from "../../api/endpoints";
-import { Label } from "../../components/ui/controls";
+import { SectionTitle } from "../../components/ui/SettingsCard";
 
 const MODE: Record<Connection["mode"], string> = { local: "This PC", cloudflare: "Cloudflare tunnel", zrok: "zrok tunnel", tailscale: "Tailscale (private)" };
 
@@ -31,8 +31,8 @@ export function ConnectionSection({ open }: { open: boolean }) {
   const thisPcOnly = info.mode === "local" && !info.urls.lan;
   return (
     <div>
-      <Label>Connection</Label>
-      <div className="mt-1.5 rounded-m border border-line p-3">
+      <SectionTitle>Connection</SectionTitle>
+      <div className="mt-1.5 rounded-m border border-line p-3 [[data-card-body]_&]:mt-0 [[data-card-body]_&]:rounded-none [[data-card-body]_&]:border-0 [[data-card-body]_&]:p-0">
         <div className="flex items-center justify-between text-[14px]">
           <span className="text-text-2">Mode</span>
           <span>{MODE[info.mode]}</span>

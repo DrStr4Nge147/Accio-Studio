@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchModelPaths, pickFolder, saveModelPaths, type ModelPaths, type ModelPathValues } from "../../api/endpoints";
 import { ApiError } from "../../api/http";
-import { inputCls, Label } from "../../components/ui/controls";
+import { inputCls } from "../../components/ui/controls";
+import { SectionTitle } from "../../components/ui/SettingsCard";
 import { useServer } from "../../store/health";
 import { FolderBrowser } from "./FolderBrowser";
 
@@ -65,7 +66,7 @@ export function ModelFoldersSection({ open }: { open: boolean }) {
   if (!data.available) {
     return (
       <div>
-        <Label>Model folders</Label>
+        <SectionTitle>Model folders</SectionTitle>
         <p className="mt-1.5 text-[13px] text-text-3">This app uses an external backend, so its model folders are set up there.</p>
       </div>
     );
@@ -92,12 +93,12 @@ export function ModelFoldersSection({ open }: { open: boolean }) {
 
   return (
     <div>
-      <Label>Model folders</Label>
+      <SectionTitle>Model folders</SectionTitle>
       <p className="mt-1 text-[12px] text-text-3">
         Already have models from ComfyUI or another app? Enter the folder that holds each one. Nothing in them is moved, copied or changed. Leave a
         field empty to use the app's own folder.
       </p>
-      <div className="mt-2 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-2 grid gap-3 lg:grid-cols-2">
         {data.families.map((fam) => (
           <fieldset key={fam.id} className="rounded-m border border-line p-3" disabled={busy}>
             <legend className="px-1 text-[13px] font-medium text-text">{fam.label}</legend>

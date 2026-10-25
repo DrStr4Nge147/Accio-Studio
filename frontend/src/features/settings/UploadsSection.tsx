@@ -2,7 +2,7 @@ import { useState } from "react";
 import { clearUploads } from "../../api/endpoints";
 import { ApiError } from "../../api/http";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
-import { Label } from "../../components/ui/controls";
+import { SectionTitle } from "../../components/ui/SettingsCard";
 
 const btn = "hover-wash h-11 rounded-full border border-line-strong px-4 text-[14px] text-text-2 hover:text-text disabled:opacity-50";
 
@@ -28,7 +28,7 @@ export function UploadsSection() {
 
   return (
     <div>
-      <Label>Uploads</Label>
+      <SectionTitle>Uploads</SectionTitle>
       <p className="mt-1 text-[12px] text-text-3">Images you upload are kept so you can pick them again and old edits can show their original. Clear them to free disk space.</p>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <button type="button" className={btn} disabled={busy} onClick={() => setAsking(true)}>

@@ -1,5 +1,5 @@
 import { usePwaInstall } from "../../lib/pwa";
-import { Label } from "../../components/ui/controls";
+import { SectionTitle } from "../../components/ui/SettingsCard";
 
 const HELP = {
   installed: "Accio is installed on this device.",
@@ -12,7 +12,7 @@ export function InstallApp() {
   const { state, install } = usePwaInstall();
   return (
     <div>
-      <Label>Install as an app</Label>
+      <SectionTitle>Install as an app</SectionTitle>
       {state === "prompt" ? (
         <button
           type="button"

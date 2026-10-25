@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { changePassword } from "../../api/endpoints";
 import { ApiError } from "../../api/http";
-import { Field, inputCls, Label } from "../../components/ui/controls";
+import { Field, inputCls } from "../../components/ui/controls";
+import { SectionTitle } from "../../components/ui/SettingsCard";
 import { useAuth } from "../../store/auth";
 import { MIN_PASSWORD } from "../auth/AuthScreen";
 
@@ -41,7 +42,7 @@ export function AccountSection() {
 
   return (
     <div>
-      <Label>Account</Label>
+      <SectionTitle>Account</SectionTitle>
       <div className="mt-1.5 flex flex-wrap gap-2">
         <button type="button" className={btn} onClick={() => (editing ? reset() : setEditing(true))}>
           {editing ? "Cancel" : "Change password"}

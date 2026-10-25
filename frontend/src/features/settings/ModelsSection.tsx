@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cancelModelDownload, downloadModels, fetchModels, type ModelRow, type ModelsData } from "../../api/endpoints";
 import { ApiError } from "../../api/http";
-import { Label } from "../../components/ui/controls";
+import { SectionTitle } from "../../components/ui/SettingsCard";
 import { formatSize, groupModels, isHave, missingIds, percent, stateText, summary } from "../../lib/modelsView";
 import { useServer } from "../../store/health";
 
@@ -50,7 +50,7 @@ export function ModelsSection({ open }: { open: boolean }) {
   if (!data.available) {
     return (
       <div>
-        <Label>Models</Label>
+        <SectionTitle>Models</SectionTitle>
         <p className="mt-1.5 text-[13px] text-text-3">This app uses an external backend, so its models are managed there.</p>
       </div>
     );
@@ -85,12 +85,12 @@ export function ModelsSection({ open }: { open: boolean }) {
 
   return (
     <div>
-      <Label>Models</Label>
-      <p className="mt-1 text-[12px] text-text-3">
-        {summary(data)} Free space on the models drive: {formatSize(data.free_bytes)}. Stopping keeps what is already downloaded; the next download continues from
-        there.
-      </p>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <SectionTitle>Models</SectionTitle>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="min-w-0">
+          <p className="text-[14px] text-text">{summary(data)}</p>
+          <p className="mt-0.5 text-[12px] text-text-3">Free space on the models drive: {formatSize(data.free_bytes)}. Stopping keeps what is downloaded; the next download continues from there.</p>
+        </div>
         {running ? (
           <button type="button" className={btn} disabled={busy} onClick={() => void stop()}>
             Stop downloading
@@ -100,19 +100,21 @@ export function ModelsSection({ open }: { open: boolean }) {
             type="button"
             disabled={busy || !requiredMissing.length}
             onClick={() => void start(requiredMissing)}
-            className="h-11 rounded-full bg-gold px-5 text-[14px] font-semibold text-on-gold disabled:opacity-50"
+            className="h-11 flex-none rounded-full bg-gold px-5 text-[14px] font-semibold text-on-gold disabled:opacity-50"
           >
             Download required models
           </button>
         )}
       </div>
-      <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-3 grid gap-3">
         {groupModels(data.models).map((g) => {
           const ids = missingIds(g.rows);
           return (
-            <section key={g.id} className="rounded-m border border-line p-3" aria-label={g.title}>
+            <section key={g.id} className="rounded-m border border-line bg-surface/60 p-4" aria-label={g.title}>
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-[13px] font-medium text-text">{g.title}</h3>
+                <h3 className="text-[13px] font-medium text-text">
+                  {g.title} <span className="ml-1 font-normal text-text-3">{g.rows.filter(isHave).length}/{g.rows.length} installed</span>
+                </h3>
                 {g.id !== "required" && (
                   <button type="button" className={smallBtn} disabled={busy || running || !ids.length} onClick={() => void start(ids)}>
                     {ids.length ? "Download" : "Installed"}
@@ -120,7 +122,7 @@ export function ModelsSection({ open }: { open: boolean }) {
                 )}
               </div>
               <p className="mt-0.5 text-[12px] text-text-3">{g.hint}</p>
-              <ul className="mt-2 space-y-2.5">
+              <ul className="mt-3 divide-y divide-line">
                 {g.rows.map((m) => (
                   <ModelItem key={m.id} m={m} disabled={busy || running} onDownload={() => void start([m.id])} />
                 ))}
@@ -140,18 +142,18 @@ export function ModelsSection({ open }: { open: boolean }) {
 
 function ModelItem({ m, disabled, onDownload }: { m: ModelRow; disabled: boolean; onDownload: () => void }) {
   const pct = percent(m);
+  const tone = isHave(m) ? "text-ok" : m.state === "damaged" ? "text-danger" : "text-text-3";
   return (
-    <li>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="min-w-0 break-all font-mono text-[12px] text-text-2" title={m.id}>
-          {m.id}
-        </span>
-        <span className="flex-none text-[12px] text-text-3">{formatSize(m.size)}</span>
-      </div>
-      <div className="mt-0.5 flex items-center justify-between gap-2">
-        <span className={`text-[12px] ${isHave(m) ? "text-ok" : m.state === "damaged" ? "text-danger" : "text-text-3"}`}>
-          {stateText(m)} · {m.used_by}
-        </span>
+    <li className="py-2.5 first:pt-0 last:pb-0">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="break-all font-mono text-[12.5px] text-text" title={m.id}>
+            {m.id}
+          </div>
+          <div className="mt-0.5 text-[12px] text-text-3">
+            <span className={tone}>{stateText(m)}</span> · {m.used_by} · {formatSize(m.size)}
+          </div>
+        </div>
         {!isHave(m) && m.state !== "downloading" && m.state !== "queued" && (
           <button type="button" className={smallBtn} disabled={disabled} onClick={onDownload}>
             {m.state === "partial" ? "Resume" : "Download"}
@@ -165,9 +167,9 @@ function ModelItem({ m, disabled, onDownload }: { m: ModelRow; disabled: boolean
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={pct}
-          className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line"
+          className="mt-2 h-1.5 overflow-hidden rounded-full bg-line"
         >
-          <div className="h-full bg-gold" style={{ width: `${pct}%` }} />
+          <div className="h-full bg-gold transition-[width] duration-700" style={{ width: `${pct}%` }} />
         </div>
       )}
     </li>
