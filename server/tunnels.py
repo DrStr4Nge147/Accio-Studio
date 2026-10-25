@@ -27,12 +27,13 @@ import qrcode.image.svg
 from config import ROOT
 
 CLOUDFLARED = ROOT / "cloudflared.exe"
-ZROK = ROOT / "zrok.exe"
+ZROK = ROOT / "zrok2.exe"  # zrok v2: the hosted zrok.io refuses v1 clients, and v2 renamed the program
 ZROK_SHARE_FILE = ROOT / ".zrok_share"
 CLOUDFLARED_URL = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
 ZROK_NAME = re.compile(r"^[A-Za-z0-9]{4,32}$")
 CLOUDFLARE_URL = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
-ZROK_URL = re.compile(r"https://[a-z0-9-]+\.share\.zrok\.io")
+ZROK_URL = re.compile(r"https://[a-z0-9-]+\.shares?\.zrok\.io")
+ZROK_NAMESPACE = "public"
 TAILSCALE_DEFAULT = Path(r"C:\Program Files\Tailscale\tailscale.exe")
 NO_WINDOW = 0x08000000  # CREATE_NO_WINDOW: no console flashing up for the child process
 
@@ -129,7 +130,7 @@ def reserved_name() -> str | None:
 def run_zrok(port: int) -> None:
     if not ZROK.is_file():
         state.update(mode="zrok", status="failed")
-        print("\n[ERROR] zrok.exe was not found next to the app. Run Setup_Zrok.bat first.\n", flush=True)
+        print("\n[ERROR] zrok2.exe was not found next to the app. Run Setup_Zrok.bat first.\n", flush=True)
         return
     state.update(mode="zrok", status="starting")
 
@@ -137,12 +138,7 @@ def run_zrok(port: int) -> None:
         while True:  # keep the share alive forever
             name = reserved_name()
             if name:
-                cmd = [str(ZROK), "share", "reserved", name, "--headless"]
-                url = f"https://{name}.share.zrok.io"
-                state.update(public_url=url, status="up")
-                if not work.announced:
-                    announce("ZROK TUNNEL ACTIVE (RESERVED)", url)
-                    work.announced = True
+                cmd = [str(ZROK), "share", "public", f"http://127.0.0.1:{port}", "-n", f"{ZROK_NAMESPACE}:{name}", "--headless"]
             else:
                 cmd = [str(ZROK), "share", "public", f"http://127.0.0.1:{port}", "--headless"]
             try:
@@ -155,9 +151,9 @@ def run_zrok(port: int) -> None:
                     if "[error]" in low or "error:" in low:
                         print(f"zrok: {line.strip()}", flush=True)
                     match = ZROK_URL.search(line)
-                    if match and not name and state["public_url"] != match.group(0):
+                    if match and state["public_url"] != match.group(0):
                         state.update(public_url=match.group(0), status="up")
-                        announce("ZROK TUNNEL ACTIVE", match.group(0))
+                        announce("ZROK TUNNEL ACTIVE" + (" (RESERVED NAME)" if name else ""), match.group(0))
                 state["status"] = "reconnecting"
                 print("zrok share closed; reconnecting in 5 s...", flush=True)
             except OSError as e:
@@ -165,7 +161,6 @@ def run_zrok(port: int) -> None:
                 print(f"[ERROR] Could not start zrok: {e!r}. Retrying in 5 s.", flush=True)
             time.sleep(5)
 
-    work.announced = False  # type: ignore[attr-defined]
     threading.Thread(target=work, daemon=True, name="zrok").start()
 
 

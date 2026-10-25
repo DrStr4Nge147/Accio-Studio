@@ -15,11 +15,6 @@ echo Accio Studio
 echo =================================================================
 echo.
 
-if "%TUNNEL%"=="zrok" if not exist "zrok.exe" (
-    echo [ERROR] zrok is not set up yet. Run Setup_Zrok.bat first.
-    pause
-    exit /b 1
-)
 
 :: Self-heal: environment
 if not exist "env\Scripts\python.exe" (
@@ -126,14 +121,24 @@ if "%CHOICE%"=="4" (
     echo       Other devices on this network can open the LAN address shown below.
     echo       Everything is behind your Accio password. If Windows Firewall asks, allow access on private networks.
 )
-if "%TUNNEL%"=="zrok" if not exist "zrok.exe" (
-    echo.
-    echo [ERROR] zrok is not set up yet. Run Setup_Zrok.bat first, then start this again.
-    pause
-    exit /b 1
-)
-
 :launch
+:: zrok and Tailscale need a one-time guided setup; offer it here instead of just failing.
+if "%TUNNEL%"=="zrok" (
+    ver >nul
+    if not exist "zrok2.exe" set "NEED_SETUP=1"
+    if not exist "%USERPROFILE%\.zrok2\environment.json" set "NEED_SETUP=1"
+    if not exist ".zrok_share" set "NEED_SETUP=1"
+    if defined NEED_SETUP call :offer_setup zrok Setup_Zrok.bat
+    if errorlevel 1 exit /b 1
+)
+if "%TUNNEL%"=="tailscale" (
+    ver >nul
+    set "TS_EXE="
+    if exist "%ProgramFiles%\Tailscale	ailscale.exe" set "TS_EXE=1"
+    where tailscale >nul 2>&1 && set "TS_EXE=1"
+    if not defined TS_EXE call :offer_setup Tailscale Setup_Tailscale.bat
+    if errorlevel 1 exit /b 1
+)
 echo.
 echo [3/3] Launching Accio Studio ^(%TUNNEL%^)...
 echo       The first time, the app asks you to set a password. Forgot it? Run Reset_Password.bat.
@@ -145,3 +150,20 @@ if %ERRORLEVEL% neq 0 (
     pause
 )
 endlocal
+goto :eof
+
+:offer_setup
+:: %1 = name, %2 = setup script. Runs it when the user agrees; errorlevel 1 = do not launch.
+echo.
+echo %~1 is not set up yet.
+set "ANSWER=Y"
+set /p ANSWER="Run %~2 now? [Y/n]: "
+if /i "!ANSWER!"=="n" (
+    echo Skipped. Run %~2 later, then start this again.
+    pause
+    exit /b 1
+)
+call "%~dp0%~2"
+if errorlevel 1 exit /b 1
+set "NEED_SETUP="
+exit /b 0

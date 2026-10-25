@@ -1,6 +1,6 @@
 # Accio Studio - progress
 
-Read `APP_SPEC.md` first; this file records state, decisions and how to run. Last updated: 2026-10-07 (Phase 8, stopped early at the user's request).
+Read `APP_SPEC.md` first; this file records state, decisions and how to run. Last updated: 2026-10-25 (guided zrok / Tailscale setup, zrok v2).
 
 ## Status
 
@@ -339,3 +339,14 @@ Radii 10 / 14 / 22 / pill. Three surface levels separated by 1 px hairlines. Lin
 ## Next
 
 See "Still to do for final review" under Phase 8 results.
+
+## Guided connection setup (zrok v2, Tailscale) - 2026-10-25
+
+- **zrok changed under us.** Latest release is v2.0.8: the program is `zrok2.exe`, its environment is `%USERPROFILE%\.zrok2\environment.json`, `zrok reserve` / `share reserved` are gone (reserved names are now `zrok2 create name -n public <name>`, shared with `zrok2 share public <target> -n public:<name> --headless`), and the hosted zrok.io answers v1 clients with "your local zrok installation is out of date" (checked against api.zrok.io). So the old pinned v1.1.11 setup could no longer work. `server/tunnels.py` now runs `zrok2.exe` (`ZROK`, `-n public:<name>`); the old `zrok.exe` in this folder is removed by the setup.
+- `installer/connect_setup.py` (`zrok` / `tailscale` subcommands, standard library only, links in the `LINKS` dict) does the checklist with polling every 3 s and a 10 minute timeout with "press Enter to retry". `Setup_Zrok.bat` and the new `Setup_Tailscale.bat` are thin wrappers (port from `settings_cli.py`). `Run_Accio.bat` offers the matching setup when option 3 or 5 finds it missing (zrok: no `zrok2.exe`, no `.zrok2` environment or no `.zrok_share`; Tailscale: no `tailscale.exe`).
+- Tailscale probe: if port 443 of Serve already points to Accio's port the probe is skipped (so setup never switches off a running Accio); if it points elsewhere the user is asked first. Otherwise `tailscale serve --bg --https=443 <target>` (20 s limit, killed), then `serve --https=443 off`.
+- Test-only environment variables (documented at the top of the helper): `ACCIO_SETUP_TIMEOUT`, `ACCIO_SETUP_INTERVAL`, `ACCIO_TAILSCALE_BIN`, `ACCIO_ZROK_BIN`, `ACCIO_ZROK_SHARE_FILE`, `ACCIO_SETUP_NO_WINGET`.
+- Tests: `tests/test_connect_setup.py` (token/name validation, version choice, checksum and names parsing, serve output and status fixtures, polling and retry) and two zrok cases in `tests/test_tunnels.py`.
+- **Verified live on this PC (2026-10-25):** `Setup_Tailscale.bat` against the real Tailscale 1.104.1 (all four checks pass, probe leaves "No serve config"); mode 5 started from `Run_Accio.bat`, the tailnet address answered 200 with the login screen and `/api/gallery` gave 401 without a session (the password itself was not entered); `Stop_Accio.bat` afterwards. zrok2.exe v2.0.8 downloaded by `Setup_Zrok.bat`; the "not linked" stop and the offer from `Run_Accio.bat` (answer n / y) ran for real.
+- **Verified only with fake programs** (a stand-in `tailscale` / `zrok2` driven by a state file): not installed, not signed in, MagicDNS off, Serve disabled (probe hangs and is killed), HTTPS off, each flipping to OK while polling; timeout then Enter retry; zrok bad token, invalid name, taken name, saved name no longer reserved.
+- **Not verified:** a real zrok account (no token available): `zrok2 enable`, `create name`, the real JSON of `zrok2 list names --json` (the parser accepts a list or an object with `names`, rows with `name` / `namespaceToken` / `url`; the shown address falls back to `https://<name>.shares.zrok.io`), the URL that `share public -n public:<name>` prints (`ZROK_URL` accepts `share` and `shares`), and mode 3 end to end. winget install of Tailscale (Tailscale was already installed; not uninstalled or signed out).
