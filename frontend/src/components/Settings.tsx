@@ -16,50 +16,6 @@ import { useIsDesktop } from "../lib/useMedia";
 import { SettingsCard } from "./ui/SettingsCard";
 import { Sheet } from "./ui/Sheet";
 
-/** Mobile: the settings content as one stack, in `order-N` sequence (the fourth tab, MobileLayout). `open` = visible, so polling pauses when it is not. */
-export function SettingsBody({ open }: { open: boolean }) {
-  const { refreshHealth } = useServer();
-
-  useEffect(() => {
-    if (open) void refreshHealth();
-  }, [open, refreshHealth]);
-
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="order-1">
-        <AppearanceSection />
-      </div>
-      <div className="order-2">
-        <ConnectionSection open={open} />
-      </div>
-      <div className="order-3">
-        <InstallApp />
-      </div>
-      <div className="order-4">
-        <UpdateSection open={open} />
-      </div>
-      <div className="order-5">
-        <AccountSection />
-      </div>
-      <div className="order-5">
-        <SystemSection open={open} />
-      </div>
-      <div className="order-6">
-        <StatusSection />
-      </div>
-      <div className="order-6">
-        <UploadsSection />
-      </div>
-      <div className="order-9">
-        <ModelsSection open={open} />
-      </div>
-      <div className="order-10">
-        <ModelFoldersSection open={open} />
-      </div>
-    </div>
-  );
-}
-
 type TabId = "general" | "models" | "connection" | "system" | "account";
 
 const TABS: { id: TabId; label: string; icon: ComponentType<{ size?: number; strokeWidth?: number }> }[] = [
@@ -70,8 +26,8 @@ const TABS: { id: TabId; label: string; icon: ComponentType<{ size?: number; str
   { id: "account", label: "Account", icon: UserRound },
 ];
 
-/** Desktop: a category list on the left, the chosen category's cards on the right. The size stays fixed so switching never makes the window jump. */
-function SettingsDesktop({ open }: { open: boolean }) {
+/** The chosen category, health refreshed while visible, and a jump to Models when the window opens with models missing. */
+function useSettingsTabs(open: boolean) {
   const [tab, setTab] = useState<TabId>("general");
   const { health, refreshHealth } = useServer();
 
@@ -79,7 +35,6 @@ function SettingsDesktop({ open }: { open: boolean }) {
     if (open) void refreshHealth();
   }, [open, refreshHealth]);
 
-  // Opened from the "models are missing" banner: land where they can be downloaded.
   const missing = !!health?.missing_models.length;
   useEffect(() => {
     if (open && missing) setTab("models");
@@ -87,6 +42,98 @@ function SettingsDesktop({ open }: { open: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, missing]);
 
+  return { tab, setTab, missing };
+}
+
+/** The cards of one category; the same on desktop and mobile. */
+function SettingsPages({ tab, open, goModels }: { tab: TabId; open: boolean; goModels: () => void }) {
+  return (
+    <>
+      {tab === "general" && (
+        <>
+          <SettingsCard title="Appearance" description="Theme and the sound that tells you an image is ready.">
+            <AppearanceSection />
+          </SettingsCard>
+          <SettingsCard title="Install as an app" description="Open Accio in its own window, like any other app.">
+            <InstallApp />
+          </SettingsCard>
+          <SettingsCard title="Uploads" description="Free disk space used by images you uploaded for editing.">
+            <UploadsSection />
+          </SettingsCard>
+        </>
+      )}
+      {tab === "models" && (
+        <>
+          <SettingsCard title="Models" description="Download the files Accio needs. They are checked when they finish.">
+            <ModelsSection open={open} />
+          </SettingsCard>
+          <SettingsCard title="Model folders">
+            <ModelFoldersSection open={open} />
+          </SettingsCard>
+        </>
+      )}
+      {tab === "connection" && (
+        <SettingsCard title="Connection" description="Where Accio can be reached, and a QR code to open it on a phone.">
+          <ConnectionSection open={open} />
+        </SettingsCard>
+      )}
+      {tab === "system" && (
+        <>
+          <SettingsCard title="Updates">
+            <UpdateSection open={open} />
+          </SettingsCard>
+          <SettingsCard title="Status" description="What Accio needs to run.">
+            <StatusSection onManageModels={goModels} />
+          </SettingsCard>
+          <SettingsCard title="This PC" description="Graphics card, driver and memory.">
+            <SystemSection open={open} />
+          </SettingsCard>
+        </>
+      )}
+      {tab === "account" && (
+        <SettingsCard title="Account" description="Change your password or sign out on this device.">
+          <AccountSection />
+        </SettingsCard>
+      )}
+    </>
+  );
+}
+
+/** Mobile (the fourth tab, MobileLayout): the same categories as a strip along the top that sticks while the cards scroll beneath it. */
+export function SettingsBody({ open }: { open: boolean }) {
+  const { tab, setTab, missing } = useSettingsTabs(open);
+  return (
+    <div>
+      <nav aria-label="Settings sections" className="no-scrollbar sticky top-0 z-10 -mx-4 flex gap-1.5 overflow-x-auto bg-bg px-4 py-2">
+        {TABS.map(({ id, label, icon: Icon }) => {
+          const on = tab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-current={on ? "page" : undefined}
+              onClick={() => setTab(id)}
+              className={`relative flex h-10 flex-none items-center gap-2 rounded-full border px-4 text-[14px] transition-colors ${
+                on ? "border-gold/55 bg-gold-wash font-medium text-gold-text" : "border-line text-text-2"
+              }`}
+            >
+              <Icon size={16} strokeWidth={1.7} />
+              {label}
+              {id === "models" && missing && <i className="h-2 w-2 rounded-full bg-danger" aria-label="Models missing" />}
+            </button>
+          );
+        })}
+      </nav>
+      <div className="mt-2 flex flex-col gap-4 pb-2">
+        <SettingsPages tab={tab} open={open} goModels={() => setTab("models")} />
+      </div>
+    </div>
+  );
+}
+
+/** Desktop: a category list on the left, the chosen category's cards on the right. The size stays fixed so switching never makes the window jump. */
+function SettingsDesktop({ open }: { open: boolean }) {
+  const { tab, setTab, missing } = useSettingsTabs(open);
   return (
     <div className="flex h-[min(720px,calc(92vh-80px))] min-h-0">
       <nav aria-label="Settings sections" className="flex w-52 flex-none flex-col gap-0.5 border-r border-line px-3 py-4">
@@ -112,52 +159,7 @@ function SettingsDesktop({ open }: { open: boolean }) {
       </nav>
       <div role="region" aria-label={TABS.find((t) => t.id === tab)?.label} className="min-w-0 flex-1 overflow-y-auto px-7 py-6">
         <div className="mx-auto flex max-w-[860px] flex-col gap-4">
-          {tab === "general" && (
-            <>
-              <SettingsCard title="Appearance" description="Theme and the sound that tells you an image is ready.">
-                <AppearanceSection />
-              </SettingsCard>
-              <SettingsCard title="Install as an app" description="Open Accio in its own window, like any other app.">
-                <InstallApp />
-              </SettingsCard>
-              <SettingsCard title="Uploads" description="Free disk space used by images you uploaded for editing.">
-                <UploadsSection />
-              </SettingsCard>
-            </>
-          )}
-          {tab === "models" && (
-            <>
-              <SettingsCard title="Models" description="Download the files Accio needs. They are checked when they finish.">
-                <ModelsSection open={open} />
-              </SettingsCard>
-              <SettingsCard title="Model folders">
-                <ModelFoldersSection open={open} />
-              </SettingsCard>
-            </>
-          )}
-          {tab === "connection" && (
-            <SettingsCard title="Connection" description="Where Accio can be reached, and a QR code to open it on a phone.">
-              <ConnectionSection open={open} />
-            </SettingsCard>
-          )}
-          {tab === "system" && (
-            <>
-              <SettingsCard title="Status" description="What Accio needs to run.">
-                <StatusSection onManageModels={() => setTab("models")} />
-              </SettingsCard>
-              <SettingsCard title="This PC" description="Graphics card, driver and memory.">
-                <SystemSection open={open} />
-              </SettingsCard>
-              <SettingsCard title="Updates">
-                <UpdateSection open={open} />
-              </SettingsCard>
-            </>
-          )}
-          {tab === "account" && (
-            <SettingsCard title="Account" description="Change your password or sign out on this device.">
-              <AccountSection />
-            </SettingsCard>
-          )}
+          <SettingsPages tab={tab} open={open} goModels={() => setTab("models")} />
         </div>
       </div>
     </div>
