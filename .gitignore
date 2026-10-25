@@ -2,8 +2,6 @@
 /env/
 /bin/
 /cloudflared.exe
-/zrok.exe
-/zrok2.exe
 /.zrok_share
 uv.exe
 uvw.exe

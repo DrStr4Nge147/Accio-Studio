@@ -50,9 +50,8 @@ changes. Everything lives in this folder, so deleting the folder uninstalls it.
    |---|---|---|
    | 1 | Local only | this PC (`http://127.0.0.1:7862`) |
    | 2 | Cloudflare | reach it from your phone anywhere; a random `trycloudflare.com` address each time |
-   | 3 | zrok | the same, with an address that stays the same. Run **`Setup_Zrok.bat`** once: a checklist that downloads zrok, links your free zrok account (you paste the enable token) and reserves Accio's own name, checking each step by itself. `Run_Accio.bat` offers it if it is missing. `Run_Accio-zrok-only.bat` skips the menu. |
-   | 4 | Same network | other devices on your Wi-Fi |
-   | 5 | Tailscale | private: only devices signed into your own Tailscale account. Run **`Setup_Tailscale.bat`** once: it installs Tailscale (winget), signs you in, and waits while you enable *Serve* and *HTTPS Certificates* in the Tailscale admin console (the two steps no program can do for you). `Run_Accio.bat` offers it if Tailscale is missing. |
+   | 3 | Same network | other devices on your Wi-Fi |
+   | 4 | Tailscale | private: only devices signed into your own Tailscale account. Run **`Setup_Tailscale.bat`** once: it installs Tailscale (winget), signs you in, and waits while you enable *Serve* and *HTTPS Certificates* in the Tailscale admin console (the two steps no program can do for you). `Run_Accio.bat` offers it if Tailscale is missing. |
 
 2. The browser opens. The **first time** you choose a password (at least 10 characters). On another device, or whenever a tunnel is
    running, the one-time setup code printed in the server window is needed too.
@@ -95,7 +94,7 @@ When it says Done, start Accio again with `Run_Accio.bat`. Close any other Accio
 ## Where things are
 
 ```
-Install.bat  Run_Accio.bat  Run_Accio-zrok-only.bat  Setup_Zrok.bat  Setup_Tailscale.bat  Stop_Accio.bat  Reset_Password.bat
+Install.bat  Run_Accio.bat  Setup_Tailscale.bat  Stop_Accio.bat  Reset_Password.bat
 bin\        portable tools (uv, 7zr, Node when needed, cloudflared)
 env\        Python environment of the Accio server
 comfyui\    the engine: ComfyUI\ (with the models in ComfyUI\models\) and python_embeded\

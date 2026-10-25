@@ -2,8 +2,6 @@
 import subprocess
 import types
 
-import pytest
-
 import tunnels
 
 
@@ -74,36 +72,3 @@ def test_run_limited_kills_a_command_that_never_finishes():
     assert code is None and out == "hi" and time.time() - t < 10
     assert tunnels.run_limited([sys.executable, "-c", "print('done')"], 10) == (0, "done")
 
-
-@pytest.mark.filterwarnings("ignore::pytest.PytestUnhandledThreadExceptionWarning")
-def test_zrok_shares_the_reserved_name_through_zrok2(monkeypatch, tmp_path):
-    """zrok v2: `zrok2 share public <target> -n public:<name> --headless` (v1's `share reserved` no longer exists)."""
-    import threading
-
-    binary = tmp_path / "zrok2.exe"
-    binary.write_text("x")
-    monkeypatch.setattr(tunnels, "ZROK", binary)
-    monkeypatch.setattr(tunnels, "reserved_name", lambda: "myaccio")
-    cmds = []
-
-    class FakeProc:
-        stdout = iter(["starting\n", "access your share at: https://myaccio.shares.zrok.io\n"])
-
-    monkeypatch.setattr(tunnels.subprocess, "Popen", lambda cmd, **kw: cmds.append(cmd) or FakeProc())
-    monkeypatch.setattr(tunnels, "announce", lambda *a: None)
-
-    def stop(_):
-        raise SystemExit  # ends the reconnect loop's thread after the first run
-
-    monkeypatch.setattr(tunnels.time, "sleep", stop)
-    tunnels.state.update(mode="local", public_url=None, status="local")
-    tunnels.run_zrok(7862)
-    next(t for t in threading.enumerate() if t.name == "zrok").join(5)
-    assert cmds[0] == [str(binary), "share", "public", "http://127.0.0.1:7862", "-n", "public:myaccio", "--headless"]
-    assert tunnels.state["public_url"] == "https://myaccio.shares.zrok.io" and tunnels.state["status"] == "reconnecting"
-
-
-def test_zrok_without_the_program_fails_with_a_hint(monkeypatch, tmp_path, capsys):
-    monkeypatch.setattr(tunnels, "ZROK", tmp_path / "missing.exe")
-    tunnels.run_zrok(7862)
-    assert tunnels.state["status"] == "failed" and "Setup_Zrok.bat" in capsys.readouterr().out

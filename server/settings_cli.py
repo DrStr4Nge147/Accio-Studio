@@ -1,7 +1,6 @@
 """Print one derived setting (used by Run_Accio.bat). Usage: settings_cli.py <key>
 
-Keys: port, comfy_url, comfy_port, comfy_dir, launch_flags, uploads_dir, external (1 when an external ComfyUI is configured),
-zrok_name (the name saved by Setup_Zrok.bat, empty if none).
+Keys: port, comfy_url, comfy_port, comfy_dir, launch_flags, uploads_dir, external (1 when an external ComfyUI is configured).
 Also: `settings_cli.py reset_password` removes the password and signs every device out (Reset_Password.bat).
 """
 import sys
@@ -26,10 +25,6 @@ if len(sys.argv) == 2:
     elif key == "uploads_dir":
         config.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
         print(config.UPLOADS_DIR)
-    elif key == "zrok_name":
-        import tunnels
-
-        print(tunnels.reserved_name() or "")
     elif key == "reset_password":
         config.save_setting("_auth", None)
         (config.DATA_DIR / "sessions.json").unlink(missing_ok=True)

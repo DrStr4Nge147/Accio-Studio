@@ -5,9 +5,7 @@ title Accio Studio
 
 cd /d "%~dp0"
 
-:: "Run_Accio.bat zrok" (used by Run_Accio-zrok-only.bat) skips the connection menu and goes straight to zrok.
 set "TUNNEL="
-if /i "%~1"=="zrok" set "TUNNEL=zrok"
 
 echo.
 echo =================================================================
@@ -99,38 +97,27 @@ if not exist "frontend\dist\index.html" (
 
 :: Step 3: Connection mode
 set "HOST_ARG="
-if "%TUNNEL%"=="zrok" goto :launch
 echo.
 echo =================================================================
 echo Choose Connection Mode
 echo =================================================================
 echo 1. LOCAL ONLY ^(this PC, 127.0.0.1^)
 echo 2. CLOUDFLARE ^(random URL, downloads cloudflared on first use^)
-echo 3. ZROK ^(persistent URL, run Setup_Zrok.bat once first^)
-echo 4. SAME NETWORK ^(other devices on your Wi-Fi / LAN^)
-echo 5. TAILSCALE ^(private: only your own devices; needs the Tailscale app^)
+echo 3. SAME NETWORK ^(other devices on your Wi-Fi / LAN^)
+echo 4. TAILSCALE ^(private: only your own devices; needs the Tailscale app^)
 echo =================================================================
 set "TUNNEL=local"
-set /p CHOICE="Selection [1-5, Default=1]: "
+set /p CHOICE="Selection [1-4, Default=1]: "
 if "%CHOICE%"=="2" set "TUNNEL=cloudflare"
-if "%CHOICE%"=="3" set "TUNNEL=zrok"
-if "%CHOICE%"=="5" set "TUNNEL=tailscale"
-if "%CHOICE%"=="4" (
+if "%CHOICE%"=="4" set "TUNNEL=tailscale"
+if "%CHOICE%"=="3" (
     set "HOST_ARG=--host 0.0.0.0"
     echo.
     echo       Other devices on this network can open the LAN address shown below.
     echo       Everything is behind your Accio password. If Windows Firewall asks, allow access on private networks.
 )
 :launch
-:: zrok and Tailscale need a one-time guided setup; offer it here instead of just failing.
-if "%TUNNEL%"=="zrok" (
-    ver >nul
-    if not exist "zrok2.exe" set "NEED_SETUP=1"
-    if not exist "%USERPROFILE%\.zrok2\environment.json" set "NEED_SETUP=1"
-    if not exist ".zrok_share" set "NEED_SETUP=1"
-    if defined NEED_SETUP call :offer_setup zrok Setup_Zrok.bat
-    if errorlevel 1 exit /b 1
-)
+:: Tailscale needs a one-time guided setup; offer it here instead of just failing.
 if "%TUNNEL%"=="tailscale" (
     ver >nul
     set "TS_EXE="

@@ -156,7 +156,7 @@ def test_setup_always_needs_the_code_while_a_tunnel_runs(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "SETTINGS_FILE", tmp_path / "settings.json")
     monkeypatch.setattr(config, "DATA_DIR", tmp_path)
     monkeypatch.setattr(main, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(main.app.state, "tunnel_mode", "zrok", raising=False)
+    monkeypatch.setattr(main.app.state, "tunnel_mode", "tailscale", raising=False)
     try:
         with TestClient(main.app, base_url="http://localhost:7862", client=("127.0.0.1", 50000)) as c:
             assert c.get("/api/auth/status").json()["setup_code_needed"] is True
@@ -185,7 +185,7 @@ def test_localhost_still_needs_login_while_a_tunnel_runs(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "SETTINGS_FILE", tmp_path / "settings.json")
     monkeypatch.setattr(config, "DATA_DIR", tmp_path)
     monkeypatch.setattr(main, "DATA_DIR", tmp_path)
-    for mode in ("cloudflare", "zrok", "tailscale"):
+    for mode in ("cloudflare", "tailscale"):
         monkeypatch.setattr(main.app.state, "tunnel_mode", mode, raising=False)
         try:
             with TestClient(main.app, base_url="http://localhost:7862", client=("127.0.0.1", 50000)) as c:

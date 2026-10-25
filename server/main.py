@@ -596,7 +596,7 @@ def open_browser_when_ready(port: int) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Accio Studio server")
     parser.add_argument("--open-browser", action="store_true", help="open the app in the default browser once it is up")
-    parser.add_argument("--tunnel", choices=["local", "cloudflare", "zrok", "tailscale"], default="local")
+    parser.add_argument("--tunnel", choices=["local", "cloudflare", "tailscale"], default="local")
     parser.add_argument("--host")
     parser.add_argument("--port", type=int)
     args = parser.parse_args()
@@ -623,8 +623,6 @@ def main() -> None:
     print(f"  ComfyUI backend  {comfy_url(s)}\n", flush=True)
     if args.tunnel == "cloudflare":
         tunnels.run_cloudflare(port)
-    elif args.tunnel == "zrok":
-        tunnels.run_zrok(port)
     elif args.tunnel == "tailscale":
         tunnels.run_tailscale(port)
     if args.open_browser:

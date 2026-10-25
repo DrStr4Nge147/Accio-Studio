@@ -1,7 +1,7 @@
-"""Cloudflare quick tunnel and zrok share, run as background threads next to the server (APP_SPEC 9.2).
+"""Cloudflare quick tunnel and Tailscale Serve, run next to the server (APP_SPEC 9.2).
 
 Both connect to the server on localhost, so the server itself can stay on 127.0.0.1. Each prints its public URL with an
-ASCII QR code and records it in `state` so the settings page can show it too. zrok reconnects forever.
+ASCII QR code and records it in `state` so the settings page can show it too. The Cloudflare tunnel reconnects forever.
 
 Tailscale (optional, never bundled: it needs a system-wide install) is different: `tailscale serve` publishes the port to
 your private tailnet only, so just devices signed into your Tailscale account can open the address.
@@ -27,13 +27,8 @@ import qrcode.image.svg
 from config import ROOT
 
 CLOUDFLARED = ROOT / "cloudflared.exe"
-ZROK = ROOT / "zrok2.exe"  # zrok v2: the hosted zrok.io refuses v1 clients, and v2 renamed the program
-ZROK_SHARE_FILE = ROOT / ".zrok_share"
 CLOUDFLARED_URL = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
-ZROK_NAME = re.compile(r"^[A-Za-z0-9]{4,32}$")
 CLOUDFLARE_URL = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
-ZROK_URL = re.compile(r"https://[a-z0-9-]+\.shares?\.zrok\.io")
-ZROK_NAMESPACE = "public"
 TAILSCALE_DEFAULT = Path(r"C:\Program Files\Tailscale\tailscale.exe")
 NO_WINDOW = 0x08000000  # CREATE_NO_WINDOW: no console flashing up for the child process
 
@@ -116,52 +111,6 @@ def run_cloudflare(port: int) -> None:
             time.sleep(5)
 
     threading.Thread(target=work, daemon=True, name="cloudflare").start()
-
-
-def reserved_name() -> str | None:
-    """The zrok name saved by Setup_Zrok.bat, or None (then a random public share is used)."""
-    try:
-        name = ZROK_SHARE_FILE.read_text(encoding="utf-8").strip()
-    except OSError:
-        return None
-    return name if ZROK_NAME.fullmatch(name) else None
-
-
-def run_zrok(port: int) -> None:
-    if not ZROK.is_file():
-        state.update(mode="zrok", status="failed")
-        print("\n[ERROR] zrok2.exe was not found next to the app. Run Setup_Zrok.bat first.\n", flush=True)
-        return
-    state.update(mode="zrok", status="starting")
-
-    def work() -> None:
-        while True:  # keep the share alive forever
-            name = reserved_name()
-            if name:
-                cmd = [str(ZROK), "share", "public", f"http://127.0.0.1:{port}", "-n", f"{ZROK_NAMESPACE}:{name}", "--headless"]
-            else:
-                cmd = [str(ZROK), "share", "public", f"http://127.0.0.1:{port}", "--headless"]
-            try:
-                proc = subprocess.Popen(
-                    cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, creationflags=NO_WINDOW
-                )
-                assert proc.stdout
-                for line in proc.stdout:
-                    low = line.lower()
-                    if "[error]" in low or "error:" in low:
-                        print(f"zrok: {line.strip()}", flush=True)
-                    match = ZROK_URL.search(line)
-                    if match and state["public_url"] != match.group(0):
-                        state.update(public_url=match.group(0), status="up")
-                        announce("ZROK TUNNEL ACTIVE" + (" (RESERVED NAME)" if name else ""), match.group(0))
-                state["status"] = "reconnecting"
-                print("zrok share closed; reconnecting in 5 s...", flush=True)
-            except OSError as e:
-                state["status"] = "failed"
-                print(f"[ERROR] Could not start zrok: {e!r}. Retrying in 5 s.", flush=True)
-            time.sleep(5)
-
-    threading.Thread(target=work, daemon=True, name="zrok").start()
 
 
 # ---------------------------------------------------------------------------------------------- Tailscale

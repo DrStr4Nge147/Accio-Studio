@@ -36,7 +36,7 @@ if "%COMFY_EXTERNAL%"=="1" (
 ) else (
     echo   - the bundled backend ^(ComfyUI, port %COMFY_PORT%^)
 )
-echo   - cloudflared / zrok tunnels started from this folder
+echo   - cloudflared tunnels started from this folder
 echo   - the Tailscale address Accio published ^(Tailscale itself keeps running^)
 echo.
 

@@ -1,33 +1,26 @@
-"""Guided setup for the zrok and Tailscale connection modes (Setup_Zrok.bat, Setup_Tailscale.bat).
+"""Guided setup for the Tailscale connection mode (Setup_Tailscale.bat).
 
-    env\\Scripts\\python.exe installer\\connect_setup.py zrok [--port 7862]
-    env\\Scripts\\python.exe installer\\connect_setup.py tailscale [--port 7862]
+    env\Scripts\python.exe installer\connect_setup.py tailscale [--port 7862]
 
-Each mode is a short checklist. A step is polled every few seconds until it is done, then the next one starts. After about
+It is a short checklist. A step is polled every few seconds until it is done, then the next one starts. After about
 10 minutes without progress the step offers "press Enter to retry". Exit code 0 = READY, 1 = gave up.
 
 Only the standard library is used. The parsing and decision functions are pure so tests/test_connect_setup.py can feed them
 fixtures. Environment variables for testing without touching the real setup (all optional):
     ACCIO_SETUP_TIMEOUT / ACCIO_SETUP_INTERVAL   seconds (defaults 600 / 3)
     ACCIO_TAILSCALE_BIN                          use this program instead of the installed tailscale.exe
-    ACCIO_ZROK_BIN / ACCIO_ZROK_SHARE_FILE       use another zrok2 program / another .zrok_share file
     ACCIO_SETUP_NO_WINGET=1                      never try winget (go straight to the download link)
-    USERPROFILE                                  where zrok2 keeps its environment (~/.zrok2)
 """
 from __future__ import annotations
 
-import hashlib
-import io
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
-import tarfile
 import tempfile
 import time
-import urllib.request
 import webbrowser
 from pathlib import Path
 from typing import Callable
@@ -39,18 +32,8 @@ LINKS = {
     "tailscale_download": "https://tailscale.com/download",
     "tailscale_admin_dns": "https://login.tailscale.com/admin/dns",
     "tailscale_admin_machines": "https://login.tailscale.com/admin/machines",
-    "zrok_site": "https://zrok.io",
-    "zrok_docs_install": "https://docs.zrok.io/docs/guides/install/",
-    "zrok_latest_api": "https://api.github.com/repos/openziti/zrok/releases/latest",
-    "zrok_download": "https://github.com/openziti/zrok/releases/download/v{version}/zrok_{version}_windows_amd64.tar.gz",
-    "zrok_checksums": "https://github.com/openziti/zrok/releases/download/v{version}/checksums.sha256.txt",
 }
 
-ZROK_PINNED = "2.0.8"  # used when GitHub cannot be reached; zrok v1 clients are refused by the hosted zrok.io since v2
-ZROK_EXE = Path(os.environ.get("ACCIO_ZROK_BIN") or ROOT / "zrok2.exe")
-ZROK_SHARE_FILE = Path(os.environ.get("ACCIO_ZROK_SHARE_FILE") or ROOT / ".zrok_share")
-ZROK_NAMESPACE = "public"
-ZROK_NAME = re.compile(r"^[A-Za-z0-9]{4,32}$")
 TAILSCALE_DEFAULT = Path(r"C:\Program Files\Tailscale\tailscale.exe")
 LOGIN_LINK = re.compile(r"https://login\.tailscale\.com/\S+")
 NO_WINDOW = 0x08000000 if os.name == "nt" else 0
@@ -60,97 +43,6 @@ INTERVAL = float(os.environ.get("ACCIO_SETUP_INTERVAL", 3))
 
 
 # ------------------------------------------------------------------------------------------------ pure helpers
-
-def clean_token(raw: str) -> str:
-    """The zrok enable token from what the user pasted: strips whitespace, quotes and a leading `zrok enable` / `zrok2 enable`."""
-    text = raw.strip().strip("\"'")
-    text = re.sub(r"^zrok2?(\.exe)?\s+enable\s+", "", text, flags=re.I)
-    return text.strip().strip("\"'")
-
-
-def valid_token(token: str) -> bool:
-    return bool(re.fullmatch(r"[A-Za-z0-9_-]{4,64}", token))
-
-
-def valid_name(name: str) -> bool:
-    return bool(ZROK_NAME.fullmatch(name))
-
-
-def version_tuple(text: str) -> tuple[int, ...] | None:
-    """(2, 0, 8) from 'v2.0.8 [7d46bbfd]' or '2.0.8'; None when there is no version in the text."""
-    m = re.search(r"v?(\d+)\.(\d+)\.(\d+)", text)
-    return tuple(int(x) for x in m.groups()) if m else None
-
-
-def pick_zrok_version(latest_tag: str | None) -> str:
-    """The version to install: the latest release when it is a v2.x, else the pinned one."""
-    t = version_tuple(latest_tag or "")
-    if t and t[0] == 2:
-        return ".".join(map(str, t))
-    return ZROK_PINNED
-
-
-def zrok_is_current(version_output: str, wanted: str) -> bool:
-    have, want = version_tuple(version_output), version_tuple(wanted)
-    return bool(have and want and have[0] == want[0] and have >= want)
-
-
-def parse_checksums(text: str) -> dict[str, str]:
-    """{file name: sha256} from a `sha256sum` style list."""
-    out: dict[str, str] = {}
-    for line in text.splitlines():
-        parts = line.split()
-        if len(parts) == 2 and re.fullmatch(r"[0-9a-fA-F]{64}", parts[0]):
-            out[parts[1].lstrip("*").removeprefix("./")] = parts[0].lower()
-    return out
-
-
-def zrok_names(names_json: str) -> list[dict]:
-    """The name rows of `zrok2 list names --json` (a list, or an object holding one); [] when it cannot be read."""
-    try:
-        data = json.loads(names_json)
-    except (ValueError, TypeError):
-        return []
-    if isinstance(data, dict):
-        for key in ("names", "items", "data"):
-            if isinstance(data.get(key), list):
-                data = data[key]
-                break
-        else:
-            return []
-    return [row for row in data if isinstance(row, dict)] if isinstance(data, list) else []
-
-
-def find_zrok_name(rows: list[dict], name: str, namespace: str = ZROK_NAMESPACE) -> dict | None:
-    for row in rows:
-        row_name = str(row.get("name", row.get("Name", ""))).lower()
-        space = str(row.get("namespaceToken", row.get("namespace", row.get("Namespace", namespace)))).lower()
-        if row_name == name.lower() and space in (namespace.lower(), ""):
-            return row
-    return None
-
-
-def zrok_url(row: dict | None, name: str) -> str:
-    """The public address of a name: the url zrok reports, else the usual shape."""
-    url = str((row or {}).get("url", (row or {}).get("Url", ""))).strip()
-    if url.startswith("https://"):
-        return url.rstrip("/")
-    if url:
-        return "https://" + url.rstrip("/")
-    return f"https://{name.lower()}.shares.zrok.io"
-
-
-def classify_create_name_failure(output: str) -> str:
-    """One plain sentence for why `zrok2 create name` failed."""
-    low = output.lower()
-    if any(w in low for w in ("already", "exists", "taken", "conflict", "409")):
-        return "That name is already taken on zrok. Pick another one."
-    if any(w in low for w in ("profan", "invalid", "not allowed", "400")):
-        return "zrok refused that name (invalid or not allowed). Pick another one."
-    if any(w in low for w in ("unauthorized", "401", "token", "not enabled", "no environment")):
-        return "This PC is not linked to your zrok account any more. Run this setup again."
-    return "zrok could not reserve the name: " + (output.strip().splitlines()[-1][:200] if output.strip() else "no answer") + "."
-
 
 def tailscale_login_state(status: dict) -> tuple[str, str]:
     """('ok'|'login'|'stopped'|'other', plain sentence) from `tailscale status --json`."""
@@ -221,11 +113,6 @@ class Checklist:
         for text, st in zip(self.steps, self.status):
             print(f"   {self.MARK[st]} {text}" + ("   <- waiting" if st == "wait" else ""))
         print(flush=True)
-
-
-def ask(prompt: str) -> str:
-    """input() without a byte-order mark, which a piped console can put in front of the first line."""
-    return input(prompt).replace(chr(0xFEFF), "")
 
 
 def say(text: str = "") -> None:
@@ -421,176 +308,6 @@ def setup_tailscale(port: int) -> int:
     return 0
 
 
-# ------------------------------------------------------------------------------------------------ zrok
-
-def zrok_env_file() -> Path:
-    return Path(os.environ.get("USERPROFILE") or Path.home()) / ".zrok2" / "environment.json"
-
-
-def latest_zrok_tag() -> str | None:
-    try:
-        req = urllib.request.Request(LINKS["zrok_latest_api"], headers={"User-Agent": "AccioStudio-setup"})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            return str(json.load(r).get("tag_name", ""))
-    except (OSError, ValueError):
-        return None
-
-
-def download(url: str) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "AccioStudio-setup"})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return r.read()
-
-
-def install_zrok() -> str | None:
-    """Download zrok2.exe next to the app. Returns an error sentence, or None on success."""
-    version = pick_zrok_version(latest_zrok_tag())
-    say(f"      Downloading zrok v{version} ...")
-    asset = f"zrok_{version}_windows_amd64.tar.gz"
-    try:
-        blob = download(LINKS["zrok_download"].format(version=version))
-    except OSError as e:
-        return f"Could not download zrok ({e}). Check the internet connection and try again."
-    try:
-        want = parse_checksums(download(LINKS["zrok_checksums"].format(version=version)).decode()).get(asset)
-    except OSError:
-        want = None
-    if want and hashlib.sha256(blob).hexdigest() != want:
-        return "The zrok download failed its checksum check. Try again."
-    if not want:
-        say("      (no checksum list available, skipped the checksum check)")
-    try:
-        with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tar:
-            member = next((m for m in tar.getmembers() if m.isfile() and Path(m.name).name == "zrok2.exe"), None)
-            data = tar.extractfile(member).read() if member else None
-    except (tarfile.TarError, OSError):
-        data = None
-    if not data:
-        return "zrok2.exe was not found in the download."
-    part = ZROK_EXE.with_suffix(".part")
-    part.write_bytes(data)
-    part.replace(ZROK_EXE)
-    return None
-
-
-def zrok_version_output() -> str:
-    if not ZROK_EXE.is_file():
-        return ""
-    return run([str(ZROK_EXE), "version"], 20)[1]
-
-
-def zrok_list_names() -> list[dict]:
-    code, out = run([str(ZROK_EXE), "list", "names", "--json"], 30)
-    return zrok_names(out) if code == 0 else []
-
-
-def setup_zrok(port: int) -> int:
-    cl = Checklist("zrok (public link that stays the same)", [
-        "zrok2.exe is here and current",
-        "This PC is linked to your zrok account",
-        "Accio's name is reserved",
-        "Address ready",
-    ])
-    cl.show()
-
-    # 1. zrok2.exe
-    cl.set(0, "wait")
-    old = ROOT / "zrok.exe"
-    if old.is_file():
-        say("      Removing the old zrok v1 program from this folder (zrok.io no longer accepts it).")
-        old.unlink(missing_ok=True)
-    tag = latest_zrok_tag()
-    wanted = pick_zrok_version(tag)
-    if not zrok_is_current(zrok_version_output(), wanted):
-        while True:
-            problem = install_zrok()
-            if not problem:
-                break
-            say(f"      {problem}")
-            try:
-                input("      Press Enter to retry, or close this window to stop. ")
-            except EOFError:
-                cl.set(0, "fail")
-                return 1
-    if not zrok_version_output():
-        cl.set(0, "fail")
-        say("      zrok2.exe does not start. Delete it and run this again.")
-        return 1
-    cl.set(0, "done")
-    say(f"      {zrok_version_output().splitlines()[-1].strip()}")
-
-    # 2. account linked
-    cl.set(1, "wait")
-    env = zrok_env_file()
-    while not env.is_file():
-        say("      Create a free zrok account (or sign in), then copy your enable token from the dashboard.")
-        open_link(LINKS["zrok_site"])
-        try:
-            raw = ask("      Paste the token here (or just press Enter if you link it in another window): ")
-        except EOFError:
-            cl.set(1, "fail")
-            return 1
-        if raw.strip():
-            token = clean_token(raw)
-            if not valid_token(token):
-                say("      That does not look like a zrok token (letters, digits, - and _ only). Copy it again.")
-                continue
-            code, out = run([str(ZROK_EXE), "enable", token, "--headless"], 120)
-            if code != 0 or not env.is_file():
-                say("      [ERROR] zrok enable failed" + (f": {out.splitlines()[-1][:200]}" if out else "."))
-                say("      Check the token (copy it again from the dashboard) and try again.")
-                continue
-        elif not poll(env.is_file, "this PC to be linked (run `zrok2 enable <token>` in another window)"):
-            cl.set(1, "fail")
-            return 1
-    cl.set(1, "done")
-
-    # 3. name reserved
-    cl.set(2, "wait")
-    saved = ""
-    try:
-        saved = ZROK_SHARE_FILE.read_text(encoding="utf-8").strip()
-    except OSError:
-        pass
-    name, row = "", None
-    if valid_name(saved):
-        row = find_zrok_name(zrok_list_names(), saved)
-        if row:
-            say(f"      Accio already has the reserved name {saved}.")
-            name = saved
-        else:
-            say(f"      The saved name {saved} is not reserved on your account (any more).")
-    while not name:
-        say("      Pick Accio's own name: letters and digits only, 4 to 32 characters. Use a NEW name, not one used by another app.")
-        try:
-            wish = ask("      Name for Accio [e.g. myaccio]: ").strip()
-        except EOFError:
-            cl.set(2, "fail")
-            return 1
-        if not valid_name(wish):
-            say("      Not valid: use letters and digits only, 4 to 32 characters.")
-            continue
-        code, out = run([str(ZROK_EXE), "create", "name", "-n", ZROK_NAMESPACE, wish], 60)
-        row = find_zrok_name(zrok_list_names(), wish)
-        if code != 0 or not row:
-            say("      [ERROR] " + classify_create_name_failure(out))
-            continue
-        name = wish
-    ZROK_SHARE_FILE.write_text(name + "\n", encoding="utf-8")
-    cl.set(2, "done")
-
-    # 4. address
-    cl.set(3, "done")
-    cl.show()
-    say("=" * 64)
-    say("READY")
-    say("=" * 64)
-    say("Start Accio with Run_Accio-zrok-only.bat, or pick option 3 in Run_Accio.bat.")
-    say(f"Your address: {zrok_url(row, name)}  (shown with a QR code when it starts)")
-    say("=" * 64)
-    return 0
-
-
 def main(argv: list[str]) -> int:
     mode = argv[1] if len(argv) > 1 else ""
     port = 7862
@@ -601,14 +318,12 @@ def main(argv: list[str]) -> int:
             say("Bad --port value.")
             return 2
     try:
-        if mode == "zrok":
-            return setup_zrok(port)
         if mode == "tailscale":
             return setup_tailscale(port)
     except KeyboardInterrupt:
         say("\nStopped.")
         return 1
-    say("Usage: connect_setup.py zrok|tailscale [--port N]")
+    say("Usage: connect_setup.py tailscale [--port N]")
     return 2
 
 

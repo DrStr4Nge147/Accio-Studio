@@ -4,7 +4,7 @@ import { SectionTitle } from "../../components/ui/SettingsCard";
 const HELP = {
   installed: "Accio is installed on this device.",
   ios: "In Safari, tap Share, then Add to Home Screen.",
-  insecure: "Browsers only offer installing on a secure address: open Accio through the Cloudflare or zrok link, or on this PC at 127.0.0.1.",
+  insecure: "Browsers only offer installing on a secure address: open Accio through the Cloudflare or Tailscale link, or on this PC at 127.0.0.1.",
   unavailable: "Use your browser's menu (Install app / Add to Home Screen) if it offers it.",
 } as const;
 
