@@ -5,6 +5,7 @@ import { AccountSection } from "../features/settings/AccountSection";
 import { ConnectionSection } from "../features/settings/ConnectionSection";
 import { InstallApp } from "../features/settings/InstallApp";
 import { ModelFoldersSection } from "../features/settings/ModelFoldersSection";
+import { ModelsSection } from "../features/settings/ModelsSection";
 import { SystemSection } from "../features/settings/SystemSection";
 import { UploadsSection } from "../features/settings/UploadsSection";
 import { UpdateSection } from "../features/settings/UpdateSection";
@@ -112,7 +113,7 @@ export function SettingsBody({ open }: { open: boolean }) {
                 <li key={m}>{m}</li>
               ))}
             </ul>
-            <p className="mt-2 text-[12px] text-text-3">Run Install.bat again to download them.</p>
+            <p className="mt-2 text-[12px] text-text-3">Download them in the Models section below.</p>
           </div>
         )}
         {health && health.missing_nodes.length > 0 && (
@@ -140,6 +141,9 @@ export function SettingsBody({ open }: { open: boolean }) {
         <div className="order-6">
           <UploadsSection />
         </div>
+      </div>
+      <div className="order-9 lg:col-span-2">
+        <ModelsSection open={open} />
       </div>
       <div className="order-10 lg:col-span-2">
         <ModelFoldersSection open={open} />

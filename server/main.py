@@ -33,6 +33,8 @@ import tunnels
 import updates
 from auth import Auth
 from authapi import GuardMiddleware, local_trusted, router as auth_router
+from modeldownloads import ModelDownloads
+from modeldownloadsapi import router as model_downloads_router
 from modelpathsapi import router as model_paths_router
 from uploads import INPUT_NAME, UPLOAD_KINDS, UPLOADS_DIR, local_copy, migrate_legacy_input, router as uploads_router
 from userdata import router as userdata_router
@@ -116,6 +118,7 @@ async def lifespan(app: FastAPI):
     app.state.sheets = SheetManager(app.state.jobs, app.state.history, app.state.comfy, out_dir)
     app.state.auth = Auth(DATA_DIR / "sessions.json", settings["session_days"])
     app.state.cache = {}
+    app.state.downloads = ModelDownloads(MANIFEST, on_finish=app.state.cache.clear)
     await app.state.jobs.start()
     await app.state.sheets.resume()
     unload = float(settings["auto_unload_minutes"])
@@ -127,6 +130,7 @@ async def lifespan(app: FastAPI):
     yield
     if unloader:
         unloader.cancel()
+    app.state.downloads.cancel()
     await app.state.sheets.stop()
     await app.state.jobs.stop()
     await app.state.comfy.aclose()
@@ -153,6 +157,7 @@ app.add_middleware(SkipImageGZip)
 app.add_middleware(GuardMiddleware)  # added last = outermost: nothing private runs before the session check
 app.include_router(auth_router)
 app.include_router(model_paths_router)
+app.include_router(model_downloads_router)
 app.include_router(uploads_router)
 app.include_router(userdata_router)
 

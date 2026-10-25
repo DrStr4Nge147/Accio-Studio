@@ -25,7 +25,7 @@ def downloads(tmp_path, monkeypatch):
     monkeypatch.setattr(modelfiles, "free_space", lambda p: 10**12)
     calls = []
 
-    def fake_download(url, dest, expected_size=None):
+    def fake_download(url, dest, expected_size=None, **kw):
         calls.append(url)
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(data)
@@ -67,7 +67,7 @@ def test_installed_models_are_not_downloaded_again(tmp_path, downloads):
 
 def test_a_damaged_download_is_retried_then_reported(tmp_path, downloads, monkeypatch):
     data, calls = downloads
-    monkeypatch.setattr(modelfiles, "curl_download", lambda url, dest, expected_size=None: (calls.append(url), dest.parent.mkdir(parents=True, exist_ok=True), dest.write_bytes(b"junk")))
+    monkeypatch.setattr(modelfiles, "curl_download", lambda url, dest, expected_size=None, **kw: (calls.append(url), dest.parent.mkdir(parents=True, exist_ok=True), dest.write_bytes(b"junk")))
     manifest = {"models": [entry("m.safetensors", len(data))]}
     assert modelfiles.install_models(manifest, tmp_path / "models", say=lambda _: None) == ["m.safetensors"]
     assert len(calls) == 2

@@ -21,7 +21,7 @@ export function HealthBanner() {
           Check again
         </button>
         <button type="button" onClick={openSettings} className="hover-wash h-11 rounded-full px-3 text-text-2 hover:text-text">
-          Details
+          {health?.missing_models.length ? "Download models" : "Details"}
         </button>
       </span>
     </div>

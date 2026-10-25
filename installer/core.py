@@ -11,6 +11,7 @@ import os
 import shutil
 import struct
 import subprocess
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -106,8 +107,31 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
-def curl_download(url: str, dest: Path, *, expected_size: int | None = None, retries: int = 5) -> None:
-    """Resumable download: <dest>.part is continued with `-C -`, then renamed. Raises RuntimeError on failure.
+class DownloadCancelled(RuntimeError):
+    """`cancel` was set while a download ran. The .part file stays, so a later download continues from it."""
+
+
+def run_curl(cmd: list[str], *, cancel: threading.Event | None = None, quiet: bool = False) -> int:
+    """curl's exit code. `quiet` hides its progress bar (errors still print); setting `cancel` stops it and raises DownloadCancelled."""
+    if quiet:
+        cmd = [*cmd[:1], "-sS", *cmd[1:]]
+    if cancel is None:
+        return subprocess.run(cmd).returncode
+    proc = subprocess.Popen(cmd)
+    while True:
+        try:
+            return proc.wait(timeout=0.5)
+        except subprocess.TimeoutExpired:
+            if cancel.is_set():
+                proc.terminate()
+                proc.wait()
+                raise DownloadCancelled("download cancelled") from None
+
+
+def curl_download(url: str, dest: Path, *, expected_size: int | None = None, retries: int = 5,
+                  cancel: threading.Event | None = None, quiet: bool = False) -> None:
+    """Resumable download: <dest>.part is continued with `-C -`, then renamed. Raises RuntimeError on failure
+    (DownloadCancelled, a RuntimeError, when `cancel` is set).
 
     A connection that is too slow is dropped and re-made at once (see CURL_STALL_GUARD) without using up `retries`, as long as
     it made progress. `retries` counts attempts that got nowhere; MAX_RECONNECTS bounds the total, so it can never loop forever.
@@ -117,9 +141,7 @@ def curl_download(url: str, dest: Path, *, expected_size: int | None = None, ret
     failed = 0
     for _ in range(MAX_RECONNECTS):
         before = part.stat().st_size if part.exists() else 0
-        rc = subprocess.run(
-            ["curl.exe", "-L", "-f", "-C", "-", "--ssl-no-revoke", *CURL_STALL_GUARD, "-o", str(part), url]
-        ).returncode
+        rc = run_curl(["curl.exe", "-L", "-f", "-C", "-", "--ssl-no-revoke", *CURL_STALL_GUARD, "-o", str(part), url], cancel=cancel, quiet=quiet)
         if rc == 0:
             break
         if rc == 33 and part.exists():  # "range not satisfiable": the .part is already complete or stale

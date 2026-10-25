@@ -6,11 +6,12 @@ so the verification, resume and "already have it" rules exist once.
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 from typing import Callable
 
 import core
-from core import curl_download, fmt_size, free_space, verify_safetensors
+from core import DownloadCancelled, curl_download, fmt_size, free_space, verify_safetensors
 
 # The folders the app sorts LoRAs by (frontend/src/lib/loras.ts): Create's, then the two Edit families.
 LORA_FOLDERS = ("krea2", "qwen2.1-edit", "flux-klein9b-edit")
@@ -57,51 +58,74 @@ def wanted(manifest: dict, optional: bool = False, groups: frozenset[str] = froz
     return [m for m in manifest["models"] if m["required"] or (m["group"] in groups if "group" in m else optional)]
 
 
+def status(m: dict, dest_root: Path, say: Callable[[str], None] = print) -> tuple[str, int]:
+    """Where manifest entry `m` stands: ("linked" | "installed" | "damaged" | "partial" | "missing", bytes of the partial download).
+
+    "linked" = a verified copy in a folder chosen in Settings; "damaged" = our copy (or one filed in a subfolder) fails verification."""
+    if locate_existing(m, say):
+        return "linked", 0
+    dest = dest_root / m["folder"] / m["file"]
+    have_at = find_model_file(dest.parent, m["file"])
+    if have_at:
+        ok, why = verify_safetensors(have_at, m["size"])
+        if ok:
+            return "installed", 0
+        say(f"  [!] {m['file']} is incomplete or damaged ({why})")
+        return "damaged", 0
+    part = dest.with_name(dest.name + ".part")
+    have = part.stat().st_size if part.is_file() else 0
+    return ("partial" if have else "missing"), have
+
+
+def fetch(m: dict, dest_root: Path, *, cancel: threading.Event | None = None, quiet: bool = False,
+          say: Callable[[str], None] = print) -> bool:
+    """Download manifest entry `m` (resuming its .part file) and verify it; one retry on a failed check. Raises DownloadCancelled."""
+    dest = dest_root / m["folder"] / m["file"]
+    have_at = find_model_file(dest.parent, m["file"])
+    if have_at == dest and not verify_safetensors(dest, m["size"])[0]:
+        dest.unlink()  # only ever delete our own copy; a damaged file the user filed in a subfolder is left alone
+    for _ in (1, 2):
+        try:
+            curl_download(m["url"], dest, expected_size=m["size"], cancel=cancel, quiet=quiet)
+            ok, why = verify_safetensors(dest, m["size"])
+            if ok:
+                return True
+            say(f"    verification failed: {why}")
+            dest.unlink(missing_ok=True)
+        except DownloadCancelled:
+            raise
+        except RuntimeError as e:
+            say(f"    {e}")
+    return False
+
+
 def install_models(manifest: dict, dest_root: Path, optional: bool = False, groups: frozenset[str] = frozenset(),
                    say: Callable[[str], None] = print) -> list[str]:
     """Download what is missing under `dest_root` (ComfyUI's models folder), resuming partial files. Returns the files that failed."""
     todo, rows = [], []
     for m in wanted(manifest, optional, groups):
-        dest = dest_root / m["folder"] / m["file"]
-        if locate_existing(m, say):
-            rows.append((m["file"], m["size"], "found in a folder chosen in Settings"))
+        state, have = status(m, dest_root, say)
+        if state in ("linked", "installed"):
+            rows.append((m["file"], m["size"], "found in a folder chosen in Settings" if state == "linked" else "already installed"))
             continue
-        have_at = find_model_file(dest.parent, m["file"])
-        if have_at:
-            ok, why = verify_safetensors(have_at, m["size"])
-            if ok:
-                rows.append((m["file"], m["size"], "already installed"))
-                continue
-            say(f"  [!] {m['file']} is incomplete or damaged ({why}); re-downloading")
-            if have_at == dest:
-                dest.unlink()  # only ever delete our own copy; a damaged file the user filed in a subfolder is left alone
-        part = dest.with_name(dest.name + ".part")
-        have = part.stat().st_size if part.is_file() else 0
+        if state == "damaged":
+            say(f"  re-downloading {m['file']}")
         rows.append((m["file"], m["size"], f"download{f' (resume from {fmt_size(have)})' if have else ''}"))
-        todo.append((m, dest, m["size"] - have))
+        todo.append((m, m["size"] - have))
     say("  Model                                                                 Size       Status")
-    for name, size, status in rows:
-        say(f"  {name[:66].ljust(66)} {fmt_size(size).rjust(9)}  {status}")
-    need = sum(t[2] for t in todo)
+    for name, size, st in rows:
+        say(f"  {name[:66].ljust(66)} {fmt_size(size).rjust(9)}  {st}")
+    need = sum(t[1] for t in todo)
     say(f"\n  To download: {fmt_size(need)} in {len(todo)} file(s). Free space: {fmt_size(free_space(dest_root))}.")
     if not todo:
         return []
     if free_space(dest_root) < need * 1.02 + 2_000_000_000:
         raise RuntimeError("not enough free disk space for the model downloads")
     failed = []
-    for m, dest, _ in todo:
+    for m, _ in todo:
         say(f"\n  downloading {m['file']} ({fmt_size(m['size'])})")
-        for attempt in (1, 2):
-            try:
-                curl_download(m["url"], dest, expected_size=m["size"])
-                ok, why = verify_safetensors(dest, m["size"])
-                if ok:
-                    say("    verified.")
-                    break
-                say(f"    verification failed: {why}")
-                dest.unlink(missing_ok=True)
-            except RuntimeError as e:
-                say(f"    {e}")
+        if fetch(m, dest_root, say=say):
+            say("    verified.")
         else:
             failed.append(m["file"])
     return failed

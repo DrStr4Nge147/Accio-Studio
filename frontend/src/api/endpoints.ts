@@ -153,3 +153,36 @@ export const fetchUploads = () => get<{ uploads: UploadedImage[] }>("/api/upload
 /** Makes a stored upload readable by the mode that uses this kind (no second copy on disk). */
 export const makeUploadUsable = (file: string, kind: "media" | "image") => post<{ file: string }>(`/api/uploads/${file}/use?kind=${kind}`);
 export const deleteUpload = (file: string) => del<{ ok: boolean }>(`/api/uploads/${file}`);
+
+export type ModelState = "linked" | "installed" | "damaged" | "partial" | "missing" | "downloading" | "queued";
+export interface ModelRow {
+  /** The file name; it is also the id the download API takes. */
+  id: string;
+  size: number;
+  folder: string;
+  required: boolean;
+  /** Optional models that belong together (e.g. "klein"); null for the rest. */
+  group: string | null;
+  used_by: string;
+  state: ModelState;
+  /** Bytes already on disk for a partial or running download. */
+  bytes: number;
+}
+export interface ModelsJob {
+  state: "idle" | "running" | "done" | "cancelled" | "failed";
+  queue: string[];
+  current: string | null;
+  done: string[];
+  failed: string[];
+  message: string;
+}
+export interface ModelsData {
+  /** false when an external backend is configured: its models are managed there. */
+  available: boolean;
+  models: ModelRow[];
+  job: ModelsJob;
+  free_bytes: number;
+}
+export const fetchModels = () => get<ModelsData>("/api/models");
+export const downloadModels = (ids: string[]) => post<{ job: ModelsJob }>("/api/models/download", { ids });
+export const cancelModelDownload = () => post<{ job: ModelsJob }>("/api/models/cancel");

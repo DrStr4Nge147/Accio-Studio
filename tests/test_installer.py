@@ -189,3 +189,16 @@ def test_verify_gguf_checks_magic_and_manifest_size(tmp_path):
     assert core.verify_safetensors(f, 65)[0] is False
     f.write_bytes(b"NOPE" + b"\0" * 60)
     assert core.verify_safetensors(f, 64)[0] is False
+
+
+def test_run_curl_can_be_cancelled_and_can_be_quiet(monkeypatch):
+    import threading
+
+    stop = threading.Event()
+    threading.Timer(0.3, stop.set).start()
+    with pytest.raises(core.DownloadCancelled):
+        core.run_curl([sys.executable, "-c", "import time; time.sleep(30)"], cancel=stop)
+    seen = []
+    monkeypatch.setattr(core.subprocess, "run", lambda cmd, **kw: seen.append(cmd) or type("R", (), {"returncode": 0})())
+    assert core.run_curl(["curl.exe", "-L", "url"], quiet=True) == 0
+    assert seen == [["curl.exe", "-sS", "-L", "url"]]
