@@ -204,9 +204,9 @@ function EditMobile() {
 function SettingsTab() {
   const set = useUi((s) => s.set);
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-1">
-      <h1 className="serif mb-3 text-[22px] font-medium">Settings</h1>
-      <StatsBadge className="mb-4 !h-10 w-full justify-around" />
+    <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
+      <h1 className="serif mb-3 pt-1 text-[22px] font-medium">Settings</h1>
+      <StatsBadge grid className="mb-4 w-full" />
       <SettingsBody open />
       <button
         type="button"

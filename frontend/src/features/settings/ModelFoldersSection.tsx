@@ -95,8 +95,8 @@ export function ModelFoldersSection({ open }: { open: boolean }) {
     <div>
       <SectionTitle>Model folders</SectionTitle>
       <p className="mt-1 text-[12px] text-text-3">
-        Already have models from ComfyUI or another app? Enter the folder that holds each one. Nothing in them is moved, copied or changed. Leave a
-        field empty to use the app's own folder.
+        If you already have models from ComfyUI or another app, enter the folder that holds each one. Accio only reads them: nothing is moved, copied
+        or changed. Leave a field empty to use Accio's own folder.
       </p>
       <div className="mt-2 grid gap-3 lg:grid-cols-2">
         {data.families.map((fam) => (

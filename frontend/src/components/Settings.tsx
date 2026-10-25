@@ -13,6 +13,7 @@ import { UploadsSection } from "../features/settings/UploadsSection";
 import { UpdateSection } from "../features/settings/UpdateSection";
 import { useUi } from "../store/ui";
 import { useIsDesktop } from "../lib/useMedia";
+import { useScrollFade } from "./ui/controls";
 import { SettingsCard } from "./ui/SettingsCard";
 import { Sheet } from "./ui/Sheet";
 
@@ -102,29 +103,36 @@ function SettingsPages({ tab, open, goModels }: { tab: TabId; open: boolean; goM
 /** Mobile (the fourth tab, MobileLayout): the same categories as a strip along the top that sticks while the cards scroll beneath it. */
 export function SettingsBody({ open }: { open: boolean }) {
   const { tab, setTab, missing } = useSettingsTabs(open);
+  const fade = useScrollFade<HTMLElement>(missing);
   return (
     <div>
-      <nav aria-label="Settings sections" className="no-scrollbar sticky top-0 z-10 -mx-4 flex gap-1.5 overflow-x-auto bg-bg px-4 py-2">
-        {TABS.map(({ id, label, icon: Icon }) => {
-          const on = tab === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              aria-current={on ? "page" : undefined}
-              onClick={() => setTab(id)}
-              className={`relative flex h-10 flex-none items-center gap-2 rounded-full border px-4 text-[14px] transition-colors ${
-                on ? "border-gold/55 bg-gold-wash font-medium text-gold-text" : "border-line text-text-2"
-              }`}
-            >
-              <Icon size={16} strokeWidth={1.7} />
-              {label}
-              {id === "models" && missing && <i className="h-2 w-2 rounded-full bg-danger" aria-label="Models missing" />}
-            </button>
-          );
-        })}
-      </nav>
-      <div className="mt-2 flex flex-col gap-4 pb-2">
+      {/* Tabs share the width when they fit; on a narrow phone the strip scrolls, fades at the hidden edge and keeps the chosen tab in view. */}
+      <div className="sticky top-0 z-10 -mx-4 border-b border-line bg-bg">
+        <nav ref={fade.ref} style={fade.style} aria-label="Settings sections" className="no-scrollbar flex overflow-x-auto px-3">
+          {TABS.map(({ id, label }) => {
+            const on = tab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-current={on ? "page" : undefined}
+                onClick={(e) => {
+                  setTab(id);
+                  e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+                }}
+                className={`relative flex h-11 min-w-max flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-1.5 text-[13px] transition-colors ${
+                  on ? "font-medium text-text" : "text-text-3"
+                }`}
+              >
+                {label}
+                {id === "models" && missing && <i className="h-1.5 w-1.5 rounded-full bg-danger" aria-label="Models missing" />}
+                {on && <i className="absolute inset-x-1.5 bottom-0 h-0.5 rounded-full bg-gold-ui" aria-hidden />}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+      <div className="mt-4 flex flex-col gap-4 pb-2">
         <SettingsPages tab={tab} open={open} goModels={() => setTab("models")} />
       </div>
     </div>
