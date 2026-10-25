@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "installer"))
 import core  # noqa: E402
 import install  # noqa: E402
+import modelfiles  # noqa: E402
 
 
 def make_safetensors(path: Path, payload: int = 64, extra: int = 0, trunc: int = 0) -> Path:
@@ -126,65 +127,45 @@ def test_every_template_model_is_in_manifest():
                     assert v["lora"] in files, f"{path.stem}: {v['lora']}"
 
 
-def test_models_dir_of_accepts_comfy_folder_or_models_folder(tmp_path):
-    models = tmp_path / "ComfyUI" / "models"
-    (models / "loras").mkdir(parents=True)
-    assert install.models_dir_of(str(models)) == models.resolve()
-    assert install.models_dir_of(str(tmp_path / "ComfyUI")) == models.resolve()
-    assert install.models_dir_of(str(tmp_path / "nowhere")) is None
-
-
-def test_existing_models_must_verify_before_they_are_reused(tmp_path):
-    (tmp_path / "loras").mkdir()
-    good = make_safetensors(tmp_path / "loras" / "a.safetensors")
-    m = {"folder": "loras", "file": "a.safetensors", "size": good.stat().st_size}
-    assert install.locate_existing(tmp_path, m) == good
-    make_safetensors(good, trunc=5)  # truncated copy is not reused
-    assert install.locate_existing(tmp_path, m) is None
+def test_models_in_folders_chosen_in_settings_count_as_installed(tmp_path, monkeypatch):
+    mine = tmp_path / "my vaes"
+    mine.mkdir()
+    good = make_safetensors(mine / "v.safetensors")
+    (tmp_path / "settings.json").write_text(json.dumps({"model_paths": {"krea2": {"vae": str(mine)}}}), encoding="utf-8")
+    monkeypatch.setattr(core, "ROOT", tmp_path)
+    m = {"folder": "vae", "file": "v.safetensors", "size": good.stat().st_size}
+    assert modelfiles.locate_existing(m) == good
+    assert modelfiles.locate_existing({**m, "folder": "loras"}) is None  # only the matching kind is searched
+    assert modelfiles.settings_model_folders("text_encoders") == []
+    make_safetensors(good, trunc=5)  # a truncated copy is not reused
+    assert modelfiles.locate_existing(m, say=lambda _: None) is None
 
 
 def test_models_filed_into_subfolders_still_count_as_installed(tmp_path):
     (tmp_path / "loras" / "krea2").mkdir(parents=True)
     filed = make_safetensors(tmp_path / "loras" / "krea2" / "a.safetensors")
-    m = {"folder": "loras", "file": "a.safetensors", "size": filed.stat().st_size}
-    assert install.locate_existing(tmp_path, m) == filed
-    assert install.find_model_file(tmp_path / "loras", "A.safetensors") == filed
-    assert install.find_model_file(tmp_path / "loras", "missing.safetensors") is None
-    assert install.find_model_file(tmp_path / "nowhere", "a.safetensors") is None
+    assert modelfiles.find_model_file(tmp_path / "loras", "A.safetensors") == filed
+    assert modelfiles.find_model_file(tmp_path / "loras", "missing.safetensors") is None
+    assert modelfiles.find_model_file(tmp_path / "nowhere", "a.safetensors") is None
 
 
 def test_lora_folders_are_created_and_kept(tmp_path):
     (tmp_path / "loras" / "krea2").mkdir(parents=True)
     keep = tmp_path / "loras" / "krea2" / "a.txt"
     keep.write_text("x")
-    install.make_lora_folders(tmp_path)
-    install.make_lora_folders(tmp_path)  # idempotent
-    assert sorted(p.name for p in (tmp_path / "loras").iterdir()) == sorted(install.LORA_FOLDERS)
+    modelfiles.make_lora_folders(tmp_path)
+    modelfiles.make_lora_folders(tmp_path)  # idempotent
+    assert sorted(p.name for p in (tmp_path / "loras").iterdir()) == sorted(modelfiles.LORA_FOLDERS)
     assert keep.read_text() == "x"
 
 
-def test_models_in_folders_chosen_in_settings_are_not_downloaded_again(tmp_path, monkeypatch):
-    mine = tmp_path / "my vaes"
-    mine.mkdir()
-    good = make_safetensors(mine / "v.safetensors")
-    (tmp_path / "settings.json").write_text(json.dumps({"model_paths": {"krea2": {"vae": str(mine)}}}), encoding="utf-8")
-    monkeypatch.setattr(install, "ROOT", tmp_path)
-    m = {"folder": "vae", "file": "v.safetensors", "size": good.stat().st_size}
-    assert install.locate_existing(None, m) == good
-    assert install.locate_existing(None, {**m, "folder": "loras"}) is None  # only the matching kind is searched
-    assert install.settings_model_folders("text_encoders") == []
-
-
-def test_reinstall_keeps_the_folders_chosen_in_settings(tmp_path, monkeypatch):
-    monkeypatch.setattr(install, "comfy_dir", lambda: tmp_path)
-    old = ["accio_existing:", "    vae: D:/old/", "", install.YAML_MARKER, "accio_user:", '    vae: "D:/mine"']
-    (tmp_path / "extra_model_paths.yaml").write_text(chr(10).join(old) + chr(10), encoding="utf-8")
-    models = tmp_path / "other" / "models"
-    (models / "vae").mkdir(parents=True)
-    install.write_extra_model_paths(models)
-    text = (tmp_path / "extra_model_paths.yaml").read_text(encoding="utf-8")
-    assert text.count("accio_existing") == 1 and models.as_posix() in text and "D:/old/" not in text
-    assert install.YAML_MARKER in text and 'vae: "D:/mine"' in text
+def test_the_installer_does_not_download_models():
+    """Models come from Settings > Models. The installer takes no model flags and never calls the downloader."""
+    src = (ROOT / "installer" / "install.py").read_text(encoding="utf-8")
+    for gone in ("--models-from", "--optional-loras", "--klein", "--skip-models", "install_models"):
+        assert gone not in src, gone
+    for bat in ("Install.bat", "Run_Accio.bat"):
+        assert "--skip-models" not in (ROOT / bat).read_text(encoding="utf-8"), bat
 
 
 def test_no_hard_coded_user_paths_in_shipped_files():

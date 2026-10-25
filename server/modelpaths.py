@@ -23,9 +23,8 @@ try:  # Windows-only (the app is); the import failing just disables junction cre
 except ImportError:  # pragma: no cover
     CreateJunction = None  # type: ignore[assignment]
 
-# The marker is mirrored in installer/install.py (its yaml writer keeps everything from here on); a test keeps them equal.
 YAML_MARKER = "# --- Accio Studio: model folders set in Settings (rewritten on every save) ---"
-FAMILIES: dict[str, dict[str, str]] = {  # id -> label, folder under models/loras (the installer creates the same three)
+FAMILIES: dict[str, dict[str, str]] = {  # id -> label, folder under models/loras (the installer creates the same three, installer/modelfiles.py; a test keeps them equal)
     "krea2": {"label": "Krea2 (Create)", "lora_dir": "krea2"},
     "qwen_edit": {"label": "Qwen 2.1 Edit", "lora_dir": "qwen2.1-edit"},
     "klein": {"label": "Flux Klein 9B (Edit)", "lora_dir": "flux-klein9b-edit"},

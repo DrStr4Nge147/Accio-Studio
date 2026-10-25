@@ -17,7 +17,7 @@ import modelpaths
 import modelpathsapi
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "installer"))
-import install  # noqa: E402
+import modelfiles  # noqa: E402
 
 client = TestClient(main.app, raise_server_exceptions=False)
 
@@ -124,8 +124,8 @@ def test_default_folder_is_the_apps_own_one(tmp_path):
     assert modelpaths.default_folder(tmp_path, "klein", "loras") == str(tmp_path / "ComfyUI" / "models" / "loras" / "flux-klein9b-edit")
 
 
-def test_installer_and_server_share_the_yaml_marker():
-    assert install.YAML_MARKER == modelpaths.YAML_MARKER
+def test_installer_and_server_share_the_lora_folders():
+    assert set(modelfiles.LORA_FOLDERS) == {f["lora_dir"] for f in modelpaths.FAMILIES.values()}
 
 
 # --------------------------------------------------------------------------- API

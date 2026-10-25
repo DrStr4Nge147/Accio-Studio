@@ -23,7 +23,7 @@ echo Deleting the folder uninstalls it. Re-running this file resumes where it st
 echo.
 
 :: "nopause" = do not wait for a key at the end; every other argument goes to the installer
-::   Install.bat --models-from "D:\ComfyUI\models" --optional-loras no --yes
+::   Install.bat --yes
 set "NOPAUSE="
 set "ARGS=%*"
 if defined ARGS if not "!ARGS:nopause=!"=="!ARGS!" set "NOPAUSE=1"
@@ -80,14 +80,15 @@ if not exist "env\Scripts\python.exe" (
 uv pip install --python env\Scripts\python.exe -r requirements.txt
 if !errorlevel! neq 0 goto :fail
 
-:: [3/3] Portable 7-Zip, GPU detection, ComfyUI, pinned nodes, models, frontend build if needed
-echo [3/3] Installing the bundled ComfyUI, custom nodes and models...
+:: [3/3] Portable 7-Zip, GPU detection, ComfyUI, pinned nodes, frontend build if needed
+echo [3/3] Installing the bundled ComfyUI and custom nodes...
 env\Scripts\python.exe installer\install.py !ARGS!
 if !errorlevel! neq 0 goto :fail
 
 echo.
 echo ==========================================
-echo Installation complete. Use Run_Accio.bat to start.
+echo Installation complete. Use Run_Accio.bat to start,
+echo then open Settings ^> Models to download the models.
 echo ==========================================
 if not defined NOPAUSE pause
 endlocal

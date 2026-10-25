@@ -94,7 +94,7 @@ echo.
 echo [2/3] Checking the frontend build...
 if not exist "frontend\dist\index.html" (
     echo       Frontend build missing. Building ^(this may take a minute^)...
-    env\Scripts\python.exe installer\install.py --yes --skip-models
+    env\Scripts\python.exe installer\install.py --yes
     if not exist "frontend\dist\index.html" (
         echo [ERROR] Could not build the frontend. Run Install.bat.
         pause

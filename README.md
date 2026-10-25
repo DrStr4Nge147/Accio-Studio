@@ -35,13 +35,12 @@ changes. Everything lives in this folder, so deleting the folder uninstalls it.
    folder, so `Install.bat` stops with a clear message instead. Avoid `C:\Program Files`. **Do not move or rename the folder
    afterwards** (if you do, run `Install.bat` again; it repairs the Python environment and keeps everything else).
 2. Double-click **`Install.bat`** and wait. It is safe to close it and run it again later: it resumes and skips finished steps.
-   It downloads the tools, the engine (ComfyUI 0.38.0), 9 pinned custom-node packs and the models, and checks every model
-   file is complete.
-3. When it asks "Use models from an existing ComfyUI folder?", press Enter to download everything, or give the path of
-   a ComfyUI folder that already has the models (it is only **read**, never changed, and nothing is copied). It also asks whether to
-   download the four optional preset LoRAs (head swap, body swap, remove object, move object), and separately whether to
-   download Flux2 Klein 9B (about 19 GB), a second Edit model that does Multi-edit with up to 3 images. Once installed, pick it
-   in Edit > Advanced > Model.
+   It downloads the tools, the engine (ComfyUI 0.38.0) and 9 pinned custom-node packs. It does not download models.
+3. Start Accio with `Run_Accio.bat`, open **Settings > Models** and download the models you want. Every file is checked when it
+   finishes, and an interrupted download resumes. Already have the models from another ComfyUI? Point **Settings > Model folders**
+   at them instead (they are only **read**, never changed, and nothing is copied). The four preset LoRAs (head swap, body swap,
+   remove object, move object) and Flux2 Klein 9B (about 19 GB, a second Edit model that does Multi-edit with up to 3 images; pick
+   it in Edit > Advanced > Model) are optional downloads there.
 
 ## Daily use
 
