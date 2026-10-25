@@ -28,16 +28,16 @@ li:first-child{border-top:0}.dot{flex:none;width:26px;height:26px;border-radius:
 .label{padding-top:2px}.todo .label{color:var(--mute)}.wait .label{font-weight:600}
 .hint h2{font-size:1.05rem;margin:0 0 6px}.hint p{margin:0 0 12px;white-space:pre-line}
 a.btn{display:inline-block;background:var(--accent);color:var(--on-accent);text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600}
-.final{border-color:var(--ok)}.final h2{color:var(--ok)}.fail-card{border-color:var(--bad)}.fail-card h2{color:var(--bad)}
+.mute{color:var(--mute)}.final{border-color:var(--ok)}.final h2{color:var(--ok)}.fail-card{border-color:var(--bad)}.fail-card h2{color:var(--bad)}
 code{background:var(--bg);padding:2px 6px;border-radius:6px;word-break:break-all}
 [hidden]{display:none!important}
 </style></head><body><main>
 <h1>Tailscale setup</h1><p class="sub">Each step is checked automatically. This page moves on by itself.</p>
 <div class="card"><ol id="steps"></ol></div>
 <div class="card hint" id="hint" hidden><h2 id="hint-title"></h2><p id="hint-text"></p><a class="btn" id="hint-link" hidden target="_blank" rel="noopener"></a></div>
-<div class="card final" id="final" hidden><h2>All set. You can now close this window.</h2>
+<div class="card final" id="final" hidden><h2 id="final-title">All set. This window closes in <span id="count">5</span> seconds.</h2>
 <p>Your address (only devices signed into your Tailscale account can open it):</p><p><code id="addr"></code></p>
-<p id="next"></p></div>
+<p id="next"></p><p class="mute">The address is not live yet. It works while Accio runs with option 4 in Run_Accio.bat.</p></div>
 <div class="card fail-card" id="fail" hidden><h2>Setup stopped</h2><p id="fail-text"></p></div>
 </main><script>
 const MARK={todo:"",wait:"",done:"\\u2713",fail:"!"};
@@ -52,11 +52,17 @@ function render(s){
     const a=document.getElementById("hint-link");
     if(h.link&&h.link.startsWith("https://")){a.href=h.link;a.textContent=h.button||"Open";a.hidden=false}else{a.hidden=true}}
   document.getElementById("final").hidden=!s.done;
-  if(s.done){document.getElementById("addr").textContent=s.address||"";document.getElementById("next").textContent=s.next||""}
+  if(s.done){countdown();document.getElementById("addr").textContent=s.address||"";document.getElementById("next").textContent=s.next||""}
   document.getElementById("fail").hidden=!s.failed;
   if(s.failed)document.getElementById("fail-text").textContent=s.failed;
 }
-let last=null,dead=0;
+let last=null,dead=0,counting=false;
+function countdown(){
+  if(counting)return;counting=true;let n=5;const c=document.getElementById("count");
+  const t=setInterval(()=>{n--;c.textContent=String(n);
+    if(n<=0){clearInterval(t);window.close();
+      document.getElementById("final-title").textContent="All set. You can close this tab now."}},1000);
+}
 async function tick(){
   try{const r=await fetch("/status",{cache:"no-store"});last=await r.json();dead=0;render(last)}
   catch(e){dead++;if(last&&last.done){return}}

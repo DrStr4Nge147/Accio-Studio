@@ -83,7 +83,7 @@ def test_guide_page_serves_status_and_refuses_other_hosts():
         data = json.loads(body)
         assert status == 200 and data["status"] == ["done", "wait"] and data["hint"]["title"] == "T" and data["done"] is False
         status, body = get("/")
-        assert status == 200 and b"close this window" in body
+        assert status == 200 and b"closes in" in body
         assert get("/nope")[0] == 404
         assert get("/status", host_header="evil.example")[0] == 403  # a rebinding page cannot read it
     finally:

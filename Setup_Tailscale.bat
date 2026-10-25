@@ -24,6 +24,7 @@ echo Each step is checked automatically and the next one starts by itself.
 env\Scripts\python.exe installer\connect_setup.py tailscale --port %ACCIO_PORT%
 set "RC=!errorlevel!"
 echo.
-if not "!RC!"=="0" echo Setup did not finish. Run this file again to continue where it stopped.
+if "!RC!"=="0" exit /b 0
+echo Setup did not finish. Run this file again to continue where it stopped.
 pause
 exit /b !RC!

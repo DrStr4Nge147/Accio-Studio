@@ -230,7 +230,6 @@ def setup_tailscale(port: int, show_page: bool = True) -> int:
         return _setup_tailscale(port, Checklist("Tailscale (private link, only your own devices)", STEPS, page), page)
     finally:
         if page:
-            time.sleep(2 * 2)  # let an open page poll the final state once
             page.stop()
 
 
@@ -366,9 +365,13 @@ def _setup_tailscale(port: int, cl: Checklist, page: GuidePage | None) -> int:
     say("=" * 64)
     say(nxt)
     say(f"Your address (only devices signed into your Tailscale account): https://{dns}")
-    if page:
-        say("You can now close the browser page.")
+    say("The address is not live yet: it works while Accio runs with option 4 in Run_Accio.bat.")
     say("=" * 64)
+    if page:  # the page counts down and closes itself; give it time to see the final state, then stop serving it
+        for n in range(5, 0, -1):
+            say(f"This window closes in {n} ...")
+            time.sleep(1)
+        time.sleep(2)
     return 0
 
 
