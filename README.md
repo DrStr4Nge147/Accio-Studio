@@ -51,7 +51,7 @@ changes. Everything lives in this folder, so deleting the folder uninstalls it.
    | 1 | Local only | this PC (`http://127.0.0.1:7862`) |
    | 2 | Cloudflare | reach it from your phone anywhere; a random `trycloudflare.com` address each time |
    | 3 | Same network | other devices on your Wi-Fi |
-   | 4 | Tailscale | private: only devices signed into your own Tailscale account. Run **`Setup_Tailscale.bat`** once: it installs Tailscale (winget), signs you in, and waits while you enable *Serve* and *HTTPS Certificates* in the Tailscale admin console (the two steps no program can do for you). `Run_Accio.bat` offers it if Tailscale is missing. |
+   | 4 | Tailscale | private: only devices signed into your own Tailscale account. Run **`Setup_Tailscale.bat`** once: it installs Tailscale (winget), signs you in, and waits while you enable *Serve* and *HTTPS Certificates* in the Tailscale admin console (the two steps no program can do for you). A progress page opens in your browser with the current step, a button to the right link and live checks; at the end it says you can close it. `Run_Accio.bat` offers it if Tailscale is missing. |
 
 2. The browser opens. The **first time** you choose a password (at least 10 characters). On another device, or whenever a tunnel is
    running, the one-time setup code printed in the server window is needed too.

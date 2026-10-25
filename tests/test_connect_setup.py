@@ -60,3 +60,45 @@ def test_poll_retries_on_enter_after_timeout(monkeypatch):
 
 def test_links_are_https():
     assert all(v.startswith("https://") for v in cs.LINKS.values())
+
+
+def test_guide_page_serves_status_and_refuses_other_hosts():
+    import http.client
+
+    from setup_page import GuidePage
+
+    page = GuidePage(["a", "b"])
+    page.start()
+    host, port = page.url.split("//")[1].rstrip("/").split(":")
+
+    def get(path, host_header=None):
+        c = http.client.HTTPConnection(host, int(port), timeout=5)
+        c.request("GET", path, headers={"Host": host_header or f"127.0.0.1:{port}"})
+        r = c.getresponse()
+        return r.status, r.read()
+
+    try:
+        page.update(status=["done", "wait"], hint={"title": "T", "text": "x", "link": "https://example.com", "button": "Go"})
+        status, body = get("/status")
+        data = json.loads(body)
+        assert status == 200 and data["status"] == ["done", "wait"] and data["hint"]["title"] == "T" and data["done"] is False
+        status, body = get("/")
+        assert status == 200 and b"close this window" in body
+        assert get("/nope")[0] == 404
+        assert get("/status", host_header="evil.example")[0] == 403  # a rebinding page cannot read it
+    finally:
+        page.stop()
+
+
+def test_checklist_updates_page_and_clears_hint_when_a_step_changes(capsys):
+    from setup_page import GuidePage
+
+    page = GuidePage(["a", "b"])
+    cl = cs.Checklist("t", ["a", "b"], page)
+    cl.set(0, "wait")
+    cl.hint("Do it", "line one\nline two", None)
+    assert json.loads(page.snapshot())["hint"]["title"] == "Do it"
+    cl.set(0, "done")
+    state = json.loads(page.snapshot())
+    assert state["hint"] is None and state["status"] == ["done", "todo"]
+    assert "line two" in capsys.readouterr().out

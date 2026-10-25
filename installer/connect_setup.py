@@ -1,14 +1,15 @@
-"""Guided setup for the Tailscale connection mode (Setup_Tailscale.bat).
+r"""Guided setup for the Tailscale connection mode (Setup_Tailscale.bat).
 
     env\Scripts\python.exe installer\connect_setup.py tailscale [--port 7862]
 
-It is a short checklist. A step is polled every few seconds until it is done, then the next one starts. After about
+It is a short checklist, in the terminal and on a local progress page in the browser. A step is polled every few seconds until it is done, then the next one starts. After about
 10 minutes without progress the step offers "press Enter to retry". Exit code 0 = READY, 1 = gave up.
 
 Only the standard library is used. The parsing and decision functions are pure so tests/test_connect_setup.py can feed them
 fixtures. Environment variables for testing without touching the real setup (all optional):
     ACCIO_SETUP_TIMEOUT / ACCIO_SETUP_INTERVAL   seconds (defaults 600 / 3)
     ACCIO_TAILSCALE_BIN                          use this program instead of the installed tailscale.exe
+    ACCIO_SETUP_NO_PAGE=1                        no browser progress page (same as --no-page)
     ACCIO_SETUP_NO_WINGET=1                      never try winget (go straight to the download link)
 """
 from __future__ import annotations
@@ -24,6 +25,9 @@ import time
 import webbrowser
 from pathlib import Path
 from typing import Callable
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from setup_page import GuidePage  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -96,8 +100,8 @@ class Checklist:
 
     MARK = {"todo": "[ ]", "wait": "[..]", "done": "[OK]", "fail": "[!!]"}
 
-    def __init__(self, title: str, steps: list[str]):
-        self.title, self.steps = title, steps
+    def __init__(self, title: str, steps: list[str], page: GuidePage | None = None):
+        self.title, self.steps, self.page = title, steps, page
         self.status = ["todo"] * len(steps)
         if os.name == "nt":
             os.system("")  # enables ANSI escapes in the Windows console
@@ -106,6 +110,23 @@ class Checklist:
         """Record a step change and print just that line (`n/total`); the whole list is printed at the start and the end."""
         self.status[index] = status
         print(f"  {self.MARK[status]} {index + 1}/{len(self.steps)} {self.steps[index]}" + ("  ..." if status == "wait" else ""), flush=True)
+        if self.page:
+            self.page.update(status=list(self.status), hint=None)  # the instruction belongs to the step that was waiting
+
+    def hint(self, title: str, text: str, link: str | None = None, button: str | None = None) -> None:
+        """What to do at the waiting step: printed in the terminal and shown on the page (with a button for the link)."""
+        say(f"      {title}")
+        for line in text.split("\n"):
+            say(f"      {line}")
+        if link:
+            say(f"      Link: {link}")
+        if self.page:
+            self.page.update(hint={"title": title, "text": text, "link": link, "button": button})
+        elif link:  # no page: open the link for the user
+            try:
+                webbrowser.open(link)
+            except Exception:  # noqa: BLE001 - opening a browser is a courtesy only
+                pass
 
     def show(self) -> None:
         print()
@@ -117,14 +138,6 @@ class Checklist:
 
 def say(text: str = "") -> None:
     print(text, flush=True)
-
-
-def open_link(url: str) -> None:
-    say(f"      Link: {url}")
-    try:
-        webbrowser.open(url)
-    except Exception:  # noqa: BLE001 - opening a browser is a courtesy only
-        pass
 
 
 def poll(check: Callable[[], object], what: str, timeout: float | None = None, interval: float | None = None):
@@ -195,14 +208,41 @@ def ts_status(binary: str) -> dict:
         return {}
 
 
-def setup_tailscale(port: int) -> int:
-    cl = Checklist("Tailscale (private link, only your own devices)", [
-        "Tailscale is installed",
-        "Signed in to Tailscale",
-        "This PC has a machine name (MagicDNS)",
-        "Serve and HTTPS certificates are enabled on your tailnet",
-        "Address ready",
-    ])
+STEPS = [
+    "Tailscale is installed",
+    "Signed in to Tailscale",
+    "This PC has a machine name (MagicDNS)",
+    "Serve and HTTPS certificates are enabled on your tailnet",
+    "Address ready",
+]
+
+
+def setup_tailscale(port: int, show_page: bool = True) -> int:
+    page = GuidePage(STEPS) if show_page and not os.environ.get("ACCIO_SETUP_NO_PAGE") else None
+    if page:
+        url = page.start()
+        say(f"Progress page: {url}  (opening it in your browser)")
+        try:
+            webbrowser.open(url)
+        except Exception:  # noqa: BLE001 - the terminal checklist works without it
+            pass
+    try:
+        return _setup_tailscale(port, Checklist("Tailscale (private link, only your own devices)", STEPS, page), page)
+    finally:
+        if page:
+            time.sleep(2 * 2)  # let an open page poll the final state once
+            page.stop()
+
+
+def _fail(cl: Checklist, page: GuidePage | None, index: int, why: str) -> int:
+    cl.set(index, "fail")
+    if page:
+        page.update(failed=why)
+    return 1
+
+
+def _setup_tailscale(port: int, cl: Checklist, page: GuidePage | None) -> int:
+    again = "Run Setup_Tailscale.bat again to continue where it stopped."
     cl.show()
 
     # 1. installed
@@ -210,6 +250,11 @@ def setup_tailscale(port: int) -> int:
     binary = find_tailscale()
     if not binary:
         say("      Tailscale is not installed. Trying winget (Windows asks for permission, click Yes)...")
+        cl.hint("Installing Tailscale",
+                "Trying to install it automatically. If Windows asks for permission, click Yes.\n"
+                "If that does not work, download it from the button and run the installer.\n"
+                "This page moves on by itself once Tailscale is installed.",
+                LINKS["tailscale_download"], "Download Tailscale")
         if shutil.which("winget") and not os.environ.get("ACCIO_SETUP_NO_WINGET"):
             code, out = run(["winget", "install", "--id", "Tailscale.Tailscale", "-e", "--silent",
                              "--accept-package-agreements", "--accept-source-agreements"], 600)
@@ -217,13 +262,9 @@ def setup_tailscale(port: int) -> int:
                 say(f"      winget did not finish the install ({(out.splitlines() or ['no answer'])[-1][:150]}).")
         else:
             say("      winget is not available (or turned off) here.")
-        if not find_tailscale():
-            say("      Install it by hand, then this window moves on by itself:")
-            open_link(LINKS["tailscale_download"])
         binary = poll(find_tailscale, "tailscale.exe to appear")
         if not binary:
-            cl.set(0, "fail")
-            return 1
+            return _fail(cl, page, 0, "Tailscale was not installed. " + again)
     cl.set(0, "done")
     say(f"      Found: {binary}")
 
@@ -231,29 +272,45 @@ def setup_tailscale(port: int) -> int:
     cl.set(1, "wait")
     kind, _ = tailscale_login_state(ts_status(binary))
     if kind != "ok":
-        say("      Opening the Tailscale sign-in in your browser. Finish signing in there.")
-        login = subprocess.Popen([binary, "up"], stdin=subprocess.DEVNULL, creationflags=NO_WINDOW,
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        try:
-            ok = poll(lambda: tailscale_login_state(ts_status(binary))[0] == "ok", "you to sign in to Tailscale")
-        finally:
-            if login.poll() is None:
-                login.terminate()
+        with tempfile.TemporaryFile() as up_out:
+            login = subprocess.Popen([binary, "up"], stdin=subprocess.DEVNULL, creationflags=NO_WINDOW,
+                                     stdout=up_out, stderr=subprocess.STDOUT)
+            shown = False
+
+            def signed_in() -> bool:
+                nonlocal shown
+                if not shown:  # `tailscale up` prints the sign-in link a moment after it starts
+                    up_out.seek(0)
+                    link = LOGIN_LINK.search(up_out.read().decode("utf-8", "replace"))
+                    if link:
+                        shown = True
+                        cl.hint("Sign in to Tailscale",
+                                "A sign-in page opens in your browser (or use the button).\n"
+                                "Sign in with your Google, Microsoft, Apple or GitHub account and approve this PC.\n"
+                                "No account yet? Creating one there is free.", link.group(0), "Sign in to Tailscale")
+                return tailscale_login_state(ts_status(binary))[0] == "ok"
+
+            cl.hint("Sign in to Tailscale", "Waiting for the Tailscale sign-in link...")
+            try:
+                ok = poll(signed_in, "you to sign in to Tailscale")
+            finally:
+                if login.poll() is None:
+                    login.terminate()
         if not ok:
-            cl.set(1, "fail")
-            return 1
+            return _fail(cl, page, 1, "Tailscale was not signed in. " + again)
     cl.set(1, "done")
 
     # 3. machine name
     cl.set(2, "wait")
     dns = tailscale_dns_name(ts_status(binary))
     if not dns:
-        say("      Tailscale did not report a name for this PC. Turn on MagicDNS in the admin console (DNS page):")
-        open_link(LINKS["tailscale_admin_dns"])
+        cl.hint("Turn on MagicDNS",
+                "Tailscale did not give this PC a name. Open the DNS page in the Tailscale admin console "
+                "(as the tailnet admin) and turn on MagicDNS.\nThis page moves on by itself.",
+                LINKS["tailscale_admin_dns"], "Open the DNS page")
         dns = poll(lambda: tailscale_dns_name(ts_status(binary)), "MagicDNS (a machine name for this PC)")
         if not dns:
-            cl.set(2, "fail")
-            return 1
+            return _fail(cl, page, 2, "MagicDNS stayed off. " + again)
     cl.set(2, "done")
     say(f"      Machine name: {dns}")
 
@@ -268,8 +325,7 @@ def setup_tailscale(port: int) -> int:
             say(f"      Port 443 of Tailscale Serve already points to {existing}.")
             say("      Testing here replaces that entry and switches it off afterwards.")
             if input("      Continue? [y/N]: ").strip().lower() != "y":
-                cl.set(3, "fail")
-                return 1
+                return _fail(cl, page, 3, "Left your existing Tailscale Serve entry alone. " + again)
         told: set[str] = set()
 
         def probe() -> bool:
@@ -280,30 +336,38 @@ def setup_tailscale(port: int) -> int:
                 return True
             if kind == "serve_disabled" and "serve" not in told:
                 told.add("serve")
-                say("      Serve is not enabled on your tailnet. Open this page as the tailnet admin and enable it:")
-                open_link(link or LINKS["tailscale_admin_machines"])
+                cl.hint("Enable Tailscale Serve",
+                        "Serve is not turned on for your tailnet yet. Open the page, sign in as the tailnet admin "
+                        "and click Enable.\nThis page moves on by itself.",
+                        link or LINKS["tailscale_admin_machines"], "Open the Serve page")
             elif kind == "https_off" and "https" not in told:
                 told.add("https")
-                say("      HTTPS certificates are off. In the admin console go to DNS > HTTPS Certificates and enable them:")
-                open_link(LINKS["tailscale_admin_dns"])
+                cl.hint("Enable HTTPS certificates",
+                        "Open the DNS page, scroll to HTTPS Certificates and click Enable HTTPS.\n"
+                        "This page moves on by itself.", LINKS["tailscale_admin_dns"], "Open the DNS page")
             elif kind == "other" and "other" not in told:
                 told.add("other")
                 say(f"      tailscale serve answered: {out.strip()[:300] or 'nothing'}")
             return False
 
+        cl.hint("Checking Serve and HTTPS", "Testing that Tailscale can publish Accio. This takes a few seconds.")
         if not poll(probe, "Serve and HTTPS certificates to be enabled"):
-            cl.set(3, "fail")
-            return 1
+            return _fail(cl, page, 3, "Serve or HTTPS certificates are still off. " + again)
     cl.set(3, "done")
 
     # 5. address
     cl.set(4, "done")
     cl.show()
+    nxt = "Start Accio with Run_Accio.bat and pick option 4 (Tailscale)."
+    if page:
+        page.update(done=True, address=f"https://{dns}", next=nxt)
     say("=" * 64)
     say("READY")
     say("=" * 64)
-    say("Start Accio with Run_Accio.bat and pick option 5 (Tailscale).")
+    say(nxt)
     say(f"Your address (only devices signed into your Tailscale account): https://{dns}")
+    if page:
+        say("You can now close the browser page.")
     say("=" * 64)
     return 0
 
@@ -311,6 +375,7 @@ def setup_tailscale(port: int) -> int:
 def main(argv: list[str]) -> int:
     mode = argv[1] if len(argv) > 1 else ""
     port = 7862
+    show_page = "--no-page" not in argv
     if "--port" in argv:
         try:
             port = int(argv[argv.index("--port") + 1])
@@ -319,11 +384,11 @@ def main(argv: list[str]) -> int:
             return 2
     try:
         if mode == "tailscale":
-            return setup_tailscale(port)
+            return setup_tailscale(port, show_page)
     except KeyboardInterrupt:
         say("\nStopped.")
         return 1
-    say("Usage: connect_setup.py tailscale [--port N]")
+    say("Usage: connect_setup.py tailscale [--port N] [--no-page]")
     return 2
 
 
