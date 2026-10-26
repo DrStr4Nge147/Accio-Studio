@@ -268,11 +268,97 @@ def download_comfyui(c: dict, build: str, spec: dict, archive: Path) -> None:
     raise RuntimeError("could not download ComfyUI from any source (see the messages above); check the connection and run Install.bat again")
 
 
+UPGRADE_DIR = "_old"  # where an upgrade parks the previous install until the user's files are carried over
+CARRY = ("models", "input", "output", "user", "custom_nodes", "extra_model_paths.yaml")  # what lives in ComfyUI\ and is the user's
+
+
+def version_key(v: str) -> tuple[int, ...]:
+    return tuple(int(x) for x in re.findall(r"\d+", v))
+
+
+def replace_path(src: Path, dest: Path) -> None:
+    """Rename `src` over `dest` (same volume), removing what is at `dest` first."""
+    if dest.is_dir() and not dest.is_symlink():
+        shutil.rmtree(dest)
+    elif dest.exists() or dest.is_symlink():
+        dest.unlink()
+    os.replace(src, dest)
+
+
+def finish_upgrade(old: Path) -> None:
+    """Carry the user's folders from the parked old ComfyUI into the new one, then drop the old install. Every move is a
+    rename on one volume (instant, junctions keep working) and is skipped when already done, so an interrupted run resumes."""
+    src, dst = old / "ComfyUI", COMFY_HOME / "ComfyUI"
+    for name in CARRY:
+        s = src / name
+        if not s.exists():
+            continue
+        if name == "custom_nodes" and (dst / name).is_dir():  # the new package ships a few files of its own: keep both
+            for child in s.iterdir():
+                replace_path(child, dst / name / child.name)
+            s.rmdir()
+        else:
+            replace_path(s, dst / name)
+    # The new portable Python has none of the packs' pip dependencies yet: have install_nodes run pip again.
+    for marker in (dst / "custom_nodes").glob("*/.accio_reqs_ok"):
+        marker.unlink()
+    shutil.rmtree(old, ignore_errors=True)
+    if LEGACY_HOME.is_dir() and not (LEGACY_HOME / "ComfyUI").exists():
+        shutil.rmtree(LEGACY_HOME, ignore_errors=True)  # the emptied nested layout of the first builds
+
+
+def upgrade_comfyui(manifest: dict, build: str, sevenzip: Path, have: str | None) -> str:
+    """Replace an installed ComfyUI of another version with the manifest's, keeping models, outputs, inputs, user settings,
+    custom nodes and extra_model_paths.yaml. The new package is downloaded and unpacked before the old install is touched, and
+    the old one stays parked in comfyui\\_old (with the user's folders) until they are carried over. Returns the launch flags."""
+    c = manifest["comfyui"]
+    want = c["version"]
+    old = COMFY_HOME / UPGRADE_DIR
+    if have and not old.exists() and version_key(have) > version_key(want):
+        raise RuntimeError(f"{COMFY_HOME} holds ComfyUI {have}, which is newer than the {want} this Accio needs. It is not replaced: update Accio instead.")
+    flags = ""
+    if not (old.exists() and have == want and py().is_file()):  # not finished by an earlier run
+        spec = c.get("archives", {}).get(build)
+        if not spec:
+            raise RuntimeError(f"no ComfyUI package is listed for the '{build}' build")
+        archive = COMFY_HOME / f"ComfyUI_windows_portable_{build}.7z"
+        if not archive_ok(archive, spec):
+            archive.unlink(missing_ok=True)
+            download_comfyui(c, build, spec, archive)
+        say(f"  upgrading ComfyUI {have or 'unknown'} -> {want}: extracting (a few minutes) ...")
+        extracted = COMFY_HOME / "_extract"
+        shutil.rmtree(extracted, ignore_errors=True)
+        r = subprocess.run([str(sevenzip), "x", "-aoa", f"-o{extracted}", str(archive)], capture_output=True, text=True)
+        if r.returncode != 0:
+            raise RuntimeError(f"extraction failed: {(r.stdout + r.stderr)[-300:]}")
+        # Only now park the old install. ComfyUI goes first: once old\ComfyUI exists the user's files are safe there.
+        old.mkdir(exist_ok=True)
+        for name in ("ComfyUI", "python_embeded"):
+            for base in (COMFY_HOME, LEGACY_HOME):
+                if (base / name).exists() and not (old / name).exists():
+                    os.replace(base / name, old / name)
+        if not (old / "ComfyUI").is_dir():
+            raise RuntimeError("could not find the old ComfyUI folder to carry over; nothing was replaced")
+        for name in ("python_embeded", "ComfyUI"):  # what is left at the top is a half-finished new install from an earlier run
+            if (COMFY_HOME / name).exists():
+                shutil.rmtree(COMFY_HOME / name)
+        flags = flatten_portable(extracted, COMFY_HOME, build)
+        archive.unlink(missing_ok=True)
+        got = installed_comfy_version()
+        if got != want or not py().is_file():
+            raise RuntimeError(f"installed ComfyUI reports version {got}, expected {want}")
+    finish_upgrade(old)
+    say(f"  ComfyUI {want} installed; models, outputs and custom nodes were kept.")
+    return flags
+
+
 def install_comfyui(manifest: dict, build: str, sevenzip: Path) -> str:
     """Installs the bundled ComfyUI. Returns the AMD/Intel launch flags ("" when there are none or nothing was installed)."""
     want = manifest["comfyui"]["version"]
     have = installed_comfy_version()
     extracted = COMFY_HOME / "_extract"
+    if (COMFY_HOME / UPGRADE_DIR).exists() or (have and have != want):
+        return upgrade_comfyui(manifest, build, sevenzip, have)
     if have == want and py().is_file():
         say(f"  ComfyUI {have} already installed.")
         shutil.rmtree(extracted, ignore_errors=True)  # left behind if an earlier run stopped right at the end

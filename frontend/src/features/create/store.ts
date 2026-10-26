@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SamplerDefaults } from "../../api/types";
-import { ASPECTS, CUSTOM } from "../../lib/aspects";
+import { ASPECTS, ASPECTS_MOSS, CUSTOM } from "../../lib/aspects";
 import type { LoraSel } from "../../components/LoraList";
 import type { LoraMode } from "../../lib/loras";
 import { GRAIN_DEFAULT } from "../edit/grain";
@@ -9,7 +9,7 @@ import { STYLE_OPTS, type StyleOpts } from "./styles";
 
 export type { LoraSel, LoraTarget } from "../../components/LoraList";
 
-export type Variant = "standard" | "detailed";
+export type Variant = "standard" | "detailed" | "moss";
 
 export interface SizeSel {
   aspect: string; // an ASPECTS key or CUSTOM
@@ -40,6 +40,8 @@ export interface CreateState {
   grain: { on: boolean; strength: number };
   variance: Record<string, string | number>;
   sampler: Partial<SamplerDefaults>;
+  /** MOSS Image keeps its own sampler overrides: its defaults differ from Krea's. */
+  mossSampler: Partial<SamplerDefaults>;
   pass1: Partial<SamplerDefaults>;
   pass2: Partial<SamplerDefaults>;
   turbo1: { on?: boolean; strength?: number };
@@ -60,12 +62,17 @@ const preset = (key: string): SizeSel => {
   return { aspect: a.key, w: a.w, h: a.h };
 };
 
+const mossPreset = (key: string): SizeSel => {
+  const a = ASPECTS_MOSS.find((x) => x.key === key)!;
+  return { aspect: a.key, w: a.w, h: a.h };
+};
+
 const initial = (): Omit<CreateState, "patch" | "reset"> => ({
   variant: "standard",
   prompt: "",
   style: null,
   styleOpts: STYLE_OPTS,
-  sizes: { standard: preset("9:16"), detailed: preset("16:9") },
+  sizes: { standard: preset("9:16"), detailed: preset("16:9"), moss: mossPreset("16:9") },
   batch: 1,
   seedVariance: true,
   tEnhancer: false,
@@ -73,6 +80,7 @@ const initial = (): Omit<CreateState, "patch" | "reset"> => ({
   grain: { on: false, strength: GRAIN_DEFAULT },
   variance: {},
   sampler: {},
+  mossSampler: {},
   pass1: {},
   pass2: {},
   turbo1: {},
@@ -95,11 +103,17 @@ export const useCreate = create<CreateState>()(
     }),
     {
       name: "accio.create",
-      version: 3,
+      version: 4,
       // v2: styleOpts lost its "name" option. v3: it lost "compact" too (the compact text is the only one), keeping just "first".
+      // v4: MOSS Image arrived: it has its own size and sampler overrides.
       migrate: (state) => {
-        const old = state as { styleOpts?: { first?: boolean } };
-        return { ...(state as object), styleOpts: { ...STYLE_OPTS, first: old.styleOpts?.first === true } } as CreateState;
+        const old = state as { styleOpts?: { first?: boolean }; sizes?: Record<string, SizeSel> };
+        return {
+          ...(state as object),
+          styleOpts: { ...STYLE_OPTS, first: old.styleOpts?.first === true },
+          sizes: { ...old.sizes, moss: old.sizes?.moss ?? mossPreset("16:9") },
+          mossSampler: {},
+        } as CreateState;
       },
       partialize: ({ patch: _p, reset: _r, ...rest }) => rest,
     },

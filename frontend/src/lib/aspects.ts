@@ -22,9 +22,25 @@ export const ASPECTS: Aspect[] = [
   { key: "16:9", w: 1920, h: 1080, untested: false },
 ];
 
+/**
+ * MOSS Image presets (~2.1 MP, multiples of 32): its VAE works in 16 px steps, so a side that is not a multiple of 16
+ * (1080) would come out shorter. 16:9 is the workflow's own size (1920x1088).
+ */
+export const ASPECTS_MOSS: Aspect[] = [
+  { key: "9:16", w: 1088, h: 1920, untested: false },
+  { key: "2:3", w: 1184, h: 1760, untested: false },
+  { key: "3:4", w: 1248, h: 1664, untested: false },
+  { key: "1:1", w: 1440, h: 1440, untested: false },
+  { key: "4:3", w: 1664, h: 1248, untested: false },
+  { key: "3:2", w: 1760, h: 1184, untested: false },
+  { key: "16:9", w: 1920, h: 1088, untested: false },
+];
+
 export const CUSTOM = "custom";
 export const MIN_DIM = 64;
 export const MAX_DIM = 8192;
 
 export const aspectFor = (w: number, h: number) => ASPECTS.find((a) => a.w === w && a.h === h);
 export const snap8 = (n: number) => Math.min(MAX_DIM, Math.max(MIN_DIM, Math.round(n / 8) * 8));
+/** Snap to the model's step: 8 px for Krea, 16 px for MOSS. */
+export const snapTo = (n: number, step: number) => Math.min(MAX_DIM, Math.max(MIN_DIM, Math.round(n / step) * step));

@@ -86,6 +86,16 @@ def _cases():
         exp |= {"282.seed"} if v else set()
         yield pytest.param(name, base, full, exp, id=name)
 
+    for s in (0, 1):
+        name = f"moss_t2i__sharp{s}"
+        base = dict(mode="create", variant="moss", prompt="a test prompt", sharpen=bool(s))
+        full = dict(base, width=1920, height=1088, batch=1, sampler=dict(steps=8, cfg=1, sampler_name="er_sde", scheduler="bong_tangent", denoise=1))
+        if s:
+            full["sharpen_strength"] = 0.7
+        save = "147" if s else "86"
+        # 676 = the template's automatic resolution switch: the engine always uses the manual size.
+        yield pytest.param(name, base, full, {"104.value", "331.seed", f"{save}.filename_prefix", "676.value"}, id=name)
+
     for keep in (0, 1):
         name = f"qwen_multiedit__resize{1 - keep}"
         base = dict(mode="multiedit", prompt="make it happy", images=[{"file": "abc.png", "name": "a.png"}], keep_original_resolution=bool(keep))
@@ -124,8 +134,8 @@ def _build(req: dict) -> Built:
     return build(params, Catalog(), seed_source=seed_source, output_prefix=PREFIX)
 
 
-def test_there_are_exactly_23_templates():
-    assert len(template_files()) == 23
+def test_there_are_exactly_25_templates():
+    assert len(template_files()) == 25
 
 
 @pytest.mark.parametrize("name,base,full,expected", CASES)
@@ -154,6 +164,8 @@ def _loose(name: str) -> set[str]:
         return {"158.width", "158.height", "244.value", "245.value", "246.value"}
     if name.startswith("krea_t2i"):
         return {"833:829.batch_size"}
+    if name.startswith("moss_t2i"):
+        return {"676.value"}
     return set()
 
 

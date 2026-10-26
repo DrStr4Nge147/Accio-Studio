@@ -22,6 +22,12 @@ const GROUPS: { id: string; title: string; hint: string; has: (m: ModelRow) => b
     hint: "A second Edit model that does Multi-edit with up to 3 images. Pick it in Edit > Advanced > Model.",
     has: (m) => !m.required && m.group === "klein",
   },
+  {
+    id: "moss",
+    title: "MOSS Image (optional)",
+    hint: "A second Create model (8 steps, with an optional sharpen). Pick it in Create > Mode.",
+    has: (m) => !m.required && m.group === "moss",
+  },
   { id: "presets", title: "Preset LoRAs (optional)", hint: "Head swap, body swap, remove object and move object.", has: (m) => !m.required && !m.group },
 ];
 

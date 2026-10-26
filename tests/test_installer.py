@@ -101,14 +101,14 @@ def test_curl_download_rejects_wrong_size(tmp_path):
 
 def test_manifest_pins_and_models():
     m = core.load_manifest()
-    assert m["comfyui"]["version"] == "0.38.0" and m["comfyui"]["tag"] == "v0.38.0"
+    assert m["comfyui"]["version"] == "0.42.1" and m["comfyui"]["tag"] == "v0.42.1"
     names = {n["name"] for n in m["nodes"]}
-    assert len(names) == 9
+    assert len(names) == 10
     for n in m["nodes"]:
         assert re.fullmatch(r"[0-9a-f]{40}", n["commit"]), n["name"]
     assert {n["name"] for n in m["nodes"] if "registry_version" in n} == {"ComfyUI-Krea2T-Enhancer", "ComfyUI-RBG-SmartSeedVariance"}
     required = [x for x in m["models"] if x["required"]]
-    assert len(required) == 8 and len(m["models"]) == 15
+    assert len(required) == 8 and len(m["models"]) == 20
     assert 36e9 < sum(x["size"] for x in required) < 38e9  # "~37 GB required"
     assert all(x["url"].startswith("https://huggingface.co/") for x in m["models"])
 

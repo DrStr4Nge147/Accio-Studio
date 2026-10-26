@@ -101,7 +101,7 @@ def fake_comfy(tmp_path, monkeypatch):
     home.mkdir()
     monkeypatch.setattr(install, "COMFY_HOME", home)
     monkeypatch.setattr(install, "LEGACY_HOME", home / "ComfyUI_windows_portable")
-    seen = {"downloads": 0, "extracts": 0, "fail_extract": False, "mirror_has_it": True, "payload": b"12345", "urls": []}
+    seen = {"downloads": 0, "extracts": 0, "fail_extract": False, "mirror_has_it": True, "payload": b"12345", "urls": [], "pkg_version": "0.38.0"}
     monkeypatch.setattr(install, "remote_size", lambda url: 5 if ("mirror" not in url or seen["mirror_has_it"]) else None)
     monkeypatch.setattr(install, "free_space", lambda p: 10**12)
 
@@ -112,7 +112,7 @@ def fake_comfy(tmp_path, monkeypatch):
 
     def fake_run(cmd, **kw):
         seen["extracts"] += 1
-        make_package(Path(next(a for a in cmd if str(a).startswith("-o"))[2:]))
+        make_package(Path(next(a for a in cmd if str(a).startswith("-o"))[2:]), version=seen["pkg_version"])
         return type("R", (), {"returncode": 1 if seen["fail_extract"] else 0, "stdout": "", "stderr": "boom"})()
 
     monkeypatch.setattr(install, "curl_download", fake_download)
@@ -156,16 +156,114 @@ def test_install_comfyui_reuses_a_finished_download_after_a_failed_extraction(fa
     assert seen["downloads"] == 1  # the verified archive was kept
 
 
-def test_install_comfyui_refuses_to_replace_another_version_that_may_hold_models(fake_comfy):
-    home, manifest, seen = fake_comfy
-    pkg = make_package(home / "_tmp", version="0.1.0")
+def put_install(base: Path, version: str) -> None:
+    """An installed ComfyUI (ComfyUI + python_embeded) of `version` inside `base`, with the folders a user fills."""
+    pkg = make_package(base / "_tmp", version=version)
     for name in ("ComfyUI", "python_embeded"):
+        shutil.move(str(pkg / name), str(base / name))
+    shutil.rmtree(base / "_tmp")
+    (base / "python_embeded" / "old_python.txt").write_text("old")
+    comfy = base / "ComfyUI"
+    for rel, data in (
+        ("models/diffusion_models/mine.safetensors", "m"), ("models/loras/krea2/x.safetensors", "l"), ("input/a.png", "i"),
+        ("output/AccioStudio/o.png", "o"), ("user/default/comfy.settings.json", "{}"), ("extra_model_paths.yaml", "y: 1"),
+        ("custom_nodes/PackA/f.py", "a"), ("custom_nodes/PackA/.accio_pin", "abc"), ("custom_nodes/PackA/.accio_reqs_ok", "ok"),
+        ("custom_nodes/UserPack/g.py", "u"),
+    ):
+        (comfy / rel).parent.mkdir(parents=True, exist_ok=True)
+        (comfy / rel).write_text(data)
+
+
+def want_new(manifest: dict, seen: dict) -> None:
+    manifest["comfyui"].update(version="0.42.1", tag="v0.42.1")
+    seen["pkg_version"] = "0.42.1"
+
+
+def assert_user_files_kept(comfy: Path) -> None:
+    for rel, data in (
+        ("models/diffusion_models/mine.safetensors", "m"), ("models/loras/krea2/x.safetensors", "l"), ("input/a.png", "i"),
+        ("output/AccioStudio/o.png", "o"), ("user/default/comfy.settings.json", "{}"), ("extra_model_paths.yaml", "y: 1"),
+        ("custom_nodes/PackA/f.py", "a"), ("custom_nodes/PackA/.accio_pin", "abc"), ("custom_nodes/UserPack/g.py", "u"),
+    ):
+        assert (comfy / rel).read_text() == data, rel
+    assert not (comfy / "custom_nodes" / "PackA" / ".accio_reqs_ok").exists()  # pip runs again in the new Python
+
+
+def test_upgrade_keeps_the_users_folders_and_replaces_the_rest(fake_comfy):
+    home, manifest, seen = fake_comfy
+    put_install(home, "0.38.0")
+    want_new(manifest, seen)
+    assert install.install_comfyui(manifest, "nvidia", Path("7zr.exe")) == ""
+    assert install.installed_comfy_version() == "0.42.1" and seen["downloads"] == 1
+    assert sorted(p.name for p in home.iterdir()) == ["ComfyUI", "python_embeded"]  # _old, _extract and the archive are gone
+    assert not (home / "python_embeded" / "old_python.txt").exists()  # the old Python is replaced, not reused
+    assert_user_files_kept(home / "ComfyUI")
+    assert install.install_comfyui(manifest, "nvidia", Path("7zr.exe")) == "" and seen["downloads"] == 1  # a rerun does nothing
+
+
+def test_upgrade_from_the_nested_layout_ends_in_the_flat_one(fake_comfy):
+    home, manifest, seen = fake_comfy
+    legacy = home / "ComfyUI_windows_portable"
+    legacy.mkdir()
+    put_install(legacy, "0.38.0")
+    (legacy / "run_nvidia_gpu.bat").write_text("x")
+    want_new(manifest, seen)
+    install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))
+    assert sorted(p.name for p in home.iterdir()) == ["ComfyUI", "python_embeded"] and install.comfy_base() == home
+    assert_user_files_kept(home / "ComfyUI")
+
+
+def test_a_failed_extraction_leaves_the_old_install_untouched(fake_comfy):
+    home, manifest, seen = fake_comfy
+    put_install(home, "0.38.0")
+    want_new(manifest, seen)
+    seen["fail_extract"] = True
+    with pytest.raises(RuntimeError, match="extraction failed"):
+        install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))
+    assert install.installed_comfy_version() == "0.38.0" and not (home / "_old").exists()
+    assert (home / "ComfyUI" / "models" / "diffusion_models" / "mine.safetensors").is_file()
+    seen["fail_extract"] = False
+    install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))  # the kept download is reused
+    assert seen["downloads"] == 1 and install.installed_comfy_version() == "0.42.1"
+    assert_user_files_kept(home / "ComfyUI")
+
+
+def test_an_upgrade_stopped_after_parking_the_old_install_resumes_without_losing_files(fake_comfy):
+    home, manifest, seen = fake_comfy
+    put_install(home, "0.38.0")
+    want_new(manifest, seen)
+    (home / "_old").mkdir()
+    for name in ("ComfyUI", "python_embeded"):
+        shutil.move(str(home / name), str(home / "_old" / name))
+    (home / "python_embeded").mkdir()  # half of the new install was already in place
+    install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))
+    assert install.installed_comfy_version() == "0.42.1" and not (home / "_old").exists()
+    assert_user_files_kept(home / "ComfyUI")
+
+
+def test_an_upgrade_stopped_before_the_files_were_carried_over_resumes(fake_comfy):
+    home, manifest, seen = fake_comfy
+    put_install(home, "0.38.0")
+    want_new(manifest, seen)
+    (home / "_old").mkdir()
+    for name in ("ComfyUI", "python_embeded"):
+        shutil.move(str(home / name), str(home / "_old" / name))
+    pkg = make_package(home / "_tmp", version="0.42.1")  # the new install is complete, the carry-over has not happened
+    for name in ("python_embeded", "ComfyUI"):
         shutil.move(str(pkg / name), str(home / name))
     shutil.rmtree(home / "_tmp")
-    (home / "ComfyUI" / "models" / "mine.safetensors").write_bytes(b"x")
-    with pytest.raises(RuntimeError, match="Delete the 'comfyui' folder"):
+    install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))
+    assert seen["downloads"] == 0 and not (home / "_old").exists()
+    assert_user_files_kept(home / "ComfyUI")
+
+
+def test_a_newer_installed_comfyui_is_never_replaced(fake_comfy):
+    home, manifest, seen = fake_comfy
+    put_install(home, "0.50.0")
+    want_new(manifest, seen)
+    with pytest.raises(RuntimeError, match="newer"):
         install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))
-    assert (home / "ComfyUI" / "models" / "mine.safetensors").is_file() and seen["downloads"] == 0
+    assert seen["downloads"] == 0 and (home / "ComfyUI" / "models" / "diffusion_models" / "mine.safetensors").is_file()
 
 
 def test_an_existing_nested_install_keeps_working(fake_comfy):

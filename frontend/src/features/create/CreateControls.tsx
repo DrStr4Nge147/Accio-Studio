@@ -12,7 +12,9 @@ const next = <T,>(list: T[], cur: T) => list[(list.indexOf(cur) + 1) % list.leng
 const VARIANTS: { value: Variant; label: string; tip: string }[] = [
   { value: "standard", label: "Standard", tip: TIPS.standard },
   { value: "detailed", label: "Detailed", tip: TIPS.detailed },
+  { value: "moss", label: "MOSS", tip: TIPS.moss },
 ];
+const VARIANT_ORDER: Variant[] = ["standard", "detailed", "moss"];
 
 /** Shown while Detailed is selected: the second pass re-samples the first image, which can amplify flaws. */
 export function DetailedNote({ compact }: { compact?: boolean }) {
@@ -53,8 +55,8 @@ export function CreateChips() {
   return (
     <>
     <ChipRow end={<OptionsChip />}>
-      <Chip toggle={false} onClick={() => s.patch({ variant: next(["standard", "detailed"] as Variant[], s.variant) })} label={`Mode: ${s.variant}. Tap to switch`} tip={s.variant === "standard" ? TIPS.standard : TIPS.detailed}>
-        {s.variant === "standard" ? "Standard" : "Detailed"}
+      <Chip toggle={false} onClick={() => s.patch({ variant: next(VARIANT_ORDER, s.variant) })} label={`Mode: ${s.variant}. Tap to switch`} tip={TIPS[s.variant]}>
+        {VARIANTS.find((v) => v.value === s.variant)?.label}
       </Chip>
       <PromptToolsChip />
       <Chip toggle={false} onClick={openAdvanced} label="Aspect ratio" tip="Pick an aspect ratio or a custom size in Advanced">
@@ -79,9 +81,9 @@ export function CreateToggles() {
       {s.variant === "detailed" && <DetailedNote />}
       <AspectPicker />
       <div>
-        <Toggle on={s.seedVariance} onChange={(seedVariance) => s.patch({ seedVariance })} label="Seed variance" tip={TIPS.seedVariance} />
+        {s.variant !== "moss" && <Toggle on={s.seedVariance} onChange={(seedVariance) => s.patch({ seedVariance })} label="Seed variance" tip={TIPS.seedVariance} />}
         <Toggle on={s.sharpen} onChange={(sharpen) => s.patch({ sharpen })} label="Sharpen" tip={TIPS.sharpen} />
-        <Toggle on={s.tEnhancer} onChange={(tEnhancer) => s.patch({ tEnhancer })} label="T-Enhancer" tip={TIPS.tEnhancer} />
+        {s.variant !== "moss" && <Toggle on={s.tEnhancer} onChange={(tEnhancer) => s.patch({ tEnhancer })} label="T-Enhancer" tip={TIPS.tEnhancer} />}
       </div>
       <div className="flex items-center justify-between">
         <Label tip={TIPS.batch}>Images</Label>

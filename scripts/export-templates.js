@@ -1,4 +1,4 @@
-// Re-export the 20 API templates from ComfyUI's own frontend (APP_SPEC 4.5). Nothing is queued.
+// Re-export the 25 API templates from ComfyUI's own frontend (APP_SPEC 4.5). Nothing is queued.
 //
 // Run in the browser console (or via automation) on a tab of the bundled ComfyUI, http://127.0.0.1:8189, after
 // serving the two workflow JSON files with CORS (see export-templates.md). Each export is POSTed to
@@ -7,6 +7,9 @@
 const BASE = "http://127.0.0.1:8765";
 const KREA = "KREA2_ULTRA_WORKFLOW-V3_fixed.json";
 const QWEN = "QWEN-IMAGE-EDIT-21-TURBO_ULTRA_WORKFLOW_autoenhancer.json";
+const MOSS = "MOSS_IMAGE_ULTRA_WORKFLOW.json";
+// Optional filter: set `globalThis.ACCIO_ONLY = "moss"` before running to export only the templates whose name starts with it.
+const ONLY = globalThis.ACCIO_ONLY ?? "";
 
 const acc = {
   // Mode must also be set on subgraph nodes, as rgthree's group toggles do; otherwise the combo export loses nodes.
@@ -28,7 +31,9 @@ const acc = {
   },
   // cfg: {groupTitle: mode}. Applied in order, after every group is first bypassed (4). Later entries win,
   // so sub-groups that sit inside a bigger group's bounds (e.g. CONTROLNET inside MULTI-EDIT) go last.
-  async exportConfig(file, name, cfg) {
+  // `off` (optional): ids of top-level nodes to bypass afterwards, for variants a group cannot express.
+  async exportConfig(file, name, cfg, off = []) {
+    if (!name.startsWith(ONLY)) return `${name}: skipped`;
     const n = await this.load(file);
     if (app.graph._nodes.length !== n) throw new Error(`node count ${app.graph._nodes.length} != ${n}`);
     const m = this.members();
@@ -37,6 +42,7 @@ const acc = {
       if (!m[t]) throw new Error("no group " + t);
       for (const nd of m[t]) this.setMode(nd, mode);
     }
+    for (const id of off) this.setMode(app.graph.getNodeById(id), 4);
     const { output } = await app.graphToPrompt();
     const r = await fetch(`${BASE}/save/${name}`, { method: "POST", body: JSON.stringify(output) });
     return `${name}: ${Object.keys(output).length} nodes, save ${r.status}`;
@@ -57,4 +63,8 @@ log.push(await acc.exportConfig(QWEN, "qwen_multiedit__resize1", { "MULTI-EDIT":
 log.push(await acc.exportConfig(QWEN, "qwen_multiedit__resize0", { "MULTI-EDIT": 0, [RESIZE]: 4, CONTROLNET: 4 }));
 log.push(await acc.exportConfig(QWEN, "qwen_inpaint", { INPAINTING: 0 }));
 log.push(await acc.exportConfig(QWEN, "qwen_outpaint", { OUTPAINTING: 0 }));
+// MOSS Image, text to image, turbo: 27 / 325 prompt previews and 324 comparer are UI only; sharp0 keeps the plain save (86),
+// sharp1 saves only the sharpened image (336 -> 147), like the Krea templates.
+log.push(await acc.exportConfig(MOSS, "moss_t2i__sharp0", { "TEXT TO IMAGE TURBO": 0 }, [27, 325, 324, 336, 147]));
+log.push(await acc.exportConfig(MOSS, "moss_t2i__sharp1", { "TEXT TO IMAGE TURBO": 0 }, [27, 325, 324, 86]));
 log;

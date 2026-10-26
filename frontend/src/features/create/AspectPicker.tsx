@@ -1,4 +1,4 @@
-import { ASPECTS, CUSTOM, snap8, MAX_DIM, MIN_DIM } from "../../lib/aspects";
+import { ASPECTS, ASPECTS_MOSS, CUSTOM, snapTo, MAX_DIM, MIN_DIM } from "../../lib/aspects";
 import { LoadNote } from "../../components/LoadNote";
 import { Label, inputCls } from "../../components/ui/controls";
 import { useCreate, type SizeSel } from "./store";
@@ -15,13 +15,15 @@ export function AspectPicker() {
   const size = useCreate((s) => s.sizes[s.variant]);
   const patch = useCreate((s) => s.patch);
   const set = (next: SizeSel) => patch({ sizes: { ...useCreate.getState().sizes, [variant]: next } });
-  const active = ASPECTS.find((a) => a.key === size.aspect);
+  const aspects = variant === "moss" ? ASPECTS_MOSS : ASPECTS;
+  const step = variant === "moss" ? 16 : 8; // MOSS Image works in 16 px steps
+  const active = aspects.find((a) => a.key === size.aspect);
 
   return (
     <div>
       <Label>Aspect</Label>
       <div className="mt-1.5 grid grid-cols-4 gap-1.5" role="radiogroup" aria-label="Aspect ratio">
-        {ASPECTS.map((a) => {
+        {aspects.map((a) => {
           const on = size.aspect === a.key;
           return (
             <button
@@ -62,12 +64,12 @@ export function AspectPicker() {
               <input
                 type="number"
                 inputMode="numeric"
-                step={8}
+                step={step}
                 min={MIN_DIM}
                 max={MAX_DIM}
                 value={size[k]}
                 onChange={(e) => set({ ...size, aspect: CUSTOM, [k]: Number(e.target.value) })}
-                onBlur={() => set({ ...size, [k]: snap8(size[k]) })}
+                onBlur={() => set({ ...size, [k]: snapTo(size[k], step) })}
                 className={`${inputCls} font-mono`}
               />
             </div>
@@ -76,7 +78,7 @@ export function AspectPicker() {
       </div>
       <p className="mt-1.5 text-[12px] text-text-3">
         {size.w}×{size.h} · {((size.w * size.h) / 1e6).toFixed(2)} MP
-        {active?.untested && " · portrait twin of a tested ratio; not tested directly with Krea2"}
+        {active?.untested && variant !== "moss" && " · portrait twin of a tested ratio; not tested directly with Krea2"}
       </p>
       <LoadNote mp={(size.w * size.h) / 1e6} />
     </div>

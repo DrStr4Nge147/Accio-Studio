@@ -21,9 +21,9 @@ describe("modelsView", () => {
     expect(formatSize(10)).toBe("1 KB");
   });
 
-  it("sorts models into required, Klein and preset cards and drops empty ones", () => {
-    const rows = [row("a"), row("k", { required: false, group: "klein" }), row("p", { required: false })];
-    expect(groupModels(rows).map((g) => [g.id, g.rows.map((r) => r.id)])).toEqual([["required", ["a"]], ["klein", ["k"]], ["presets", ["p"]]]);
+  it("sorts models into required, Klein, MOSS and preset cards and drops empty ones", () => {
+    const rows = [row("a"), row("k", { required: false, group: "klein" }), row("m", { required: false, group: "moss" }), row("p", { required: false })];
+    expect(groupModels(rows).map((g) => [g.id, g.rows.map((r) => r.id)])).toEqual([["required", ["a"]], ["klein", ["k"]], ["moss", ["m"]], ["presets", ["p"]]]);
     expect(groupModels([row("a")]).map((g) => g.id)).toEqual(["required"]);
   });
 

@@ -1,0 +1,1306 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "moss_image_base_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "Qwen3.5-9B-abliterated_int8_convrot.safetensors",
+      "type": "moss_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "flux2-vae_small.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "15": {
+    "inputs": {
+      "value": 1920
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "MANUAL WIDTH",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "16": {
+    "inputs": {
+      "value": 1088
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "MANUAL HEIGHT",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "86": {
+    "inputs": {
+      "filename_prefix": "MOSS/text_to_image/original",
+      "images": [
+        "337:85",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "GENERATED IMAGE",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "92": {
+    "inputs": {
+      "attention": "comfy kitchen attention",
+      "model": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "ModelAttentionBackend",
+    "_meta": {
+      "title": "Model Attention Backend",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "95": {
+    "inputs": {
+      "width": 1920,
+      "height": 1088,
+      "high_level_description": "",
+      "background": "",
+      "style": "photo",
+      "style.photo": "",
+      "aesthetics": "",
+      "lighting": "",
+      "medium": "",
+      "style_palette_data": "",
+      "elements_data": "",
+      "bg_brightness": 25,
+      "import_mode": "when empty",
+      "output_format": "compact",
+      "coord_mode": "normalized",
+      "bbox_order": "yx"
+    },
+    "class_type": "Ideogram4PromptBuilderKJ",
+    "_meta": {
+      "title": "IDEOGRAM 4 PROMPT BUILDER",
+      "cnr_id": "comfyui-kjnodes",
+      "ver": "95389ef411dc9f5e498da928b365b98a682e1cd6"
+    }
+  },
+  "104": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "MANUAL PROMPT",
+      "cnr_id": "comfy-core",
+      "ver": "0.23.0"
+    }
+  },
+  "105": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "NEGATIVE PROMPT",
+      "cnr_id": "comfy-core",
+      "ver": "0.23.0"
+    }
+  },
+  "154": {
+    "inputs": {
+      "value": 1
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "PROMPT MODE",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "331": {
+    "inputs": {
+      "seed": 69420,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "er_sde",
+      "scheduler": "bong_tangent",
+      "denoise": 1,
+      "model": [
+        "337:70",
+        0
+      ],
+      "positive": [
+        "337:328",
+        0
+      ],
+      "negative": [
+        "337:330",
+        0
+      ],
+      "latent_image": [
+        "337:329",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "341": {
+    "inputs": {
+      "PowerLoraLoaderHeaderWidget": {
+        "type": "PowerLoraLoaderHeaderWidget"
+      },
+      "lora_1": {
+        "on": true,
+        "lora": "8-steps-dmd2-lora.safetensors",
+        "strength": 1
+      },
+      "lora_2": {
+        "on": true,
+        "lora": "moss_image_sft.safetensors",
+        "strength": 1
+      },
+      "➕ Add Lora": "",
+      "model": [
+        "92",
+        0
+      ]
+    },
+    "class_type": "Power Lora Loader (rgthree)",
+    "_meta": {
+      "title": "Power Lora Loader (rgthree)",
+      "cnr_id": "rgthree-comfy",
+      "aux_id": "rgthree/rgthree-comfy",
+      "ver": "d7297b42f0fa78bec1c0411478f887423c249502"
+    }
+  },
+  "675": {
+    "inputs": {
+      "aspect_ratio": "16:9 (Widescreen)",
+      "megapixels": 3,
+      "multiple": 32
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "AUTOMATIC RESOLUTION",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "676": {
+    "inputs": {
+      "value": true
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "AUTO RESOLUTION — OFF = MANUAL",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.1"
+    }
+  },
+  "337:328": {
+    "inputs": {
+      "text": [
+        "337:326:14",
+        0
+      ],
+      "clip": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "337:330": {
+    "inputs": {
+      "text": [
+        "337:326:108",
+        0
+      ],
+      "clip": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode · Generation negative",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "337:327:17": {
+    "inputs": {
+      "width": [
+        "337:677:678",
+        0
+      ],
+      "height": [
+        "337:677:679",
+        0
+      ],
+      "editor_state": {
+        "__value__": []
+      },
+      "last_incoming": {
+        "__value__": []
+      },
+      "bboxes": [
+        "337:327:172",
+        0
+      ]
+    },
+    "class_type": "CreateBoundingBoxes",
+    "_meta": {
+      "title": "MOSS region bridge · automatic; edit boxes in Ideogram",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:18": {
+    "inputs": {
+      "prompt": [
+        "337:327:170",
+        0
+      ],
+      "width": [
+        "337:677:678",
+        0
+      ],
+      "height": [
+        "337:677:679",
+        0
+      ],
+      "character_boxes": "",
+      "element": [
+        "337:327:17",
+        2
+      ]
+    },
+    "class_type": "MOSSImageLayoutPrompt",
+    "_meta": {
+      "title": "Native MOSS layout · descriptions + text + coordinates",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "337:327:159": {
+    "inputs": {
+      "string": [
+        "95",
+        0
+      ],
+      "regex_pattern": "\"elements\"\\s*:\\s*(\\[[\\s\\S]*\\])\\s*}\\s*}\\s*$",
+      "mode": "First Group",
+      "case_insensitive": false,
+      "multiline": false,
+      "dotall": false,
+      "group_index": 1
+    },
+    "class_type": "RegexExtract",
+    "_meta": {
+      "title": "Ideogram → region JSON",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:327:160": {
+    "inputs": {
+      "string": [
+        "95",
+        0
+      ],
+      "regex_pattern": "\"compositional_deconstruction\"\\s*:\\s*(\\{[\\s\\S]*\\})\\s*}\\s*$",
+      "mode": "First Group",
+      "case_insensitive": false,
+      "multiline": false,
+      "dotall": false,
+      "group_index": 1
+    },
+    "class_type": "RegexExtract",
+    "_meta": {
+      "title": "Ideogram → composition JSON",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:327:161": {
+    "inputs": {
+      "string": [
+        "95",
+        0
+      ],
+      "regex_pattern": "\"style_description\"\\s*:\\s*(\\{(?:[^\"{}]|\"(?:\\\\.|[^\"\\\\])*\")*\\})",
+      "mode": "First Group",
+      "case_insensitive": false,
+      "multiline": false,
+      "dotall": false,
+      "group_index": 1
+    },
+    "class_type": "RegexExtract",
+    "_meta": {
+      "title": "Ideogram → style JSON",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:327:162": {
+    "inputs": {
+      "json_string": [
+        "95",
+        0
+      ],
+      "key": "high_level_description"
+    },
+    "class_type": "JsonExtractString",
+    "_meta": {
+      "title": "Scene caption",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:163": {
+    "inputs": {
+      "json_string": [
+        "337:327:160",
+        0
+      ],
+      "key": "background"
+    },
+    "class_type": "JsonExtractString",
+    "_meta": {
+      "title": "Background caption",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:164": {
+    "inputs": {
+      "json_string": [
+        "337:327:161",
+        0
+      ],
+      "key": "aesthetics"
+    },
+    "class_type": "JsonExtractString",
+    "_meta": {
+      "title": "Style · aesthetics",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:165": {
+    "inputs": {
+      "json_string": [
+        "337:327:161",
+        0
+      ],
+      "key": "lighting"
+    },
+    "class_type": "JsonExtractString",
+    "_meta": {
+      "title": "Style · lighting",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:166": {
+    "inputs": {
+      "json_string": [
+        "337:327:161",
+        0
+      ],
+      "key": "photo"
+    },
+    "class_type": "JsonExtractString",
+    "_meta": {
+      "title": "Style · photo",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:167": {
+    "inputs": {
+      "json_string": [
+        "337:327:161",
+        0
+      ],
+      "key": "medium"
+    },
+    "class_type": "JsonExtractString",
+    "_meta": {
+      "title": "Style · medium",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:168": {
+    "inputs": {
+      "json_string": [
+        "337:327:161",
+        0
+      ],
+      "key": "art_style"
+    },
+    "class_type": "JsonExtractString",
+    "_meta": {
+      "title": "Style · art_style",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:169": {
+    "inputs": {
+      "json_string": [
+        "337:327:161",
+        0
+      ],
+      "key": "color_palette"
+    },
+    "class_type": "JsonExtractString",
+    "_meta": {
+      "title": "Style · color_palette",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:170": {
+    "inputs": {
+      "f_string": "Scene: {a}\nBackground: {b}\nAesthetics: {c}\nLighting: {d}\nCamera: {e}\nMedium: {f}\nArt style: {g}\nPalette: {h}",
+      "values.a": [
+        "337:327:162",
+        0
+      ],
+      "values.b": [
+        "337:327:163",
+        0
+      ],
+      "values.c": [
+        "337:327:164",
+        0
+      ],
+      "values.d": [
+        "337:327:165",
+        0
+      ],
+      "values.e": [
+        "337:327:166",
+        0
+      ],
+      "values.f": [
+        "337:327:167",
+        0
+      ],
+      "values.g": [
+        "337:327:168",
+        0
+      ],
+      "values.h": [
+        "337:327:169",
+        0
+      ]
+    },
+    "class_type": "StringFormat",
+    "_meta": {
+      "title": "Full Ideogram scene + style",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:171": {
+    "inputs": {
+      "value": "[]"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "No layout requested",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:172": {
+    "inputs": {
+      "switch": [
+        "337:327:231",
+        2
+      ],
+      "on_false": [
+        "337:327:171",
+        0
+      ],
+      "on_true": [
+        "337:327:159",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Only evaluate boxes in mode 3",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:327:231": {
+    "inputs": {
+      "expression": "a == 3",
+      "values.a": [
+        "154",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Only evaluate layout in prompt mode3",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:326:14": {
+    "inputs": {
+      "value": [
+        "337:326:173",
+        0
+      ]
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Selected positive",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "337:326:96": {
+    "inputs": {
+      "string": [
+        "337:326:98",
+        0
+      ],
+      "regex_pattern": "\\A\\s*\\S+(?:\\s+\\S+){449}",
+      "case_insensitive": true,
+      "multiline": false,
+      "dotall": false
+    },
+    "class_type": "RegexMatch",
+    "_meta": {
+      "title": "First positive has at least 450 words?",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:97": {
+    "inputs": {
+      "string_a": [
+        "337:326:101",
+        0
+      ],
+      "string_b": "",
+      "mode": "Equal",
+      "case_sensitive": true
+    },
+    "class_type": "StringCompare",
+    "_meta": {
+      "title": "Positive output empty? · Report failure",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:98": {
+    "inputs": {
+      "prompt": [
+        "337:326:102",
+        0
+      ],
+      "max_length": 2048,
+      "sampling_mode": "on",
+      "sampling_mode.temperature": 0.7,
+      "sampling_mode.top_k": 20,
+      "sampling_mode.top_p": 0.8,
+      "sampling_mode.min_p": 0,
+      "sampling_mode.repetition_penalty": 1,
+      "sampling_mode.seed": 0,
+      "sampling_mode.presence_penalty": 1.5,
+      "thinking": false,
+      "use_default_template": true,
+      "mtp": "auto",
+      "clip": [
+        "2",
+        0
+      ],
+      "system_prompt": [
+        "337:326:100",
+        0
+      ]
+    },
+    "class_type": "TextGenerate",
+    "_meta": {
+      "title": "Generate Text · Detailed POSITIVE",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:99": {
+    "inputs": {
+      "switch": [
+        "337:326:103",
+        2
+      ],
+      "on_false": [
+        "104",
+        0
+      ],
+      "on_true": [
+        "337:326:119",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Positive · Enhanced / manual",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:100": {
+    "inputs": {
+      "value": "You write richly detailed image-generation prompts for MOSS. Expand the user's idea into vivid, visually specific English prose that an image model can render directly. Aim for 450-600 words of useful visual detail even from a short idea. Return only the finished positive prompt, without headings, explanations, JSON, or a negative section. Use natural paragraphs when useful; there is no mandatory paragraph count, section order, or equal word allocation.\n\nThe ORIGINAL SOURCE IDEA controls the image. Preserve its subjects, identity, count, defining features, action, setting, medium, style references, spatial relationships, mood, colors, and requested lettering. Correct clear spelling mistakes without changing an explicit subject. If a misspelling leaves identity ambiguous, use neutral wording. Do not assign an unstated age category or reinterpret identity from appearance. A previous generated attempt is only a draft. Preserve user-supplied trigger tokens, score tags, and weights in a compact prefix when needed; do not invent them. Keep named artists and @artist tags as style cues, and preserve literal lettering in its original language.\n\nLead with the medium, subject, action or pose, and setting. Write the rest as a flowing visual brief: concrete nouns, precise descriptive phrases, and direct sentences. Connect details of appearance, gesture, materials, light, framing, color, and atmosphere so they describe one complete image. Give the most distinctive requested elements the most attention. A simple idea needs richer execution, not a new story or additional major subjects. Make modest, compatible choices for unspecified scene styling while keeping explicit features intact. For named characters, preserve the supplied design, hairstyle, outfit, and defining features. Enrich rendering, composition, lighting, motion, and materials without inventing distinguishing identity marks, injuries, or a character redesign. Do not present guessed details as canonical. Leave an uncertain defining feature unspecified when it is absent from the source. Keep character names and artist trigger strings exactly as supplied.\n\nUse the language of the requested medium. For realistic photography, describe convincing skin texture and natural tonal variation when skin is visible, believable hair, fabric and material finish, readable expressions, controlled reflections, optical perspective, and a plausible exposure. Select a coherent photographic character suited to the source: studio, candid phone photo, editorial, documentary, or another requested treatment. Camera or lens language is useful only when it describes perspective, framing, focus, or image character. Keep casual images casual. For anime, describe character drawing, line quality, cel or painterly shading, illustrated depth, motion, and effects appropriate to the requested style. For painting, rendering, products, architecture, and landscapes, use the relevant material and visual language. Keep hybrid styles when explicitly requested.\n\nChoose one composition and one compatible lighting setup. Keep subject position, pose, crop, object contact, and visibility consistent throughout. Name camera-left or camera-right when specifying light direction, then keep the lit and shadowed sides consistent with that reference. Let fill or edge light support the main light. Define a believable focus plane and allow depth to soften away from it; do not combine selective focus with universal sharpness. Keep surfaces, hair coverage, clothing, and object construction consistent. Use ordinary, accurate material names.\n\nSpend the word budget on distinct things the model can depict: how light falls across a surface, the shape and finish of an accessory, placement of fabric folds, separation between subject and setting, a specific gesture, or the atmosphere of the requested scene. Describe each useful detail once. Use compact clauses instead of explaining why a choice draws attention or makes an image feel authentic. Keep a plain background plain. Do not introduce details outside the crop merely to fill space.\n\nWrite observable features and visible emotion. Omit personality inferences, imagined history, social interpretations, commentary about the viewer, and an explanation of the image's significance. Avoid essay-style introductions, section transitions, concluding summaries, technical-sounding filler, repeated quality claims, and workflow parameters. Additional words must add visual information rather than paraphrase earlier sentences.\n\nBefore returning, silently check the original requirements, feature consistency, pose and crop, lighting direction, focus, and repeated information. Repair contradictions and remove any sentence that adds no drawable detail. Return the complete detailed prompt. If the original source itself is empty, return an empty string."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "POSITIVE system · Rich visual prose · 450-600 words",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:101": {
+    "inputs": {
+      "switch": [
+        "337:326:96",
+        0
+      ],
+      "on_false": [
+        "337:326:113",
+        0
+      ],
+      "on_true": [
+        "337:326:98",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Positive · First answer / detail retry",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:102": {
+    "inputs": {
+      "f_string": "ORIGINAL SOURCE IDEA:\n{a}\n\nOPTIONAL USER EXCLUSIONS:\n{b}\n\nWrite a fully developed positive image prompt of about 450-600 words. Preserve the source subject and all defining details. Use dense, vivid visual description and a coherent composition, lighting setup, and focus. Use natural paragraphs without a fixed section structure. Return only the finished prompt.",
+      "values.a": [
+        "104",
+        0
+      ],
+      "values.b": [
+        "105",
+        0
+      ]
+    },
+    "class_type": "StringFormat",
+    "_meta": {
+      "title": "POSITIVE request",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:103": {
+    "inputs": {
+      "expression": "a == 2",
+      "values.a": [
+        "154",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Mode 2 → enable prompt enhancer",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:326:107": {
+    "inputs": {
+      "switch": [
+        "337:326:117",
+        0
+      ],
+      "on_false": [
+        "337:326:134",
+        0
+      ],
+      "on_true": [
+        "337:326:118",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Negative · Generated / nonempty backup",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:108": {
+    "inputs": {
+      "switch": [
+        "337:326:103",
+        2
+      ],
+      "on_false": [
+        "337:326:118",
+        0
+      ],
+      "on_true": [
+        "337:326:107",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Negative · Enhanced / manual backup",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:112": {
+    "inputs": {
+      "f_string": "ORIGINAL SOURCE IDEA:\n{a}\n\nOPTIONAL USER EXCLUSIONS:\n{b}\n\nPREVIOUS GENERATED DRAFT (empty or fewer than 450 words):\n{c}\n\nRewrite the complete prompt with richer concrete visual detail, aiming for 450-600 words. The original source remains authoritative. Correct any changed feature, inconsistent pose, hair coverage, light direction, or focus in the draft. Expand with distinct image details rather than explanations or restatements. Preserve named-character design and remove invented identity marks, injuries, or redesigns from the draft. Use natural paragraphs without a fixed section structure. Return only the complete positive prompt.",
+      "values.a": [
+        "104",
+        0
+      ],
+      "values.b": [
+        "105",
+        0
+      ],
+      "values.c": [
+        "337:326:98",
+        0
+      ]
+    },
+    "class_type": "StringFormat",
+    "_meta": {
+      "title": "Automatic retry · Expand short output",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:113": {
+    "inputs": {
+      "prompt": [
+        "337:326:112",
+        0
+      ],
+      "max_length": 2048,
+      "sampling_mode": "on",
+      "sampling_mode.temperature": 0.7,
+      "sampling_mode.top_k": 20,
+      "sampling_mode.top_p": 0.8,
+      "sampling_mode.min_p": 0,
+      "sampling_mode.repetition_penalty": 1,
+      "sampling_mode.seed": 0,
+      "sampling_mode.presence_penalty": 1.5,
+      "thinking": false,
+      "use_default_template": true,
+      "mtp": "auto",
+      "clip": [
+        "2",
+        0
+      ],
+      "system_prompt": [
+        "337:326:100",
+        0
+      ]
+    },
+    "class_type": "TextGenerate",
+    "_meta": {
+      "title": "Generate Text · Retry only if too short",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:114": {
+    "inputs": {
+      "value": "Write a concise negative prompt for the supplied image. Return only a nonempty comma-separated list of familiar image-generation terms. Aim for 12-18 relevant terms, no more than 20; use fewer rather than pad. No headings, explanations, numbering, JSON, or extra paragraphs.\n\nThis request uses the protected-medium route. Preserve every requested medium, drawing or rendering style, material, and intentional effect. Do not add broad medium names or style categories as exclusions. Do not use a photographic skin-retouching checklist for a stylized image. Describe actual unwanted artifacts instead.\n\nThe ORIGINAL SOURCE IDEA controls required subjects and features. The completed positive supplies framing and visible detail, not new user restrictions. Include compatible manual exclusions and preserve supplied negative trigger or score tags. When manual exclusions are blank, generate the list yourself.\n\nChoose relevant common defects affecting image quality, visible anatomy, object construction, duplication, perspective, or accidental overlays. A few useful phrases are sufficient. Use conventional vocabulary rather than inventing technical-sounding defects. Mention hands and fingers only when hands are in view; mention facial defects only when a face is present. Protect requested lettering, symbols, grain, softness, motion blur, glow, flat shading, and intentionally loose drawing. Limit overlay exclusions to unwanted additions.\n\nFor named characters, preserve their specified design, hairstyle, outfit, accessories, and facial features. Do not invent identity, age, body-shape, or expression exclusions. Do not turn every positive feature into its opposite or describe the absence of a required object.\n\nRemove irrelevant terms, contradictions, and repeated meanings. If scene information is missing, still return a small nonempty list of general rendering artifacts. Output only the final comma-separated list and stop."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "NEGATIVE system · Protected media / general artifacts",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:115": {
+    "inputs": {
+      "f_string": "ORIGINAL IMAGE IDEA:\n{a}\n\nCOMPLETED POSITIVE DESCRIPTION:\n{b}\n\nOPTIONAL USER EXCLUSIONS (blank means generate a negative prompt):\n{c}\n\nFollow the selected negative system instructions. Write a nonempty list of relevant conventional terms, aiming for 12-18 and never more than 20. Preserve every requested medium and defining feature. Keep only useful image-quality or visible-subject exclusions. Return only the comma-separated list.",
+      "values.a": [
+        "104",
+        0
+      ],
+      "values.b": [
+        "337:326:99",
+        0
+      ],
+      "values.c": [
+        "105",
+        0
+      ]
+    },
+    "class_type": "StringFormat",
+    "_meta": {
+      "title": "NEGATIVE request · Reads final positive",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:116": {
+    "inputs": {
+      "prompt": [
+        "337:326:115",
+        0
+      ],
+      "max_length": 384,
+      "sampling_mode": "on",
+      "sampling_mode.temperature": 0.7,
+      "sampling_mode.top_k": 20,
+      "sampling_mode.top_p": 0.8,
+      "sampling_mode.min_p": 0,
+      "sampling_mode.repetition_penalty": 1,
+      "sampling_mode.seed": 0,
+      "sampling_mode.presence_penalty": 1.5,
+      "thinking": false,
+      "use_default_template": true,
+      "mtp": "auto",
+      "clip": [
+        "2",
+        0
+      ],
+      "system_prompt": [
+        "337:326:130",
+        0
+      ]
+    },
+    "class_type": "TextGenerate",
+    "_meta": {
+      "title": "Generate Text · Tailored NEGATIVE",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:117": {
+    "inputs": {
+      "string": [
+        "337:326:134",
+        0
+      ],
+      "regex_pattern": "\\A\\s*(?:none|n/?a|null|no negative prompts?(?: needed)?|no exclusions(?: needed)?)?\\s*[.!]?\\s*\\Z",
+      "case_insensitive": true,
+      "multiline": false,
+      "dotall": false
+    },
+    "class_type": "RegexMatch",
+    "_meta": {
+      "title": "Negative missing or none? · Use backup",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:118": {
+    "inputs": {
+      "string": [
+        "105",
+        0
+      ],
+      "regex_pattern": "\\A\\s*(?:none|n/?a|null|no negative prompts?(?: needed)?|no exclusions(?: needed)?)?\\s*[.!]?\\s*\\Z",
+      "replace": "unwanted rendering artifacts, unintended distortion, accidental duplicate subjects, inconsistent perspective, unrequested text overlays, unwanted watermarks",
+      "case_insensitive": true,
+      "multiline": false,
+      "dotall": false,
+      "count": 1
+    },
+    "class_type": "RegexReplace",
+    "_meta": {
+      "title": "Manual negative or NONEMPTY backup",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:119": {
+    "inputs": {
+      "switch": [
+        "337:326:97",
+        0
+      ],
+      "on_false": [
+        "337:326:101",
+        0
+      ],
+      "on_true": [
+        "104",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Positive · Empty-output fallback",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:126": {
+    "inputs": {
+      "string": [
+        "337:326:116",
+        0
+      ],
+      "regex_pattern": "\\A\\s*([^,\\s](?:[^,]*[^,\\s])?(?:\\s*,\\s*[^,\\s](?:[^,]*[^,\\s])?){0,19})",
+      "mode": "First Group",
+      "case_insensitive": false,
+      "multiline": false,
+      "dotall": false,
+      "group_index": 1
+    },
+    "class_type": "RegexExtract",
+    "_meta": {
+      "title": "Generated negative · Maximum 20 phrases",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:127": {
+    "inputs": {
+      "string": [
+        "337:326:126",
+        0
+      ],
+      "regex_pattern": "(?:\\A|(?<=,))\\s*([^,\\s](?:[^,]*[^,\\s])?)\\s*,(?=(?:[^,]*,)*\\s*\\1\\s*(?:,|\\Z))",
+      "replace": "",
+      "case_insensitive": false,
+      "multiline": false,
+      "dotall": false,
+      "count": 0
+    },
+    "class_type": "RegexReplace",
+    "_meta": {
+      "title": "Generated negative · Remove exact duplicates",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:128": {
+    "inputs": {
+      "string": [
+        "104",
+        0
+      ],
+      "regex_pattern": "(?ais)\\A(?=.*(?:\\b(?:photos?|photographs?|photography|photographic|photo[ _-]?real(?:istic|ism)|selfies?|snapshots?)\\b|\\b(?:realistic|hyper[ _-]?realistic)\\s+(?:(?:studio|editorial)\\s+)?portraits?\\b))(?!.*(?:(?<![a-z0-9])(?:anime|manga|manhwa|cartoons?|cartoonish|illustrat(?:ions?|ed|or)|paint(?:ings?|ed|erly)|gouache|draw(?:ings?|n)|sketch(?:es|ing)?|comics?|(?:digital|official|concept|fan|pixel|vector)[ _-]+art|cel[ _-]?shad(?:ed|ing)|[23][ _-]?d|cgi|render(?:s|ed|ing)?|animation|animated|watercolou?r|sculptures?|statues?|figurines?|action[ _-]+figures?|toys?|posters?|screens?|mixed[ _-]+media|hybrid|collage)(?![a-z0-9])|@\\w|\\b(?:style[ _-]+of|inspired[ _-]+by)\\b))(?!.*(?<![a-z0-9])(?:not|no|without|avoid|exclude|excluding|non)[ _-]*(?:an?[ _-]+)?(?:photo(?:graphs?|graphy|graphic)?|photo[ _-]?real(?:istic|ism)|hyper[ _-]?real(?:istic|ism)|realistic)\\b).*\\Z",
+      "case_insensitive": true,
+      "multiline": false,
+      "dotall": false
+    },
+    "class_type": "RegexMatch",
+    "_meta": {
+      "title": "Clear photographic source? · Otherwise protect all media",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:129": {
+    "inputs": {
+      "value": "Write a concise negative prompt for this clearly photographic request. Return only a nonempty comma-separated list of familiar image-generation terms. Aim for 12-18 relevant terms, no more than 20; use fewer rather than pad. No headings, explanations, numbering, JSON, or extra paragraphs.\n\nThe ORIGINAL SOURCE IDEA controls the image. Preserve all required subjects, features, photographic treatments, and intentional effects. Include compatible manual exclusions and preserve supplied negative trigger or score tags. The completed positive supplies framing and visible details; incidental choices in it do not create new user restrictions.\n\nChoose a compact mix of unwanted nonphotographic styles, common image artifacts, and relevant visible defects. Suitable style options include cartoon, anime, illustration, painting, CGI, and 3D render. Select appropriate options rather than filling the list with close synonyms. Preserve the photographic medium itself.\n\nFor visible people, relevant artifact terms may include plastic skin, excessive skin smoothing, distorted facial features, misaligned eyes, malformed eyewear, glare obscuring eyes, or artificial facial hair. Choose only defects relevant to the actual subject. For objects or architecture, prefer defects in geometry, contact, duplication, or perspective. Do not add unseen body parts to a tight crop.\n\nImage-quality terms such as low resolution, blurry subject, JPEG artifacts, clipped highlights, oversharpening halos, watermark, or signature may be used when relevant. Protect intentional film grain, soft focus, motion blur, shadows, text, symbols, and natural variation. Do not impose age, identity, body, or expression preferences, and do not invert every positive feature into an absence phrase.\n\nRemove irrelevant terms, contradictions, and repeated meanings. A blank manual field still requires a negative prompt. Output only the final comma-separated list and stop."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "NEGATIVE system · Clear photography only",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:130": {
+    "inputs": {
+      "switch": [
+        "337:326:128",
+        0
+      ],
+      "on_false": [
+        "337:326:114",
+        0
+      ],
+      "on_true": [
+        "337:326:129",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Choose negative instructions · Photo / protected",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:131": {
+    "inputs": {
+      "string": [
+        "337:326:127",
+        0
+      ],
+      "regex_pattern": "(?ai)(?:\\A|,)\\s*[\\[(]*\\s*(?:(?:photo(?:s|graphs?|graphy|graphic)?|photo[ _-]?real(?:istic|ism)|hyper[ _-]?real(?:istic|ism)|realism|realistic|live[ _-]?action)(?:[ _-]+(?:style|like|aesthetics?|look|render(?:ed|ing)?s?)){0,2})\\s*(?::\\s*[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+))?\\s*[\\])]*\\s*(?=,|\\Z)",
+      "replace": "",
+      "case_insensitive": true,
+      "multiline": false,
+      "dotall": false,
+      "count": 0
+    },
+    "class_type": "RegexReplace",
+    "_meta": {
+      "title": "Photo guard · Preserve photographic medium",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:132": {
+    "inputs": {
+      "string": [
+        "337:326:127",
+        0
+      ],
+      "regex_pattern": "(?ai)(?:\\A|,)\\s*[\\[(]*\\s*(?:(?:photo(?:s|graphs?|graphy|graphic)?|photo[ _-]?real(?:istic|ism)|hyper[ _-]?real(?:istic|ism)|realism|realistic|live[ _-]?action)(?:[ _-]+(?:style|like|art|artwork|aesthetics?|look|render(?:ed|ing)?s?|illustrations?|paintings?)){0,2}|(?:anime|manga|cartoons?|cartoonish|illustrations?|illustrated|paintings?|painterly|(?:digital|traditional)[ _-]+(?:art|paintings?|illustrations?)|2[ _-]?d|3[ _-]?d|cgi|cel[ _-]?shad(?:ed|ing)|comic(?:s|[ _-]+book)?|drawings?|hand[ _-]+drawn|sketch(?:es)?|watercolou?r|oil[ _-]+paintings?|pixel[ _-]+art)(?:[ _-]+(?:style|like|art|artwork|aesthetics?|look|render(?:ed|ing)?s?|illustrations?|paintings?)){0,2}|(?:(?:plastic|waxy|airbrushed|poreless)[ _-]+skin|excessive[ _-]+skin[ _-]+(?:smoothing|retouching)|artificial[ _-]+skin[ _-]+texture|over[ _-]?smoothed[ _-]+skin))\\s*(?::\\s*[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+))?\\s*[\\])]*\\s*(?=,|\\Z)",
+      "replace": "",
+      "case_insensitive": true,
+      "multiline": false,
+      "dotall": false,
+      "count": 0
+    },
+    "class_type": "RegexReplace",
+    "_meta": {
+      "title": "Protected guard · Remove medium / photo-skin bans",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:133": {
+    "inputs": {
+      "switch": [
+        "337:326:128",
+        0
+      ],
+      "on_false": [
+        "337:326:132",
+        0
+      ],
+      "on_true": [
+        "337:326:131",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Choose guarded negative · Photo / protected",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:134": {
+    "inputs": {
+      "string": [
+        "337:326:133",
+        0
+      ],
+      "regex_pattern": "\\A[\\s,]+|[\\s,]+\\Z",
+      "replace": "",
+      "case_insensitive": true,
+      "multiline": false,
+      "dotall": false,
+      "count": 0
+    },
+    "class_type": "RegexReplace",
+    "_meta": {
+      "title": "Guarded negative · Trim separators",
+      "cnr_id": "comfy-core",
+      "ver": "0.38.0"
+    }
+  },
+  "337:326:156": {
+    "inputs": {
+      "expression": "a == 3",
+      "values.a": [
+        "154",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Mode 3 → use Ideogram boxes",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:326:173": {
+    "inputs": {
+      "switch": [
+        "337:326:156",
+        2
+      ],
+      "on_false": [
+        "337:326:99",
+        0
+      ],
+      "on_true": [
+        "337:327:18",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "FINAL POSITIVE | modes 1 / 2 / 3",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:85": {
+    "inputs": {
+      "samples": [
+        "331",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "337:329": {
+    "inputs": {
+      "width": [
+        "337:677:678",
+        0
+      ],
+      "height": [
+        "337:677:679",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyFlux2LatentImage",
+    "_meta": {
+      "title": "Empty Flux 2 Latent",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
+  "337:70": {
+    "inputs": {
+      "double_layers": "",
+      "single_layers": "22",
+      "start_percent": 0,
+      "end_percent": 1,
+      "model": [
+        "341",
+        0
+      ]
+    },
+    "class_type": "SkipLayerGuidanceDiTSimple",
+    "_meta": {
+      "title": "SKIP LAYER GUIDANCE",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:677:678": {
+    "inputs": {
+      "switch": [
+        "676",
+        0
+      ],
+      "on_false": [
+        "15",
+        0
+      ],
+      "on_true": [
+        "675",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Selected width",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  },
+  "337:677:679": {
+    "inputs": {
+      "switch": [
+        "676",
+        0
+      ],
+      "on_false": [
+        "16",
+        0
+      ],
+      "on_true": [
+        "675",
+        1
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Selected height",
+      "cnr_id": "comfy-core",
+      "ver": "0.42.0"
+    }
+  }
+}

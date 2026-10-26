@@ -7,11 +7,11 @@ const segments = (name: string) => name.split(/[\\/]/);
 /** Top-level folder, or "" for a file sitting directly in models/loras. */
 export const loraFolder = (name: string) => (segments(name).length > 1 ? segments(name)[0] : "");
 
-/** krea2* folders are Create's; qwen* / flux* / *-edit folders (qwen2.1-edit, flux-klein9b-edit) are Edit's. */
+/** krea2* and moss* folders are Create's; qwen* / flux* / *-edit folders (qwen2.1-edit, flux-klein9b-edit) are Edit's. */
 export function loraGroup(name: string): LoraGroup {
   const top = loraFolder(name).toLowerCase();
   if (!top) return "shared";
-  if (top.startsWith("krea2")) return "create";
+  if (top.startsWith("krea2") || top.startsWith("moss")) return "create";
   if (/^(qwen|flux)/.test(top) || top.endsWith("-edit")) return "edit";
   return "shared";
 }

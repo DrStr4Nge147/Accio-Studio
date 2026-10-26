@@ -1,6 +1,7 @@
 /** Hover / focus explanations for the Create controls (shown by the app tooltip; essentials are also written in the UI). */
 export const TIPS = {
   standard: "One pass at the chosen size. Faster.",
+  moss: "MOSS Image: a separate model that draws in 8 steps. It has no seed variance or T-Enhancer.",
   detailed: "Two passes: draws the image, then refines it. Slower, with finer detail.",
   seedVariance: "Adds controlled variety to the prompt so different seeds give more different images (Krea 2 Turbo tends to repeat itself otherwise). Tune it in Advanced.",
   sharpen: "Sharpens the finished image slightly (RCAS). Strength is in Advanced.",

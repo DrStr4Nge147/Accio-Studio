@@ -274,6 +274,7 @@ def create_defaults() -> dict[str, Any]:
     """Workflow default values of the Create patch points, read from the templates (single source of truth for the UI)."""
     std = load_template("krea_t2i__var1_tenh1_sharp1")
     combo = load_template("krea_combo__var1_tenh1_sharp1")
+    moss = load_template("moss_t2i__sharp1")
     sampler_keys = ("steps", "cfg", "sampler_name", "scheduler", "denoise")
 
     def sampler(pr: dict, node: str) -> dict[str, Any]:
@@ -292,6 +293,12 @@ def create_defaults() -> dict[str, Any]:
             "pass2": sampler(combo, "265"),
             "turbo_pass1": {k: combo["180"]["inputs"]["lora_1"][k] for k in ("on", "strength")},
             "turbo_pass2": {k: combo["174"]["inputs"]["lora_1"][k] for k in ("on", "strength")},
+        },
+        "moss": {
+            "width": moss["15"]["inputs"]["value"],
+            "height": moss["16"]["inputs"]["value"],
+            "sampler": sampler(moss, "331"),
+            "sharpen_strength": moss["336"]["inputs"]["alpha"],
         },
         "sharpen_strength": std["141"]["inputs"]["method.strength"],
         "t_enhancer_strength": std["146"]["inputs"]["strength"],
@@ -367,7 +374,33 @@ def edit_defaults() -> dict[str, Any]:
 
 # --------------------------------------------------------------------------- builders
 
+def _build_moss(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], prefix: str) -> Built:
+    """MOSS Image, turbo text to image. Prompt mode stays on the template's "manual prompt"; the size is always the manual one
+    (the workflow's automatic resolution picker is switched off)."""
+    sharp = int(p.sharpen)
+    name = f"moss_t2i__sharp{sharp}"
+    pr = strip_output_only(load_template(name))
+    _set(pr, "104", "value", p.prompt)
+    seeds = {"main": _seed(p.seed, seeds_src)}
+    _set(pr, "331", "seed", seeds["main"])
+    _set(pr, "676", "value", False)
+    for node, val in (("15", p.width), ("16", p.height)):
+        if val is not None:
+            _set(pr, node, "value", val)
+    _set(pr, "337:329", "batch_size", p.batch)
+    _apply_sampler(pr, "331", p.sampler, cat)
+    if sharp and p.sharpen_strength is not None:
+        _set(pr, "336", "alpha", p.sharpen_strength)
+    _inject_loras(pr, "341", p.loras, cat)
+    save = "147" if sharp else "86"
+    _apply_grain(pr, save, p.film_grain, seeds["main"])
+    _set(pr, save, "filename_prefix", f"{prefix}/create")
+    return Built(pr, name, seeds, {save: "final"}, None, "create", "Create · MOSS")
+
+
 def _build_create(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], prefix: str) -> Built:
+    if p.variant == "moss":
+        return _build_moss(p, cat, seeds_src, prefix)
     var, tenh, sharp = int(p.seed_variance), int(p.t_enhancer), int(p.sharpen)
     seeds: dict[str, int] = {}
     outputs: dict[str, str] = {}

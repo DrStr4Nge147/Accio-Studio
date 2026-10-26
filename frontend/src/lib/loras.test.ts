@@ -9,6 +9,7 @@ describe("loras", () => {
     expect(loraGroup("c.safetensors")).toBe("shared");
     expect(loraGroup("other/d.safetensors")).toBe("shared");
     expect(loraGroup("krea2.safetensors")).toBe("shared"); // a file, not the folder
+    expect(loraGroup("moss/m.safetensors")).toBe("create");
     expect(loraGroup("qwen2.1-edit\\e.safetensors")).toBe("edit");
     expect(loraGroup("flux-klein9b-edit/f.safetensors")).toBe("edit");
   });

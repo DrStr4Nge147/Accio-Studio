@@ -49,9 +49,16 @@ class LoraToggle(Strict):
     strength: float = Field(0.2, ge=0, le=5)
 
 
+# CreateParams fields that only mean something for Krea (variance, T-Enhancer, the two-pass Detailed variant).
+MOSS_UNSUPPORTED = frozenset({
+    "seed_variance", "t_enhancer", "variance", "seed_variance_seed", "t_enhancer_strength",
+    "seed_pass2", "pass1", "pass2", "turbo_pass1", "turbo_pass2", "upscale", "save_first_pass",
+})
+
+
 class CreateParams(Strict):
     mode: Literal["create"]
-    variant: Literal["standard", "detailed"]
+    variant: Literal["standard", "detailed", "moss"]
     prompt: Prompt
     width: Dim | None = None
     height: Dim | None = None
@@ -75,6 +82,15 @@ class CreateParams(Strict):
     save_first_pass: bool = True
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
     film_grain: FilmGrain | None = None
+
+    @model_validator(mode="after")
+    def _moss_has_no_krea_options(self) -> "CreateParams":
+        """MOSS Image ("moss") has one pass and none of Krea's extras: say so instead of silently ignoring what was sent."""
+        if self.variant == "moss":
+            sent = sorted(self.model_fields_set & MOSS_UNSUPPORTED)
+            if sent:
+                raise ValueError(f"MOSS Image does not take: {', '.join(sent)}")
+        return self
 
 
 class ImageRef(Strict):
