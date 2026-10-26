@@ -227,6 +227,19 @@ def test_upgrading_a_nested_install_leaves_unrelated_folders_beside_it_alone(fak
     assert not (home / "ComfyUI_windows_portable").exists() and not (home / "_old").exists()
 
 
+def test_upgrade_removes_the_parked_install_even_with_read_only_git_files(fake_comfy):
+    home, manifest, seen = fake_comfy
+    put_install(home, "0.38.0")
+    pack = home / "ComfyUI" / ".git" / "objects" / "pack" / "p.pack"  # git writes its pack files read-only
+    pack.parent.mkdir(parents=True)
+    pack.write_text("x")
+    pack.chmod(0o444)
+    want_new(manifest, seen)
+    install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))
+    assert not (home / "_old").exists()
+    assert_user_files_kept(home / "ComfyUI")
+
+
 def test_a_failed_extraction_leaves_the_old_install_untouched(fake_comfy):
     home, manifest, seen = fake_comfy
     put_install(home, "0.38.0")

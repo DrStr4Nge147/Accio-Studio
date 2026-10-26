@@ -86,8 +86,9 @@ the licence) and then runs `Install.bat` for anything new. Your history, passwor
 When it says Done, start Accio again with `Run_Accio.bat`. Close any other Accio window first.
 
 - `Update.bat --check` only tells you whether an update exists. `--force` reinstalls the newest release.
-- A release that also upgrades the ComfyUI engine is refused ("needs the full zip") so your models can never be put at risk.
-  Download the full zip from the Releases page and follow the notes there.
+- A release that also upgrades the ComfyUI engine is installed too: `Install.bat` (run by the update) swaps the engine in place and keeps your
+  models, images, settings and custom nodes, but it downloads a few GB, so keep the window open. Updating **from v0.3.9 or older to v0.4.0**
+  is the exception, because those older updaters refuse engine changes: follow the upgrade steps in the v0.4.0 release notes.
 - To go back, copy the files from `data\backup\<version>-<time>\` over the app folder.
 - To stop Accio contacting GitHub, set `"check_updates": false` in `settings.json`.
 
@@ -162,7 +163,7 @@ ComfyUI (GPL-3.0) and the custom-node packs are downloaded from their own reposi
 3. On GitHub: Releases > Draft a new release > choose the tag `vX.Y.Z` > attach **both** `AccioStudio-<version>.zip` and
    `AccioStudio-<version>.zip.sha256` > Publish. The updater looks at the *latest published* release (not drafts or pre-releases) and
    will not install one that has no checksum.
-4. If the release changes the ComfyUI version, say so in the notes: the updater refuses those and users must take the full zip.
+4. If the release changes the ComfyUI version, say so in the notes (the download size grows). Updaters older than v0.4.0 refuse such releases, so say so when users on those versions need the manual steps.
 
 ```powershell
 env\Scripts\python.exe -m pytest tests -q          # backend tests (live ones need the bundled engine running)

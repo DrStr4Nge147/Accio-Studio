@@ -15,6 +15,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -276,10 +277,25 @@ def version_key(v: str) -> tuple[int, ...]:
     return tuple(int(x) for x in re.findall(r"\d+", v))
 
 
+def rmtree_force(path: Path, *, ignore_errors: bool = False) -> None:
+    """shutil.rmtree that also removes read-only files: git keeps its pack files read-only on Windows, and a plain rmtree leaves them behind."""
+    def fix(func, p, *_exc):
+        try:
+            os.chmod(p, stat.S_IWRITE)
+            func(p)
+        except OSError:
+            if not ignore_errors:
+                raise
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=fix)
+    else:
+        shutil.rmtree(path, onerror=fix)
+
+
 def replace_path(src: Path, dest: Path) -> None:
     """Rename `src` over `dest` (same volume), removing what is at `dest` first."""
     if dest.is_dir() and not dest.is_symlink():
-        shutil.rmtree(dest)
+        rmtree_force(dest)
     elif dest.exists() or dest.is_symlink():
         dest.unlink()
     os.replace(src, dest)
@@ -302,9 +318,9 @@ def finish_upgrade(old: Path) -> None:
     # The new portable Python has none of the packs' pip dependencies yet: have install_nodes run pip again.
     for marker in (dst / "custom_nodes").glob("*/.accio_reqs_ok"):
         marker.unlink()
-    shutil.rmtree(old, ignore_errors=True)
+    rmtree_force(old, ignore_errors=True)
     if LEGACY_HOME.is_dir() and not (LEGACY_HOME / "ComfyUI").exists():
-        shutil.rmtree(LEGACY_HOME, ignore_errors=True)  # the emptied nested layout of the first builds
+        rmtree_force(LEGACY_HOME, ignore_errors=True)  # the emptied nested layout of the first builds
 
 
 def upgrade_comfyui(manifest: dict, build: str, sevenzip: Path, have: str | None) -> str:
@@ -346,7 +362,7 @@ def upgrade_comfyui(manifest: dict, build: str, sevenzip: Path, have: str | None
             raise RuntimeError("could not find the old ComfyUI folder to carry over; nothing was replaced")
         for name in ("python_embeded", "ComfyUI"):  # what is left at the top is a half-finished new install from an earlier run
             if (COMFY_HOME / name).exists():
-                shutil.rmtree(COMFY_HOME / name)
+                rmtree_force(COMFY_HOME / name)
         flags = flatten_portable(extracted, COMFY_HOME, build)
         archive.unlink(missing_ok=True)
         got = installed_comfy_version()
@@ -372,7 +388,7 @@ def install_comfyui(manifest: dict, build: str, sevenzip: Path) -> str:
     if existing and extracted.exists():
         # An earlier run stopped while unpacking or moving. Nothing of value is in there yet (models come later): start clean.
         for p in existing:
-            shutil.rmtree(p, ignore_errors=True)
+            rmtree_force(p, ignore_errors=True)
     elif existing:
         raise RuntimeError(
             f"{COMFY_HOME} holds ComfyUI {have or 'unknown/incomplete'}, not {want}. "

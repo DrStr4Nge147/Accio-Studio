@@ -245,10 +245,20 @@ def test_a_zip_without_its_checksum_file_is_refused(app, tmp_path):
         run(app, new_zip(tmp_path, sidecar=False))
 
 
-def test_a_release_that_upgrades_the_engine_is_refused_untouched(app, tmp_path):
+def test_a_release_that_upgrades_the_engine_is_installed_and_the_installer_does_the_swap(app, tmp_path, capsys, monkeypatch):
+    ran = []
+    monkeypatch.setattr(up, "run_installer", lambda root: ran.append(root) or True)
+    assert up.update(app, zip_file=new_zip(tmp_path, engine="0.40.0"), yes=True, stop=False, install=True) == 0
+    assert "upgrades the ComfyUI engine (0.38.0 -> 0.40.0)" in capsys.readouterr().out
+    assert ran == [app] and up.installed_version(app) == NEW  # Install.bat ran, so the engine upgrade follows
+    for rel in KEEP:  # models, history, settings, env stay where they were
+        assert (app / rel).is_file(), rel
+
+
+def test_a_release_with_an_older_engine_is_refused_untouched(app, tmp_path):
     before = snapshot(app)
-    with pytest.raises(up.UpdateError, match="ComfyUI engine"):
-        run(app, new_zip(tmp_path, engine="0.40.0"))
+    with pytest.raises(up.UpdateError, match="older ComfyUI engine"):
+        run(app, make_zip(tmp_path / f"AccioStudio-{NEW}.zip", app_files(NEW, "new", "0.30.0")))
     assert snapshot(app) == before
 
 

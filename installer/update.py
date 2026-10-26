@@ -5,7 +5,8 @@ the new ones and runs Install.bat for anything new (Python packages, node packs)
 
 It replaces only the app itself: server\\, installer\\, frontend\\dist\\, scripts\\, the .bat files, README.md, LICENSE,
 requirements.txt and VERSION.txt. It never touches data\\ (history, password), settings.json, env\\, bin\\, comfyui\\ (engine and
-models) or anything else. A release that also changes the ComfyUI version is refused: that needs the full zip.
+models) or anything else. When the release also changes the ComfyUI version, Install.bat (run afterwards) upgrades the engine in
+place and keeps models, outputs and custom nodes; a release with an older engine than the installed one is refused.
 
 Options:
   --check          only report whether an update is available (exit code 10 = yes, 0 = no, 1 = could not check)
@@ -337,10 +338,17 @@ def update(root: Path, *, check: bool = False, yes: bool = False, force: bool = 
     extract_release(archive, staged)
     old_engine, new_engine = engine_version(root / "server" / "templates" / "manifest.json"), engine_version(staged / "server" / "templates" / "manifest.json")
     if old_engine and new_engine and old_engine != new_engine:
-        shutil.rmtree(staged, ignore_errors=True)
-        raise UpdateError(
-            f"release {latest['version']} also upgrades the ComfyUI engine ({old_engine} -> {new_engine}). That cannot be done "
-            "automatically yet. Download the full zip, back up comfyui\\ComfyUI\\models, and follow the README. Nothing was changed."
+        old_key, new_key = version_key(old_engine), version_key(new_engine)
+        if old_key and new_key and new_key < old_key:
+            shutil.rmtree(staged, ignore_errors=True)
+            raise UpdateError(
+                f"release {latest['version']} has an older ComfyUI engine ({new_engine}) than the one installed ({old_engine}). "
+                "It is not installed. Nothing was changed."
+            )
+        say(
+            f"This release also upgrades the ComfyUI engine ({old_engine} -> {new_engine}). Install.bat does that in place after the files "
+            "are swapped: it downloads the new engine (a few GB) and keeps your models, images, settings and custom nodes. "
+            "Keep this window open until it says Done."
         )
     staged_version = installed_version(staged)
     if staged_version != latest["version"]:
