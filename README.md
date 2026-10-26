@@ -1,12 +1,12 @@
 # Accio Studio
 
-A web app for **image generation** (Krea 2) and **image editing** (Qwen Image Edit 2.1) that runs on your own PC.
+A web app for **image generation** (Krea 2, and optionally MOSS Image) and **image editing** (Qwen Image Edit 2.1) that runs on your own PC.
 It works on a computer, a phone and a tablet, and installs like an app. Everything stays on your machine unless you
 choose to share it over a tunnel.
 
 It ships with its own portable copy of ComfyUI as the engine. You never open ComfyUI yourself.
 
-- **Create**: Standard (one pass) and Detailed (two passes with a refine step), with Seed Variance, T-Enhancer and Sharpen switches.
+- **Create**: Standard (one pass) and Detailed (two passes with a refine step), with Seed Variance, T-Enhancer and Sharpen switches. **MOSS** is an optional second model (8-step turbo by default, with its own turbo and SFT LoRA sliders, a prompt enhancer and Sharpen); download its models in Settings > Models.
 - **Edit**: Multi-edit (up to 9 images, head and body swap presets), Inpaint (paint a mask; remove or move an object) and Outpaint (drag the edges out).
 - **Character sheet** (in Edit): upload one photo and get a sheet of face close-ups and a sheet of full-body views. *One by one* renders every angle at full quality and stitches them into a grid (slow: one render per view); *Merged* has the model draw each whole sheet in one picture (two renders, quicker, lower quality).
 - **Gallery** of everything you made, with thumbnails, "Reuse settings" and "Send to Edit".
@@ -35,7 +35,7 @@ changes. Everything lives in this folder, so deleting the folder uninstalls it.
    folder, so `Install.bat` stops with a clear message instead. Avoid `C:\Program Files`. **Do not move or rename the folder
    afterwards** (if you do, run `Install.bat` again; it repairs the Python environment and keeps everything else).
 2. Double-click **`Install.bat`** and wait. It is safe to close it and run it again later: it resumes and skips finished steps.
-   It downloads the tools, the engine (ComfyUI 0.38.0) and 9 pinned custom-node packs. It does not download models.
+   It downloads the tools, the engine (ComfyUI 0.42.1) and 10 pinned custom-node packs. It does not download models.
 3. Start Accio with `Run_Accio.bat`, open **Settings > Models** and download the models you want. Every file is checked when it
    finishes, and an interrupted download resumes. Already have the models from another ComfyUI? Point **Settings > Model folders**
    at them instead (they are only **read**, never changed, and nothing is copied). The four preset LoRAs (head swap, body swap,
@@ -149,7 +149,7 @@ Create it next to `Run_Accio.bat`. Unknown keys are ignored.
 Accio Studio itself is released under the MIT licence (see `LICENSE`). That covers this project only, not the models or the engine below.
 
 Accio Studio does **not** include any model. `Install.bat` downloads them from their public mirrors, and **the licences of
-Krea 2, Qwen Image, the VAEs and every LoRA are your responsibility**: read them before you use the results commercially.
+Krea 2, Qwen Image, MOSS Image, the VAEs and every LoRA are your responsibility**: read them before you use the results commercially.
 ComfyUI (GPL-3.0) and the custom-node packs are downloaded from their own repositories at pinned versions and keep their own licences.
 
 ## For developers
