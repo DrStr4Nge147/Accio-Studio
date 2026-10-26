@@ -332,11 +332,16 @@ def upgrade_comfyui(manifest: dict, build: str, sevenzip: Path, have: str | None
         if r.returncode != 0:
             raise RuntimeError(f"extraction failed: {(r.stdout + r.stderr)[-300:]}")
         # Only now park the old install. ComfyUI goes first: once old\ComfyUI exists the user's files are safe there.
+        first = not (old / "ComfyUI").exists()
+        src = comfy_base()  # where the install being replaced sits, decided before anything moves
         old.mkdir(exist_ok=True)
+        if first and src != COMFY_HOME:  # folders at the top beside a nested install are not part of it and not ours to delete
+            for name in ("ComfyUI", "python_embeded"):
+                if (COMFY_HOME / name).exists():
+                    os.replace(COMFY_HOME / name, COMFY_HOME / f"{name}_unused_before_upgrade")
         for name in ("ComfyUI", "python_embeded"):
-            for base in (COMFY_HOME, LEGACY_HOME):
-                if (base / name).exists() and not (old / name).exists():
-                    os.replace(base / name, old / name)
+            if (src / name).exists() and not (old / name).exists():
+                os.replace(src / name, old / name)
         if not (old / "ComfyUI").is_dir():
             raise RuntimeError("could not find the old ComfyUI folder to carry over; nothing was replaced")
         for name in ("python_embeded", "ComfyUI"):  # what is left at the top is a half-finished new install from an earlier run

@@ -213,6 +213,20 @@ def test_upgrade_from_the_nested_layout_ends_in_the_flat_one(fake_comfy):
     assert_user_files_kept(home / "ComfyUI")
 
 
+def test_upgrading_a_nested_install_leaves_unrelated_folders_beside_it_alone(fake_comfy):
+    home, manifest, seen = fake_comfy
+    legacy = home / "ComfyUI_windows_portable"
+    legacy.mkdir()
+    put_install(legacy, "0.38.0")
+    (home / "ComfyUI" / "models").mkdir(parents=True)  # a folder that is not the install, sitting where the new one goes
+    (home / "ComfyUI" / "models" / "theirs.safetensors").write_text("t")
+    want_new(manifest, seen)
+    install.install_comfyui(manifest, "nvidia", Path("7zr.exe"))
+    assert_user_files_kept(home / "ComfyUI")  # the nested install's files, not the stray folder's, were carried over
+    assert (home / "ComfyUI_unused_before_upgrade" / "models" / "theirs.safetensors").read_text() == "t"
+    assert not (home / "ComfyUI_windows_portable").exists() and not (home / "_old").exists()
+
+
 def test_a_failed_extraction_leaves_the_old_install_untouched(fake_comfy):
     home, manifest, seen = fake_comfy
     put_install(home, "0.38.0")
