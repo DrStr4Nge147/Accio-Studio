@@ -163,3 +163,5 @@ def test_a_job_recovered_after_a_restart_looks_for_the_templates_own_save_node()
         nodes = json.loads(path.read_text("utf-8"))
         outs = _built_stub(job).outputs
         assert outs and all(nodes.get(n, {}).get("class_type") == "SaveImage" for n in outs), path.stem
+    moss = {"template": "moss_t2i__sharp1", "seeds": {}, "mode": "create", "label": "", "params": {"prompt_enhancer": True}}
+    assert _built_stub(moss).prompt_used_node == "27"  # the "Prompt used" preview of the MOSS templates

@@ -70,6 +70,12 @@ export function buildParams(s: CreateState, d: Defaults | null, styleText?: stri
   return p;
 }
 
+/** The sampler values MOSS shows as its defaults: with the turbo LoRA off, the workflow's normal steps and CFG replace the turbo ones. */
+export function mossSamplerDefaults(d: Defaults | undefined, turboOn: boolean): SamplerDefaults | undefined {
+  if (!d) return undefined;
+  return turboOn ? d.moss.sampler : { ...d.moss.sampler, ...d.moss.base_sampler };
+}
+
 /** MOSS Image: one pass, no variance or T-Enhancer (the server refuses those for it). */
 function buildMoss(s: CreateState, d: Defaults | null, w: number, h: number, styleText?: string): Record<string, unknown> {
   const p: Record<string, unknown> = {
@@ -82,6 +88,7 @@ function buildMoss(s: CreateState, d: Defaults | null, w: number, h: number, sty
     sharpen: s.sharpen,
   };
   if (s.sharpen && s.sharpenStrength !== undefined) p.sharpen_strength = s.sharpenStrength;
+  if (s.mossEnhance) p.prompt_enhancer = true;
   if (s.grain.on) p.film_grain = s.grain.strength;
   if (nonEmpty(s.mossSampler)) p.sampler = s.mossSampler;
   for (const [key, ov, def] of [
@@ -122,6 +129,7 @@ export function reuseJob(job: Job, d: Defaults | null, keepSeed = true) {
       sharpenStrength: p.sharpen_strength ?? undefined,
       grain: p.film_grain ? { on: true, strength: p.film_grain } : { ...cur.grain, on: false },
       mossSampler: diff(p.sampler, d?.moss.sampler),
+      mossEnhance: p.prompt_enhancer === true,
       mossTurbo: p.turbo_lora ?? {},
       mossSft: p.sft_lora ?? {},
       loras: ((p.loras ?? []) as Partial<LoraSel>[]).map((l) => ({ name: String(l.name), strength: l.strength ?? 1, on: l.on ?? true, target: "both" as const })),

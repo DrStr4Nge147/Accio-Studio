@@ -44,6 +44,8 @@ export interface CreateState {
   mossSampler: Partial<SamplerDefaults>;
   /** MOSS Image's two built-in LoRAs: overrides of the workflow's "on, strength 1". */
   mossTurbo: { on?: boolean; strength?: number };
+  /** MOSS Image: the model rewrites the prompt before drawing. */
+  mossEnhance: boolean;
   mossSft: { on?: boolean; strength?: number };
   pass1: Partial<SamplerDefaults>;
   pass2: Partial<SamplerDefaults>;
@@ -86,6 +88,7 @@ const initial = (): Omit<CreateState, "patch" | "reset"> => ({
   mossSampler: {},
   mossTurbo: {},
   mossSft: {},
+  mossEnhance: false,
   pass1: {},
   pass2: {},
   turbo1: {},
@@ -120,6 +123,7 @@ export const useCreate = create<CreateState>()(
           mossSampler: {},
           mossTurbo: {},
           mossSft: {},
+          mossEnhance: false,
         } as CreateState;
       },
       partialize: ({ patch: _p, reset: _r, ...rest }) => rest,

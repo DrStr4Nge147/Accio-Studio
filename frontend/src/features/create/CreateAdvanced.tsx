@@ -8,6 +8,7 @@ import { AspectPicker } from "./AspectPicker";
 import { LoraSection } from "./LoraSection";
 import { SamplerFields } from "./SamplerFields";
 import { SeedFields } from "./SeedFields";
+import { mossSamplerDefaults } from "./params";
 import { useCreate } from "./store";
 import { TIPS } from "./tips";
 import { VarianceFields } from "./VarianceFields";
@@ -32,6 +33,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
             {!moss && <Toggle on={s.seedVariance} onChange={(seedVariance) => s.patch({ seedVariance })} label="Variance" sub={TIPS.seedVariance} />}
             <Toggle on={s.sharpen} onChange={(sharpen) => s.patch({ sharpen })} label="Sharpen" sub={TIPS.sharpen} />
             {!moss && <Toggle on={s.tEnhancer} onChange={(tEnhancer) => s.patch({ tEnhancer })} label="T-Enhancer" sub={TIPS.tEnhancer} />}
+            {moss && <Toggle on={s.mossEnhance} onChange={(mossEnhance) => s.patch({ mossEnhance })} label="Prompt enhancer" sub={TIPS.mossEnhance} />}
           </div>
         </div>
       )}
@@ -86,7 +88,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
         </>
       ) : moss ? (
         <>
-          <SamplerFields title="Sampler" def={defaults?.moss.sampler} value={s.mossSampler} onChange={(mossSampler) => s.patch({ mossSampler })} />
+          <SamplerFields title="Sampler" def={mossSamplerDefaults(defaults, s.mossTurbo.on ?? defaults?.moss.turbo_lora.on ?? true)} value={s.mossSampler} onChange={(mossSampler) => s.patch({ mossSampler })} />
           {([
             ["Turbo LoRA", "mossTurbo", defaults?.moss.turbo_lora, TIPS.mossTurbo],
             ["SFT LoRA", "mossSft", defaults?.moss.sft_lora, TIPS.mossSft],

@@ -327,7 +327,7 @@ def _built_stub(job: dict[str, Any]) -> Built:
     elif t == "qwen_inpaint":
         outs, used = {"64": "final"}, "215"
     elif t.startswith("moss_t2i"):
-        outs, used = {"147" if t.endswith("sharp1") else "86": "final"}, None
+        outs, used = {"147" if t.endswith("sharp1") else "86": "final"}, "27" if (job.get("params") or {}).get("prompt_enhancer") else None
     else:
         outs, used = {"78": "final"}, None
     return Built({}, t, job["seeds"], outs, used, job["mode"], job["label"])

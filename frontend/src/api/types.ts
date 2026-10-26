@@ -120,6 +120,7 @@ export interface Catalog {
       sampler: SamplerDefaults;
       turbo_lora: { on: boolean; strength: number };
       sft_lora: { on: boolean; strength: number };
+      base_sampler: { steps: number; cfg: number };
       sharpen_strength: number;
     };
     sharpen_strength: number;

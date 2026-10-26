@@ -417,6 +417,26 @@ def test_moss_turbo_and_sft_loras_can_be_switched_off_or_scaled():
         mk(mode="create", variant="standard", prompt="x", turbo_lora={"on": True, "strength": 1})
 
 
+def test_moss_prompt_enhancer_switches_the_prompt_mode_and_reads_the_used_prompt():
+    off, on = run_moss(), run_moss(prompt_enhancer=True)
+    assert off.prompt["154"]["inputs"]["value"] == 1 and off.prompt_used_node is None
+    assert on.prompt["154"]["inputs"]["value"] == 2 and on.prompt_used_node == "27"
+    assert on.prompt["27"]["class_type"] == "PreviewAny"
+    with pytest.raises(ValidationError, match="MOSS Image only"):
+        mk(mode="create", variant="detailed", prompt="x", prompt_enhancer=True)
+
+
+def test_moss_without_the_turbo_lora_uses_the_normal_steps_and_cfg():
+    s = run_moss(turbo_lora={"on": False, "strength": 1}).prompt["331"]["inputs"]
+    assert (s["steps"], s["cfg"], s["sampler_name"], s["scheduler"]) == (50, 4, "er_sde", "bong_tangent")  # the workflow's normal group
+    s = run_moss(turbo_lora={"on": False, "strength": 1}, sampler={"steps": 30}).prompt["331"]["inputs"]
+    assert (s["steps"], s["cfg"]) == (30, 4)  # what the request sets wins, the rest follows the base settings
+    s = run_moss(turbo_lora={"on": True, "strength": 0.5}).prompt["331"]["inputs"]
+    assert (s["steps"], s["cfg"]) == (8, 1)
+    s = run_moss(sft_lora={"on": False, "strength": 1}).prompt["331"]["inputs"]
+    assert (s["steps"], s["cfg"]) == (8, 1)  # only the turbo LoRA decides this
+
+
 def test_moss_user_loras_come_after_the_template_ones():
     b = run_moss(loras=[{"name": "moss-image/style.safetensors", "strength": 0.6}])
     assert b.prompt["341"]["inputs"]["lora_3"] == {"on": True, "lora": "moss-image/style.safetensors", "strength": 0.6}
@@ -443,3 +463,4 @@ def test_moss_defaults_come_from_the_template():
     assert (d["width"], d["height"]) == (t["15"]["inputs"]["value"], t["16"]["inputs"]["value"])
     assert d["sampler"]["scheduler"] == "bong_tangent" and d["sampler"]["steps"] == 8 and d["sharpen_strength"] == 0.7
     assert d["turbo_lora"] == {"on": True, "strength": 1} and d["sft_lora"] == {"on": True, "strength": 1}
+    assert d["base_sampler"] == {"steps": 50, "cfg": 4}

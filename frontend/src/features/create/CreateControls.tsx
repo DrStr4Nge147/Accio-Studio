@@ -84,6 +84,7 @@ export function CreateToggles() {
         {s.variant !== "moss" && <Toggle on={s.seedVariance} onChange={(seedVariance) => s.patch({ seedVariance })} label="Seed variance" tip={TIPS.seedVariance} />}
         <Toggle on={s.sharpen} onChange={(sharpen) => s.patch({ sharpen })} label="Sharpen" tip={TIPS.sharpen} />
         {s.variant !== "moss" && <Toggle on={s.tEnhancer} onChange={(tEnhancer) => s.patch({ tEnhancer })} label="T-Enhancer" tip={TIPS.tEnhancer} />}
+        {s.variant === "moss" && <Toggle on={s.mossEnhance} onChange={(mossEnhance) => s.patch({ mossEnhance })} label="Prompt enhancer" tip={TIPS.mossEnhance} />}
       </div>
       <div className="flex items-center justify-between">
         <Label tip={TIPS.batch}>Images</Label>

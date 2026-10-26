@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Catalog, Job } from "../../api/types";
-import { buildParams, reuseJob, validate } from "./params";
+import { buildParams, mossSamplerDefaults, reuseJob, validate } from "./params";
 import { useCreate, type CreateState } from "./store";
 
 const defaults: Catalog["defaults"] = {
@@ -19,6 +19,7 @@ const defaults: Catalog["defaults"] = {
     sampler: { steps: 8, cfg: 1, sampler_name: "er_sde", scheduler: "bong_tangent", denoise: 1 },
     turbo_lora: { on: true, strength: 1 },
     sft_lora: { on: true, strength: 1 },
+    base_sampler: { steps: 50, cfg: 4 },
     sharpen_strength: 0.7,
   },
   sharpen_strength: 0.75,
@@ -114,10 +115,25 @@ describe("MOSS Image", () => {
     expect((p.loras as object[])[0]).not.toHaveProperty("target");
   });
 
+  it("sends prompt_enhancer only while the enhancer is on, and reuse restores it", () => {
+    expect(buildParams(state({ variant: "moss" }), defaults)).not.toHaveProperty("prompt_enhancer");
+    expect(buildParams(state({ variant: "moss", mossEnhance: true }), defaults)).toMatchObject({ prompt_enhancer: true });
+    expect(buildParams(state({ variant: "standard", mossEnhance: true }), defaults)).not.toHaveProperty("prompt_enhancer");
+    const job = { id: "j", params: { mode: "create", variant: "moss", prompt: "p", prompt_enhancer: true }, seeds: { main: 1 } } as unknown as Job;
+    reuseJob(job, defaults);
+    expect(useCreate.getState().mossEnhance).toBe(true);
+  });
+
   it("sends the turbo and SFT LoRAs only when they differ from the workflow's on at 1", () => {
     expect(buildParams(state({ variant: "moss" }), defaults)).not.toHaveProperty("turbo_lora");
     const p = buildParams(state({ variant: "moss", mossTurbo: { on: false }, mossSft: { strength: 0.6 } }), defaults);
     expect(p).toMatchObject({ turbo_lora: { on: false, strength: 1 }, sft_lora: { on: true, strength: 0.6 } });
+  });
+
+  it("shows the normal 50 steps and CFG 4 as the sampler defaults while the turbo LoRA is off", () => {
+    expect(mossSamplerDefaults(defaults, true)).toMatchObject({ steps: 8, cfg: 1, sampler_name: "er_sde", scheduler: "bong_tangent" });
+    expect(mossSamplerDefaults(defaults, false)).toMatchObject({ steps: 50, cfg: 4, sampler_name: "er_sde", scheduler: "bong_tangent" });
+    expect(mossSamplerDefaults(undefined, false)).toBeUndefined();
   });
 
   it("has its own 16 px size rule and default size", () => {

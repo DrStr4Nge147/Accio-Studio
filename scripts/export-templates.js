@@ -63,8 +63,8 @@ log.push(await acc.exportConfig(QWEN, "qwen_multiedit__resize1", { "MULTI-EDIT":
 log.push(await acc.exportConfig(QWEN, "qwen_multiedit__resize0", { "MULTI-EDIT": 0, [RESIZE]: 4, CONTROLNET: 4 }));
 log.push(await acc.exportConfig(QWEN, "qwen_inpaint", { INPAINTING: 0 }));
 log.push(await acc.exportConfig(QWEN, "qwen_outpaint", { OUTPAINTING: 0 }));
-// MOSS Image, text to image, turbo: 27 / 325 prompt previews and 324 comparer are UI only; sharp0 keeps the plain save (86),
-// sharp1 saves only the sharpened image (336 -> 147), like the Krea templates.
-log.push(await acc.exportConfig(MOSS, "moss_t2i__sharp0", { "TEXT TO IMAGE TURBO": 0 }, [27, 325, 324, 336, 147]));
-log.push(await acc.exportConfig(MOSS, "moss_t2i__sharp1", { "TEXT TO IMAGE TURBO": 0 }, [27, 325, 324, 86]));
+// MOSS Image, text to image, turbo: 325 (negative prompt preview) and 324 (comparer) are UI only; 27 ("Prompt used") stays, it is how
+// the engine reads the enhanced prompt. sharp0 keeps the plain save (86), sharp1 saves only the sharpened image (336 -> 147).
+log.push(await acc.exportConfig(MOSS, "moss_t2i__sharp0", { "TEXT TO IMAGE TURBO": 0 }, [325, 324, 336, 147]));
+log.push(await acc.exportConfig(MOSS, "moss_t2i__sharp1", { "TEXT TO IMAGE TURBO": 0 }, [325, 324, 86]));
 log;

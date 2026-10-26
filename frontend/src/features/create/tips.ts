@@ -2,7 +2,8 @@
 export const TIPS = {
   standard: "Uses the Krea 2 model. One pass at the chosen size. Faster.",
   moss: "MOSS Image: a separate model that draws in 8 steps. It has no seed variance or T-Enhancer.",
-  mossTurbo: "The 8-step turbo LoRA the MOSS workflow loads at strength 1.",
+  mossEnhance: "Lets MOSS rewrite your prompt into a fuller one before drawing. Slower; the rewritten prompt is shown with the result.",
+  mossTurbo: "The 8-step turbo LoRA the MOSS workflow loads at strength 1. Turn it off and the sampler goes back to the normal 50 steps and CFG 4 (much slower).",
   mossSft: "The MOSS SFT LoRA the workflow loads at strength 1.",
   detailed: "Uses the Krea 2 model. Two passes: draws the image, then refines it. Slower, with finer detail.",
   seedVariance: "Adds controlled variety to the prompt so different seeds give more different images (Krea 2 Turbo tends to repeat itself otherwise). Tune it in Advanced.",

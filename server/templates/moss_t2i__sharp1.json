@@ -57,6 +57,20 @@
       "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
     }
   },
+  "27": {
+    "inputs": {
+      "source": [
+        "337:326:14",
+        0
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Prompt used",
+      "cnr_id": "comfy-core",
+      "ver": "bc5f880dbdd43e426077f42ccec53bb577ffee9f"
+    }
+  },
   "92": {
     "inputs": {
       "attention": "comfy kitchen attention",

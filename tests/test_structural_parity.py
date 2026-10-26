@@ -90,7 +90,7 @@ def _cases():
         name = f"moss_t2i__sharp{s}"
         base = dict(mode="create", variant="moss", prompt="a test prompt", sharpen=bool(s))
         full = dict(base, width=1920, height=1088, batch=1, sampler=dict(steps=8, cfg=1, sampler_name="er_sde", scheduler="bong_tangent", denoise=1),
-                    turbo_lora=dict(on=True, strength=1), sft_lora=dict(on=True, strength=1))
+                    turbo_lora=dict(on=True, strength=1), sft_lora=dict(on=True, strength=1), prompt_enhancer=False)
         if s:
             full["sharpen_strength"] = 0.7
         save = "147" if s else "86"
