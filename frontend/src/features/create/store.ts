@@ -42,6 +42,9 @@ export interface CreateState {
   sampler: Partial<SamplerDefaults>;
   /** MOSS Image keeps its own sampler overrides: its defaults differ from Krea's. */
   mossSampler: Partial<SamplerDefaults>;
+  /** MOSS Image's two built-in LoRAs: overrides of the workflow's "on, strength 1". */
+  mossTurbo: { on?: boolean; strength?: number };
+  mossSft: { on?: boolean; strength?: number };
   pass1: Partial<SamplerDefaults>;
   pass2: Partial<SamplerDefaults>;
   turbo1: { on?: boolean; strength?: number };
@@ -81,6 +84,8 @@ const initial = (): Omit<CreateState, "patch" | "reset"> => ({
   variance: {},
   sampler: {},
   mossSampler: {},
+  mossTurbo: {},
+  mossSft: {},
   pass1: {},
   pass2: {},
   turbo1: {},
@@ -113,6 +118,8 @@ export const useCreate = create<CreateState>()(
           styleOpts: { ...STYLE_OPTS, first: old.styleOpts?.first === true },
           sizes: { ...old.sizes, moss: old.sizes?.moss ?? mossPreset("16:9") },
           mossSampler: {},
+          mossTurbo: {},
+          mossSft: {},
         } as CreateState;
       },
       partialize: ({ patch: _p, reset: _r, ...rest }) => rest,

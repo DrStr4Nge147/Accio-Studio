@@ -26,7 +26,7 @@ except ImportError:  # pragma: no cover
 YAML_MARKER = "# --- Accio Studio: model folders set in Settings (rewritten on every save) ---"
 FAMILIES: dict[str, dict[str, str]] = {  # id -> label, folder under models/loras (the installer creates the same three, installer/modelfiles.py; a test keeps them equal)
     "krea2": {"label": "Krea2 (Create)", "lora_dir": "krea2"},
-    "moss": {"label": "MOSS Image (Create)", "lora_dir": "moss"},
+    "moss": {"label": "MOSS Image (Create)", "lora_dir": "moss-image"},
     "qwen_edit": {"label": "Qwen 2.1 Edit", "lora_dir": "qwen2.1-edit"},
     "klein": {"label": "Flux Klein 9B (Edit)", "lora_dir": "flux-klein9b-edit"},
 }

@@ -85,7 +85,28 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
           <Toggle on={s.saveFirstPass} onChange={(saveFirstPass) => s.patch({ saveFirstPass })} label="Save first-pass image" sub="Keep the image from before refining" tip={TIPS.saveFirstPass} />
         </>
       ) : moss ? (
-        <SamplerFields title="Sampler" def={defaults?.moss.sampler} value={s.mossSampler} onChange={(mossSampler) => s.patch({ mossSampler })} />
+        <>
+          <SamplerFields title="Sampler" def={defaults?.moss.sampler} value={s.mossSampler} onChange={(mossSampler) => s.patch({ mossSampler })} />
+          {([
+            ["Turbo LoRA", "mossTurbo", defaults?.moss.turbo_lora, TIPS.mossTurbo],
+            ["SFT LoRA", "mossSft", defaults?.moss.sft_lora, TIPS.mossSft],
+          ] as const).map(([title, key, def, tip]) => {
+            if (!def) return null;
+            const cur = { ...def, ...s[key] };
+            // Keep only values that differ from the workflow default.
+            const setLora = (p: Partial<typeof def>) => {
+              const next = { ...s[key], ...p };
+              for (const k of Object.keys(next) as (keyof typeof def)[]) if (next[k] === def[k]) delete next[k];
+              s.patch({ [key]: next });
+            };
+            return (
+              <div key={key} className="space-y-1">
+                <Toggle on={cur.on} onChange={(on) => setLora({ on })} label={title} tip={tip} />
+                <Slider label="Strength" min={0} max={5} step={0.05} value={cur.strength} disabled={!cur.on} onChange={(strength) => setLora({ strength })} />
+              </div>
+            );
+          })}
+        </>
       ) : (
         <SamplerFields title="Sampler" def={defaults?.standard.sampler} value={s.sampler} onChange={(sampler) => s.patch({ sampler })} />
       )}

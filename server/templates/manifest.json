@@ -249,7 +249,7 @@
     },
     {
       "file": "8-steps-dmd2-lora.safetensors",
-      "folder": "loras",
+      "folder": "loras/moss-image",
       "size": 1189176800,
       "required": false,
       "group": "moss",
@@ -258,7 +258,7 @@
     },
     {
       "file": "moss_image_sft.safetensors",
-      "folder": "loras",
+      "folder": "loras/moss-image",
       "size": 285329336,
       "required": false,
       "group": "moss",

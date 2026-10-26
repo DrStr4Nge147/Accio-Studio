@@ -13,7 +13,7 @@ import { canShareFiles, shareImage } from "../../lib/share";
 import { useJobs } from "../../store/jobs";
 import { openContextMenu } from "../ui/ContextMenu";
 import { IconButton } from "../ui/controls";
-import { jobMenuItems } from "../../features/history/jobMenu";
+import { jobMenuItems, removeJob } from "../../features/history/jobMenu";
 import { Box } from "./Box";
 import { Compare } from "./Compare";
 import { LocalReveal } from "./LocalReveal";
@@ -56,7 +56,18 @@ export function ResultView({ job }: { job: Job }) {
     .map((o, i) => ({ o, i }))
     .sort((a, b) => Number(a.o.role !== "final") - Number(b.o.role !== "final") || a.i - b.i);
   const cur = items[Math.min(index, items.length - 1)];
-  if (!cur) return <div className="grid h-full place-items-center text-text-2">This job produced no images.</div>;
+  if (!cur) {
+    return (
+      <div className="grid h-full place-items-center text-text-2">
+        <div className="flex flex-col items-center gap-3">
+          <p>This job produced no images.</p>
+          <button type="button" onClick={() => void removeJob(job)} className="hover-wash rounded-m border border-line px-3 py-2 text-[13px] text-text-2 hover:text-text">
+            Remove from history
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const url = imageUrl(job.id, cur.i);
   // The real pixel size wins once the image has loaded; until then the request's size keeps the layout from jumping.

@@ -13,7 +13,14 @@ const defaults: Catalog["defaults"] = {
     turbo_pass1: { on: true, strength: 0.2 },
     turbo_pass2: { on: true, strength: 0.2 },
   },
-  moss: { width: 1920, height: 1088, sampler: { steps: 8, cfg: 1, sampler_name: "er_sde", scheduler: "bong_tangent", denoise: 1 }, sharpen_strength: 0.7 },
+  moss: {
+    width: 1920,
+    height: 1088,
+    sampler: { steps: 8, cfg: 1, sampler_name: "er_sde", scheduler: "bong_tangent", denoise: 1 },
+    turbo_lora: { on: true, strength: 1 },
+    sft_lora: { on: true, strength: 1 },
+    sharpen_strength: 0.7,
+  },
   sharpen_strength: 0.75,
   t_enhancer_strength: 1,
   variance: { variance_preset: "Balanced" },
@@ -107,6 +114,12 @@ describe("MOSS Image", () => {
     expect((p.loras as object[])[0]).not.toHaveProperty("target");
   });
 
+  it("sends the turbo and SFT LoRAs only when they differ from the workflow's on at 1", () => {
+    expect(buildParams(state({ variant: "moss" }), defaults)).not.toHaveProperty("turbo_lora");
+    const p = buildParams(state({ variant: "moss", mossTurbo: { on: false }, mossSft: { strength: 0.6 } }), defaults);
+    expect(p).toMatchObject({ turbo_lora: { on: false, strength: 1 }, sft_lora: { on: true, strength: 0.6 } });
+  });
+
   it("has its own 16 px size rule and default size", () => {
     expect(useCreate.getState().sizes.moss).toEqual({ aspect: "16:9", w: 1920, h: 1088 });
     expect(validate(state({ variant: "moss" }))).toBeNull();
@@ -126,6 +139,7 @@ describe("MOSS Image", () => {
     expect(s.variant).toBe("moss");
     expect(s.sizes.moss).toEqual({ aspect: "1:1", w: 1440, h: 1440 });
     expect(s.mossSampler).toEqual({ steps: 6 });
+    expect(s.mossTurbo).toEqual({});
     expect(s.sampler).toEqual({ steps: 3 });
     expect(s.seedVariance && s.tEnhancer).toBe(true);
     expect(s.lockSeed).toBe(true);

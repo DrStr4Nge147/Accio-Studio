@@ -80,6 +80,9 @@ class CreateParams(Strict):
     turbo_pass2: LoraToggle | None = None
     upscale: Literal[1, 1.25, 1.5, 2] = 1
     save_first_pass: bool = True
+    # MOSS Image only: the two LoRAs its workflow always loads (template slots lora_1 = 8-step turbo, lora_2 = SFT).
+    turbo_lora: LoraToggle | None = None
+    sft_lora: LoraToggle | None = None
     loras: list[LoraEntry] = Field(default_factory=list, max_length=10)
     film_grain: FilmGrain | None = None
 
@@ -90,6 +93,8 @@ class CreateParams(Strict):
             sent = sorted(self.model_fields_set & MOSS_UNSUPPORTED)
             if sent:
                 raise ValueError(f"MOSS Image does not take: {', '.join(sent)}")
+        elif {"turbo_lora", "sft_lora"} & self.model_fields_set:
+            raise ValueError("turbo_lora and sft_lora are for MOSS Image only")
         return self
 
 

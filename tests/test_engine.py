@@ -379,7 +379,7 @@ def test_create_film_grain_sits_before_the_final_save(variant, save):
     assert on.outputs == off.outputs
 
 
-MCAT = Catalog(loras={"8-steps-dmd2-lora.safetensors", "moss_image_sft.safetensors", "moss/style.safetensors"}, samplers={"er_sde", "euler"}, schedulers={"bong_tangent", "simple"})
+MCAT = Catalog(loras={"8-steps-dmd2-lora.safetensors", "moss_image_sft.safetensors", "moss-image/style.safetensors"}, samplers={"er_sde", "euler"}, schedulers={"bong_tangent", "simple"})
 
 
 def run_moss(**kw):
@@ -407,9 +407,19 @@ def test_moss_sharpen_strength_and_sampler_and_template_loras_stay():
     assert [k for k in b.prompt["341"]["inputs"] if k.startswith("lora_")] == ["lora_1", "lora_2"]  # turbo and SFT LoRAs
 
 
+def test_moss_turbo_and_sft_loras_can_be_switched_off_or_scaled():
+    b = run_moss(turbo_lora={"on": False, "strength": 1}, sft_lora={"on": True, "strength": 0.5})
+    i = b.prompt["341"]["inputs"]
+    assert i["lora_1"] == {"on": False, "lora": "8-steps-dmd2-lora.safetensors", "strength": 1}
+    assert i["lora_2"] == {"on": True, "lora": "moss_image_sft.safetensors", "strength": 0.5}
+    assert i["lora_1"] != run_moss().prompt["341"]["inputs"]["lora_1"]
+    with pytest.raises(ValidationError, match="MOSS Image only"):
+        mk(mode="create", variant="standard", prompt="x", turbo_lora={"on": True, "strength": 1})
+
+
 def test_moss_user_loras_come_after_the_template_ones():
-    b = run_moss(loras=[{"name": "moss/style.safetensors", "strength": 0.6}])
-    assert b.prompt["341"]["inputs"]["lora_3"] == {"on": True, "lora": "moss/style.safetensors", "strength": 0.6}
+    b = run_moss(loras=[{"name": "moss-image/style.safetensors", "strength": 0.6}])
+    assert b.prompt["341"]["inputs"]["lora_3"] == {"on": True, "lora": "moss-image/style.safetensors", "strength": 0.6}
     with pytest.raises(BuildError, match="unknown LoRA"):
         run_moss(loras=[{"name": "nope.safetensors"}])
 
@@ -432,3 +442,4 @@ def test_moss_defaults_come_from_the_template():
     t = load_template("moss_t2i__sharp1")
     assert (d["width"], d["height"]) == (t["15"]["inputs"]["value"], t["16"]["inputs"]["value"])
     assert d["sampler"]["scheduler"] == "bong_tangent" and d["sampler"]["steps"] == 8 and d["sharpen_strength"] == 0.7
+    assert d["turbo_lora"] == {"on": True, "strength": 1} and d["sft_lora"] == {"on": True, "strength": 1}

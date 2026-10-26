@@ -47,7 +47,11 @@ export function jobMenuItems(job: Job, outputIndex = coverIndex(job)): MenuItem[
       { label: "Cancel job", icon: icon(X), danger: true, separated: true, onSelect: () => void requestCancel(job.id) },
     ];
   }
-  if (job.status !== "done" || !job.outputs.length) return [];
+  if (!job.outputs.length) {
+    // A card with no image (failed, cancelled, or a job that finished empty) can still be taken out of the history.
+    return [{ label: "Remove from history…", confirm: "Click again to remove", icon: icon(Trash2), danger: true, onSelect: () => void removeJob(job) }];
+  }
+  if (job.status !== "done") return [];
   const canDelete = useServer.getState().health?.can_delete_files === true;
   const prompt = String(job.params.prompt ?? "").trim();
   const url = imageUrl(job.id, outputIndex);

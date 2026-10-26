@@ -114,7 +114,14 @@ export interface Catalog {
       turbo_pass1: { on: boolean; strength: number };
       turbo_pass2: { on: boolean; strength: number };
     };
-    moss: { width: number; height: number; sampler: SamplerDefaults; sharpen_strength: number };
+    moss: {
+      width: number;
+      height: number;
+      sampler: SamplerDefaults;
+      turbo_lora: { on: boolean; strength: number };
+      sft_lora: { on: boolean; strength: number };
+      sharpen_strength: number;
+    };
     sharpen_strength: number;
     t_enhancer_strength: number;
     variance: Record<string, string | number>;

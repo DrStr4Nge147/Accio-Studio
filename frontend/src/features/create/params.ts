@@ -22,7 +22,7 @@ export function validate(s: CreateState): string | null {
 /** The request body for POST /api/jobs. Only values the user changed are sent as overrides. */
 export function buildParams(s: CreateState, d: Defaults | null, styleText?: string): Record<string, unknown> {
   const { w, h } = s.sizes[s.variant];
-  if (s.variant === "moss") return buildMoss(s, w, h, styleText);
+  if (s.variant === "moss") return buildMoss(s, d, w, h, styleText);
   const p: Record<string, unknown> = {
     mode: "create",
     variant: s.variant,
@@ -71,7 +71,7 @@ export function buildParams(s: CreateState, d: Defaults | null, styleText?: stri
 }
 
 /** MOSS Image: one pass, no variance or T-Enhancer (the server refuses those for it). */
-function buildMoss(s: CreateState, w: number, h: number, styleText?: string): Record<string, unknown> {
+function buildMoss(s: CreateState, d: Defaults | null, w: number, h: number, styleText?: string): Record<string, unknown> {
   const p: Record<string, unknown> = {
     mode: "create",
     variant: "moss",
@@ -84,6 +84,12 @@ function buildMoss(s: CreateState, w: number, h: number, styleText?: string): Re
   if (s.sharpen && s.sharpenStrength !== undefined) p.sharpen_strength = s.sharpenStrength;
   if (s.grain.on) p.film_grain = s.grain.strength;
   if (nonEmpty(s.mossSampler)) p.sampler = s.mossSampler;
+  for (const [key, ov, def] of [
+    ["turbo_lora", s.mossTurbo, d?.moss.turbo_lora],
+    ["sft_lora", s.mossSft, d?.moss.sft_lora],
+  ] as const) {
+    if (nonEmpty(ov) && def) p[key] = { on: ov.on ?? def.on, strength: ov.strength ?? def.strength };
+  }
   if (s.lockSeed && s.seeds.main !== null) p.seed = s.seeds.main;
   if (s.loras.length) p.loras = s.loras.map((l) => ({ name: l.name, strength: l.strength, on: l.on }));
   return p;
@@ -116,6 +122,8 @@ export function reuseJob(job: Job, d: Defaults | null, keepSeed = true) {
       sharpenStrength: p.sharpen_strength ?? undefined,
       grain: p.film_grain ? { on: true, strength: p.film_grain } : { ...cur.grain, on: false },
       mossSampler: diff(p.sampler, d?.moss.sampler),
+      mossTurbo: p.turbo_lora ?? {},
+      mossSft: p.sft_lora ?? {},
       loras: ((p.loras ?? []) as Partial<LoraSel>[]).map((l) => ({ name: String(l.name), strength: l.strength ?? 1, on: l.on ?? true, target: "both" as const })),
       lockSeed: keepSeed,
       seeds: keepSeed ? { ...cur.seeds, main: job.seeds.main ?? null } : { ...cur.seeds, main: null },

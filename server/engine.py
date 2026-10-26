@@ -298,6 +298,8 @@ def create_defaults() -> dict[str, Any]:
             "width": moss["15"]["inputs"]["value"],
             "height": moss["16"]["inputs"]["value"],
             "sampler": sampler(moss, "331"),
+            "turbo_lora": {k: moss["341"]["inputs"]["lora_1"][k] for k in ("on", "strength")},
+            "sft_lora": {k: moss["341"]["inputs"]["lora_2"][k] for k in ("on", "strength")},
             "sharpen_strength": moss["336"]["inputs"]["alpha"],
         },
         "sharpen_strength": std["141"]["inputs"]["method.strength"],
@@ -389,6 +391,9 @@ def _build_moss(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], pre
             _set(pr, node, "value", val)
     _set(pr, "337:329", "batch_size", p.batch)
     _apply_sampler(pr, "331", p.sampler, cat)
+    for slot, t in (("lora_1", p.turbo_lora), ("lora_2", p.sft_lora)):  # the workflow's own turbo and SFT LoRAs
+        if t is not None:
+            _lora_slot(pr, "341", slot, on=t.on, strength=t.strength)
     if sharp and p.sharpen_strength is not None:
         _set(pr, "336", "alpha", p.sharpen_strength)
     _inject_loras(pr, "341", p.loras, cat)
