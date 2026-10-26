@@ -13,8 +13,8 @@ from typing import Callable
 import core
 from core import DownloadCancelled, curl_download, fmt_size, free_space, verify_safetensors
 
-# The folders the app sorts LoRAs by (frontend/src/lib/loras.ts): Create's, then the two Edit families.
-LORA_FOLDERS = ("krea2", "qwen2.1-edit", "flux-klein9b-edit")
+# The folders the app sorts LoRAs by (frontend/src/lib/loras.ts): Create's (Krea2, MOSS Image), then the two Edit families.
+LORA_FOLDERS = ("krea2", "moss-image", "qwen2.1-edit", "flux-klein9b-edit")
 
 
 def find_model_file(folder: Path, name: str) -> Path | None:

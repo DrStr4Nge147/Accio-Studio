@@ -43,7 +43,7 @@ function ContextLine() {
       </span>
     );
   }
-  if (!job) return <span className="text-[13px] text-text-3">{variant === "detailed" ? "Detailed" : "Standard"}</span>;
+  if (!job) return <span className="text-[13px] text-text-3">{variant === "detailed" ? "Detailed" : variant === "moss" ? "MOSS" : "Standard"}</span>;
   const { w, h } = jobSize(job);
   const pass = job.status === "running" ? passOf(job) : null;
   return (

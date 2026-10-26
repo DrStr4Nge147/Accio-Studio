@@ -1,6 +1,6 @@
 """Model folders chosen in Settings: use models that already sit on this PC (another ComfyUI, another image app).
 
-Per family (Krea2, Qwen 2.1 Edit, Flux Klein 9B) the user can point at a folder for the diffusion model, the text encoder,
+Per family (Krea2, MOSS Image, Qwen 2.1 Edit, Flux Klein 9B) the user can point at a folder for the diffusion model, the text encoder,
 the VAE and the LoRAs. Saving does two things in the bundled ComfyUI folder, then the backend is restarted (backend.py):
 
 - diffusion models, text encoders and VAEs: the folders are listed in extra_model_paths.yaml (ComfyUI reads it at startup);
@@ -26,6 +26,7 @@ except ImportError:  # pragma: no cover
 YAML_MARKER = "# --- Accio Studio: model folders set in Settings (rewritten on every save) ---"
 FAMILIES: dict[str, dict[str, str]] = {  # id -> label, folder under models/loras (the installer creates the same three, installer/modelfiles.py; a test keeps them equal)
     "krea2": {"label": "Krea2 (Create)", "lora_dir": "krea2"},
+    "moss": {"label": "MOSS Image (Create)", "lora_dir": "moss-image"},
     "qwen_edit": {"label": "Qwen 2.1 Edit", "lora_dir": "qwen2.1-edit"},
     "klein": {"label": "Flux Klein 9B (Edit)", "lora_dir": "flux-klein9b-edit"},
 }

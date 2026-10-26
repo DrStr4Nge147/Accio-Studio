@@ -1,5 +1,5 @@
 import type { Catalog, Job, SamplerDefaults } from "../../api/types";
-import { ASPECTS, CUSTOM, MAX_DIM, MIN_DIM } from "../../lib/aspects";
+import { ASPECTS, ASPECTS_MOSS, CUSTOM, MAX_DIM, MIN_DIM } from "../../lib/aspects";
 import { useCreate, type CreateState, type LoraSel, type Variant } from "./store";
 import { withStyle } from "./styles";
 
@@ -10,9 +10,10 @@ const nonEmpty = <T extends object>(o: T) => (Object.keys(o).length ? o : undefi
 export function validate(s: CreateState): string | null {
   if (!s.prompt.trim()) return "Describe what to create first.";
   const { w, h } = s.sizes[s.variant];
+  const step = s.variant === "moss" ? 16 : 8; // MOSS Image's VAE works in 16 px steps
   for (const d of [w, h]) {
-    if (!Number.isInteger(d) || d % 8 !== 0 || d < MIN_DIM || d > MAX_DIM) {
-      return `Width and height must be multiples of 8 between ${MIN_DIM} and ${MAX_DIM}.`;
+    if (!Number.isInteger(d) || d % step !== 0 || d < MIN_DIM || d > MAX_DIM) {
+      return `Width and height must be multiples of ${step} between ${MIN_DIM} and ${MAX_DIM}.`;
     }
   }
   return null;
@@ -21,6 +22,7 @@ export function validate(s: CreateState): string | null {
 /** The request body for POST /api/jobs. Only values the user changed are sent as overrides. */
 export function buildParams(s: CreateState, d: Defaults | null, styleText?: string): Record<string, unknown> {
   const { w, h } = s.sizes[s.variant];
+  if (s.variant === "moss") return buildMoss(s, d, w, h, styleText);
   const p: Record<string, unknown> = {
     mode: "create",
     variant: s.variant,
@@ -68,6 +70,38 @@ export function buildParams(s: CreateState, d: Defaults | null, styleText?: stri
   return p;
 }
 
+/** The sampler values MOSS shows as its defaults: with the turbo LoRA off, the workflow's normal steps and CFG replace the turbo ones. */
+export function mossSamplerDefaults(d: Defaults | undefined, turboOn: boolean): SamplerDefaults | undefined {
+  if (!d) return undefined;
+  return turboOn ? d.moss.sampler : { ...d.moss.sampler, ...d.moss.base_sampler };
+}
+
+/** MOSS Image: one pass, no variance or T-Enhancer (the server refuses those for it). */
+function buildMoss(s: CreateState, d: Defaults | null, w: number, h: number, styleText?: string): Record<string, unknown> {
+  const p: Record<string, unknown> = {
+    mode: "create",
+    variant: "moss",
+    prompt: withStyle(s.prompt, styleText, s.styleOpts.first),
+    width: w,
+    height: h,
+    batch: s.batch,
+    sharpen: s.sharpen,
+  };
+  if (s.sharpen && s.sharpenStrength !== undefined) p.sharpen_strength = s.sharpenStrength;
+  if (s.mossEnhance) p.prompt_enhancer = true;
+  if (s.grain.on) p.film_grain = s.grain.strength;
+  if (nonEmpty(s.mossSampler)) p.sampler = s.mossSampler;
+  for (const [key, ov, def] of [
+    ["turbo_lora", s.mossTurbo, d?.moss.turbo_lora],
+    ["sft_lora", s.mossSft, d?.moss.sft_lora],
+  ] as const) {
+    if (nonEmpty(ov) && def) p[key] = { on: ov.on ?? def.on, strength: ov.strength ?? def.strength };
+  }
+  if (s.lockSeed && s.seeds.main !== null) p.seed = s.seeds.main;
+  if (s.loras.length) p.loras = s.loras.map((l) => ({ name: l.name, strength: l.strength, on: l.on }));
+  return p;
+}
+
 const diff = (from: Record<string, any> | null | undefined, def: SamplerDefaults | undefined): Partial<SamplerDefaults> => {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(from ?? {})) if (v !== null && v !== undefined && (!def || def[k as keyof SamplerDefaults] !== v)) out[k] = v;
@@ -78,11 +112,32 @@ const diff = (from: Record<string, any> | null | undefined, def: SamplerDefaults
 export function reuseJob(job: Job, d: Defaults | null, keepSeed = true) {
   const p = job.params;
   if (p.mode !== "create") return;
-  const variant: Variant = p.variant === "detailed" ? "detailed" : "standard";
+  const variant: Variant = p.variant === "detailed" ? "detailed" : p.variant === "moss" ? "moss" : "standard";
   const w = p.width ?? d?.[variant].width ?? 1080;
   const h = p.height ?? d?.[variant].height ?? 1920;
-  const match = ASPECTS.find((a) => a.w === w && a.h === h);
+  const match = (variant === "moss" ? ASPECTS_MOSS : ASPECTS).find((a) => a.w === w && a.h === h);
   const cur = useCreate.getState();
+  if (variant === "moss") {
+    // Only what MOSS Image has; Krea's own toggles and passes stay as they are.
+    cur.patch({
+      variant,
+      prompt: p.prompt ?? "",
+      style: null,
+      sizes: { ...cur.sizes, moss: { aspect: match?.key ?? CUSTOM, w, h } },
+      batch: p.batch ?? 1,
+      sharpen: !!p.sharpen,
+      sharpenStrength: p.sharpen_strength ?? undefined,
+      grain: p.film_grain ? { on: true, strength: p.film_grain } : { ...cur.grain, on: false },
+      mossSampler: diff(p.sampler, d?.moss.sampler),
+      mossEnhance: p.prompt_enhancer === true,
+      mossTurbo: p.turbo_lora ?? {},
+      mossSft: p.sft_lora ?? {},
+      loras: ((p.loras ?? []) as Partial<LoraSel>[]).map((l) => ({ name: String(l.name), strength: l.strength ?? 1, on: l.on ?? true, target: "both" as const })),
+      lockSeed: keepSeed,
+      seeds: keepSeed ? { ...cur.seeds, main: job.seeds.main ?? null } : { ...cur.seeds, main: null },
+    });
+    return;
+  }
   const dd = d?.detailed;
   useCreate.getState().patch({
     variant,

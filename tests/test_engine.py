@@ -377,3 +377,90 @@ def test_create_film_grain_sits_before_the_final_save(variant, save):
     assert g["class_type"] == "ImageAddNoise" and g["inputs"]["image"] == off.prompt[save]["inputs"]["images"]
     assert on.prompt[save]["inputs"]["images"] == ["film_grain", 0]
     assert on.outputs == off.outputs
+
+
+MCAT = Catalog(loras={"8-steps-dmd2-lora.safetensors", "moss_image_sft.safetensors", "moss-image/style.safetensors"}, samplers={"er_sde", "euler"}, schedulers={"bong_tangent", "simple"})
+
+
+def run_moss(**kw):
+    return build(mk(mode="create", variant="moss", prompt="a fox", **kw), MCAT, seed_source=iter(range(10, 99)).__next__)
+
+
+def test_moss_patches_prompt_seed_size_and_batch():
+    b = run_moss(seed=7, width=1024, height=768, batch=2)
+    assert b.template == "moss_t2i__sharp1" and b.seeds == {"main": 7} and b.outputs == {"147": "final"}
+    p = b.prompt
+    assert p["104"]["inputs"]["value"] == "a fox" and p["331"]["inputs"]["seed"] == 7
+    assert (p["15"]["inputs"]["value"], p["16"]["inputs"]["value"], p["337:329"]["inputs"]["batch_size"]) == (1024, 768, 2)
+    assert p["676"]["inputs"]["value"] is False  # manual size, not the workflow's automatic resolution picker
+
+
+def test_moss_without_sharpen_saves_the_plain_image():
+    b = run_moss(sharpen=False)
+    assert b.template == "moss_t2i__sharp0" and b.outputs == {"86": "final"} and "336" not in b.prompt
+
+
+def test_moss_sharpen_strength_and_sampler_and_template_loras_stay():
+    b = run_moss(sharpen_strength=0.4, sampler={"steps": 4, "scheduler": "simple"})
+    assert b.prompt["336"]["inputs"]["alpha"] == 0.4
+    assert (b.prompt["331"]["inputs"]["steps"], b.prompt["331"]["inputs"]["scheduler"]) == (4, "simple")
+    assert [k for k in b.prompt["341"]["inputs"] if k.startswith("lora_")] == ["lora_1", "lora_2"]  # turbo and SFT LoRAs
+
+
+def test_moss_turbo_and_sft_loras_can_be_switched_off_or_scaled():
+    b = run_moss(turbo_lora={"on": False, "strength": 1}, sft_lora={"on": True, "strength": 0.5})
+    i = b.prompt["341"]["inputs"]
+    assert i["lora_1"] == {"on": False, "lora": "8-steps-dmd2-lora.safetensors", "strength": 1}
+    assert i["lora_2"] == {"on": True, "lora": "moss_image_sft.safetensors", "strength": 0.5}
+    assert i["lora_1"] != run_moss().prompt["341"]["inputs"]["lora_1"]
+    with pytest.raises(ValidationError, match="MOSS Image only"):
+        mk(mode="create", variant="standard", prompt="x", turbo_lora={"on": True, "strength": 1})
+
+
+def test_moss_prompt_enhancer_switches_the_prompt_mode_and_reads_the_used_prompt():
+    off, on = run_moss(), run_moss(prompt_enhancer=True)
+    assert off.prompt["154"]["inputs"]["value"] == 1 and off.prompt_used_node is None
+    assert on.prompt["154"]["inputs"]["value"] == 2 and on.prompt_used_node == "27"
+    assert on.prompt["27"]["class_type"] == "PreviewAny"
+    with pytest.raises(ValidationError, match="MOSS Image only"):
+        mk(mode="create", variant="detailed", prompt="x", prompt_enhancer=True)
+
+
+def test_moss_without_the_turbo_lora_uses_the_normal_steps_and_cfg():
+    s = run_moss(turbo_lora={"on": False, "strength": 1}).prompt["331"]["inputs"]
+    assert (s["steps"], s["cfg"], s["sampler_name"], s["scheduler"]) == (50, 4, "er_sde", "bong_tangent")  # the workflow's normal group
+    s = run_moss(turbo_lora={"on": False, "strength": 1}, sampler={"steps": 30}).prompt["331"]["inputs"]
+    assert (s["steps"], s["cfg"]) == (30, 4)  # what the request sets wins, the rest follows the base settings
+    s = run_moss(turbo_lora={"on": True, "strength": 0.5}).prompt["331"]["inputs"]
+    assert (s["steps"], s["cfg"]) == (8, 1)
+    s = run_moss(sft_lora={"on": False, "strength": 1}).prompt["331"]["inputs"]
+    assert (s["steps"], s["cfg"]) == (8, 1)  # only the turbo LoRA decides this
+
+
+def test_moss_user_loras_come_after_the_template_ones():
+    b = run_moss(loras=[{"name": "moss-image/style.safetensors", "strength": 0.6}])
+    assert b.prompt["341"]["inputs"]["lora_3"] == {"on": True, "lora": "moss-image/style.safetensors", "strength": 0.6}
+    with pytest.raises(BuildError, match="unknown LoRA"):
+        run_moss(loras=[{"name": "nope.safetensors"}])
+
+
+def test_moss_film_grain_sits_before_the_sharpened_save():
+    b = run_moss(film_grain=0.05, seed=3)
+    assert b.prompt["147"]["inputs"]["images"] == ["film_grain", 0] and b.prompt["film_grain"]["inputs"]["seed"] == 3
+
+
+@pytest.mark.parametrize("extra", [{"t_enhancer": True}, {"seed_variance": True}, {"pass1": {"steps": 8}}, {"upscale": 2}, {"save_first_pass": False}])
+def test_moss_rejects_options_that_only_exist_for_krea(extra):
+    with pytest.raises(ValidationError, match="MOSS Image does not take"):
+        mk(mode="create", variant="moss", prompt="x", **extra)
+
+
+def test_moss_defaults_come_from_the_template():
+    from engine import create_defaults, load_template
+
+    d = create_defaults()["moss"]
+    t = load_template("moss_t2i__sharp1")
+    assert (d["width"], d["height"]) == (t["15"]["inputs"]["value"], t["16"]["inputs"]["value"])
+    assert d["sampler"]["scheduler"] == "bong_tangent" and d["sampler"]["steps"] == 8 and d["sharpen_strength"] == 0.7
+    assert d["turbo_lora"] == {"on": True, "strength": 1} and d["sft_lora"] == {"on": True, "strength": 1}
+    assert d["base_sampler"] == {"steps": 50, "cfg": 4}

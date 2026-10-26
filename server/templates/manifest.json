@@ -3,15 +3,15 @@
     "api_url": "https://api.github.com/repos/DrStr4Nge147/Accio-Studio/releases/latest"
   },
   "comfyui": {
-    "version": "0.38.0",
-    "tag": "v0.38.0",
+    "version": "0.42.1",
+    "tag": "v0.42.1",
     "mirror_url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/comfyui/{tag}/ComfyUI_windows_portable_{build}.7z?download=true",
     "release_url": "https://github.com/comfyanonymous/ComfyUI/releases/download/{tag}/ComfyUI_windows_portable_{build}.7z",
     "archives": {
-      "nvidia": {"size": 1994326521, "sha256": "8f137eac345707fd7e42bcf8e29377415243011ca15522a86aed6c77331fbd56"},
-      "nvidia_cu126": {"size": 1886111296, "sha256": "bd3bd7e3ce0068d8bc58fe46c912c360dd510f9bcfd0c5029d4906e6e6fbc677"},
-      "amd": {"size": 1612070856, "sha256": "f346e5c187b4e1647f0ea01d9978f53de1f259878656128c3296f61a5948fd1f"},
-      "intel": {"size": 1427214780, "sha256": "4df593042aced1fb0b8dfdf033918c9e5d093f01c6fbb9c79fe2504350107de0"}
+      "nvidia": {"size": 2393682041, "sha256": "d97b28c56507495e18b0d0abb755754fbf55d71ff7c04a36aeb8d68dfd300050"},
+      "nvidia_cu126": {"size": 2270591728, "sha256": "c4c45fa6a88a7a9b9b01b39bbf532b244b5b1cef9659967315173748c97cd7a6"},
+      "amd": {"size": 2100883977, "sha256": "e545ef049d2552497a0d50307e08e5cb8fa250c3c25e1881d8145ae523b30b8d"},
+      "intel": {"size": 1805468778, "sha256": "cfafaa706c9301de98e7603982eacf9ce6b213f19baee12c438d6e573189ffe5"}
     }
   },
   "tools": {
@@ -87,6 +87,13 @@
       "commit": "6ea2651e7df66d7585f6ffee804b20e92fb38b8a",
       "size": 38051,
       "sha256": "aad273a0b774684285b4496f6edff7e2293bd29d71ef89926d6861bfdf4947ac"
+    },
+    {
+      "name": "RES4LYF",
+      "repo": "ClownsharkBatwing/RES4LYF",
+      "commit": "56e44755d866c87ff9cb4b6608c8e42155db6ecc",
+      "size": 212886446,
+      "sha256": "a541552129ba2d4a40ce76cad461cad1eaf7ce58312c67be1802facea5607676"
     }
   ],
   "models": [
@@ -212,7 +219,52 @@
       "group": "klein",
       "used_by": "Edit (Klein 9B)",
       "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/flux2-vae.safetensors?download=true"
+    },
+    {
+      "file": "moss_image_base_int8_convrot.safetensors",
+      "folder": "diffusion_models",
+      "size": 5413698958,
+      "required": false,
+      "group": "moss",
+      "used_by": "Create (MOSS Image)",
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/moss_image_base_int8_convrot.safetensors?download=true"
+    },
+    {
+      "file": "Qwen3.5-9B-abliterated_int8_convrot.safetensors",
+      "folder": "text_encoders",
+      "size": 9471076556,
+      "required": false,
+      "group": "moss",
+      "used_by": "Create (MOSS Image)",
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/Qwen3.5-9B-abliterated_int8_convrot.safetensors?download=true"
+    },
+    {
+      "file": "flux2-vae_small.safetensors",
+      "folder": "vae",
+      "size": 249521340,
+      "required": false,
+      "group": "moss",
+      "used_by": "Create (MOSS Image)",
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/flux2-vae_small.safetensors?download=true"
+    },
+    {
+      "file": "8-steps-dmd2-lora.safetensors",
+      "folder": "loras/moss-image",
+      "size": 1189176800,
+      "required": false,
+      "group": "moss",
+      "used_by": "Create (MOSS Image)",
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/8-steps-dmd2-lora.safetensors?download=true"
+    },
+    {
+      "file": "moss_image_sft.safetensors",
+      "folder": "loras/moss-image",
+      "size": 285329336,
+      "required": false,
+      "group": "moss",
+      "used_by": "Create (MOSS Image)",
+      "url": "https://huggingface.co/NicRaf/AccioStudio/resolve/main/moss_image_sft.safetensors?download=true"
     }
   ],
-  "notes": "Pins match the reference ComfyUI install (2026-10-07): git packs by `git rev-parse HEAD`; registry packs by matching the installed files byte-for-byte to the commit (LF-normalised) in the upstream repo."
+  "notes": "ComfyUI 0.42.1 is the upstream v0.42.1 portable package with ComfyUI moved to commit 7cebca52 (adds the MOSS Image nodes); its version file is patched to 0.42.1. Pins match the reference ComfyUI install (2026-10-07): git packs by `git rev-parse HEAD`; registry packs by matching the installed files byte-for-byte to the commit (LF-normalised) in the upstream repo."
 }

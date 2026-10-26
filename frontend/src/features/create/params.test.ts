@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Catalog, Job } from "../../api/types";
-import { buildParams, reuseJob, validate } from "./params";
+import { buildParams, mossSamplerDefaults, reuseJob, validate } from "./params";
 import { useCreate, type CreateState } from "./store";
 
 const defaults: Catalog["defaults"] = {
@@ -12,6 +12,15 @@ const defaults: Catalog["defaults"] = {
     pass2: { steps: 4, cfg: 1, sampler_name: "euler", scheduler: "simple", denoise: 0.3 },
     turbo_pass1: { on: true, strength: 0.2 },
     turbo_pass2: { on: true, strength: 0.2 },
+  },
+  moss: {
+    width: 1920,
+    height: 1088,
+    sampler: { steps: 8, cfg: 1, sampler_name: "er_sde", scheduler: "bong_tangent", denoise: 1 },
+    turbo_lora: { on: true, strength: 1 },
+    sft_lora: { on: true, strength: 1 },
+    base_sampler: { steps: 50, cfg: 4 },
+    sharpen_strength: 0.7,
   },
   sharpen_strength: 0.75,
   t_enhancer_strength: 1,
@@ -89,6 +98,68 @@ describe("validate", () => {
     expect(validate(state())).toBeNull();
     const sizes = { ...useCreate.getState().sizes, standard: { aspect: "custom", w: 1001, h: 512 } };
     expect(validate(state({ sizes }))).toMatch(/multiples of 8/);
+  });
+});
+
+describe("MOSS Image", () => {
+  it("sends only what MOSS takes: no variance, T-Enhancer, passes or upscale", () => {
+    const p = buildParams(state({ variant: "moss", seedVariance: true, tEnhancer: true }), defaults);
+    expect(p).toEqual({ mode: "create", variant: "moss", prompt: "a fox", width: 1920, height: 1088, batch: 1, sharpen: true });
+  });
+
+  it("sends its own sampler overrides, strength, seed and LoRAs without a pass target", () => {
+    const loras = [{ name: "moss/x.safetensors", strength: 0.5, on: true, target: "pass1" as const }];
+    const p = buildParams(state({ variant: "moss", mossSampler: { steps: 6 }, sampler: { steps: 99 }, sharpenStrength: 0.4, lockSeed: true, seeds: { main: 5, pass2: 6, variance: 7 }, loras }), defaults);
+    expect(p).toMatchObject({ sampler: { steps: 6 }, sharpen_strength: 0.4, seed: 5, loras: [{ name: "moss/x.safetensors", strength: 0.5, on: true }] });
+    expect(p).not.toHaveProperty("seed_pass2");
+    expect((p.loras as object[])[0]).not.toHaveProperty("target");
+  });
+
+  it("sends prompt_enhancer only while the enhancer is on, and reuse restores it", () => {
+    expect(buildParams(state({ variant: "moss" }), defaults)).not.toHaveProperty("prompt_enhancer");
+    expect(buildParams(state({ variant: "moss", mossEnhance: true }), defaults)).toMatchObject({ prompt_enhancer: true });
+    expect(buildParams(state({ variant: "standard", mossEnhance: true }), defaults)).not.toHaveProperty("prompt_enhancer");
+    const job = { id: "j", params: { mode: "create", variant: "moss", prompt: "p", prompt_enhancer: true }, seeds: { main: 1 } } as unknown as Job;
+    reuseJob(job, defaults);
+    expect(useCreate.getState().mossEnhance).toBe(true);
+  });
+
+  it("sends the turbo and SFT LoRAs only when they differ from the workflow's on at 1", () => {
+    expect(buildParams(state({ variant: "moss" }), defaults)).not.toHaveProperty("turbo_lora");
+    const p = buildParams(state({ variant: "moss", mossTurbo: { on: false }, mossSft: { strength: 0.6 } }), defaults);
+    expect(p).toMatchObject({ turbo_lora: { on: false, strength: 1 }, sft_lora: { on: true, strength: 0.6 } });
+  });
+
+  it("shows the normal 50 steps and CFG 4 as the sampler defaults while the turbo LoRA is off", () => {
+    expect(mossSamplerDefaults(defaults, true)).toMatchObject({ steps: 8, cfg: 1, sampler_name: "er_sde", scheduler: "bong_tangent" });
+    expect(mossSamplerDefaults(defaults, false)).toMatchObject({ steps: 50, cfg: 4, sampler_name: "er_sde", scheduler: "bong_tangent" });
+    expect(mossSamplerDefaults(undefined, false)).toBeUndefined();
+  });
+
+  it("has its own 16 px size rule and default size", () => {
+    expect(useCreate.getState().sizes.moss).toEqual({ aspect: "16:9", w: 1920, h: 1088 });
+    expect(validate(state({ variant: "moss" }))).toBeNull();
+    expect(validate(state({ variant: "moss", sizes: { ...useCreate.getState().sizes, moss: { aspect: "custom", w: 1000, h: 1088 } } }))).toMatch(/multiples of 16/);
+    expect(validate(state({ variant: "standard", sizes: { ...useCreate.getState().sizes, standard: { aspect: "custom", w: 1000, h: 1088 } } }))).toBeNull();
+  });
+
+  it("reuse restores the MOSS settings and leaves Krea's toggles alone", () => {
+    useCreate.getState().patch({ seedVariance: true, tEnhancer: true, sampler: { steps: 3 } });
+    const job = {
+      id: "j",
+      params: { mode: "create", variant: "moss", prompt: "p", width: 1440, height: 1440, batch: 2, sharpen: false, sampler: { steps: 6, cfg: 1, sampler_name: "er_sde", scheduler: "bong_tangent", denoise: 1 } },
+      seeds: { main: 9 },
+    } as unknown as Job;
+    reuseJob(job, defaults);
+    const s = useCreate.getState();
+    expect(s.variant).toBe("moss");
+    expect(s.sizes.moss).toEqual({ aspect: "1:1", w: 1440, h: 1440 });
+    expect(s.mossSampler).toEqual({ steps: 6 });
+    expect(s.mossTurbo).toEqual({});
+    expect(s.sampler).toEqual({ steps: 3 });
+    expect(s.seedVariance && s.tEnhancer).toBe(true);
+    expect(s.lockSeed).toBe(true);
+    expect(s.seeds.main).toBe(9);
   });
 });
 

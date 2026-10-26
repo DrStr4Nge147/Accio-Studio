@@ -8,6 +8,7 @@ import { AspectPicker } from "./AspectPicker";
 import { LoraSection } from "./LoraSection";
 import { SamplerFields } from "./SamplerFields";
 import { SeedFields } from "./SeedFields";
+import { mossSamplerDefaults } from "./params";
 import { useCreate } from "./store";
 import { TIPS } from "./tips";
 import { VarianceFields } from "./VarianceFields";
@@ -19,6 +20,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
   const s = useCreate();
   const defaults = useServer((x) => x.catalog?.defaults);
   const detailed = s.variant === "detailed";
+  const moss = s.variant === "moss";
   const d = defaults?.detailed;
   const size = s.sizes[s.variant];
 
@@ -28,9 +30,10 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
         <div>
           <Label>Finishing</Label>
           <div className="mt-0.5">
-            <Toggle on={s.seedVariance} onChange={(seedVariance) => s.patch({ seedVariance })} label="Variance" sub={TIPS.seedVariance} />
+            {!moss && <Toggle on={s.seedVariance} onChange={(seedVariance) => s.patch({ seedVariance })} label="Variance" sub={TIPS.seedVariance} />}
             <Toggle on={s.sharpen} onChange={(sharpen) => s.patch({ sharpen })} label="Sharpen" sub={TIPS.sharpen} />
-            <Toggle on={s.tEnhancer} onChange={(tEnhancer) => s.patch({ tEnhancer })} label="T-Enhancer" sub={TIPS.tEnhancer} />
+            {!moss && <Toggle on={s.tEnhancer} onChange={(tEnhancer) => s.patch({ tEnhancer })} label="T-Enhancer" sub={TIPS.tEnhancer} />}
+            {moss && <Toggle on={s.mossEnhance} onChange={(mossEnhance) => s.patch({ mossEnhance })} label="Prompt enhancer" sub={TIPS.mossEnhance} />}
           </div>
         </div>
       )}
@@ -83,6 +86,29 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
           </div>
           <Toggle on={s.saveFirstPass} onChange={(saveFirstPass) => s.patch({ saveFirstPass })} label="Save first-pass image" sub="Keep the image from before refining" tip={TIPS.saveFirstPass} />
         </>
+      ) : moss ? (
+        <>
+          <SamplerFields title="Sampler" def={mossSamplerDefaults(defaults, s.mossTurbo.on ?? defaults?.moss.turbo_lora.on ?? true)} value={s.mossSampler} onChange={(mossSampler) => s.patch({ mossSampler })} />
+          {([
+            ["Turbo LoRA", "mossTurbo", defaults?.moss.turbo_lora, TIPS.mossTurbo],
+            ["SFT LoRA", "mossSft", defaults?.moss.sft_lora, TIPS.mossSft],
+          ] as const).map(([title, key, def, tip]) => {
+            if (!def) return null;
+            const cur = { ...def, ...s[key] };
+            // Keep only values that differ from the workflow default.
+            const setLora = (p: Partial<typeof def>) => {
+              const next = { ...s[key], ...p };
+              for (const k of Object.keys(next) as (keyof typeof def)[]) if (next[k] === def[k]) delete next[k];
+              s.patch({ [key]: next });
+            };
+            return (
+              <div key={key} className="space-y-1">
+                <Toggle on={cur.on} onChange={(on) => setLora({ on })} label={title} tip={tip} />
+                <Slider label="Strength" min={0} max={5} step={0.05} value={cur.strength} disabled={!cur.on} onChange={(strength) => setLora({ strength })} />
+              </div>
+            );
+          })}
+        </>
       ) : (
         <SamplerFields title="Sampler" def={defaults?.standard.sampler} value={s.sampler} onChange={(sampler) => s.patch({ sampler })} />
       )}
@@ -94,11 +120,11 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
           min={0}
           max={1}
           step={0.05}
-          value={s.sharpenStrength ?? defaults.sharpen_strength}
-          onChange={(v) => s.patch({ sharpenStrength: v === defaults.sharpen_strength ? undefined : v })}
+          value={s.sharpenStrength ?? (moss ? defaults.moss.sharpen_strength : defaults.sharpen_strength)}
+          onChange={(v) => s.patch({ sharpenStrength: v === (moss ? defaults.moss.sharpen_strength : defaults.sharpen_strength) ? undefined : v })}
         />
       )}
-      {s.tEnhancer && defaults && (
+      {!moss && s.tEnhancer && defaults && (
         <Slider
           label="T-Enhancer strength"
           tip={TIPS.tEnhancerStrength}
@@ -113,7 +139,7 @@ export function CreateAdvanced({ withAspect }: { withAspect: boolean }) {
         <Toggle on={s.grain.on} onChange={(on) => s.patch({ grain: { ...s.grain, on } })} label="Film grain" sub="Adds grain to the finished image" tip={EDIT_TIPS.grain} />
         {s.grain.on && <Slider label="Grain strength" tip={EDIT_TIPS.grain} min={GRAIN_MIN} max={GRAIN_MAX} step={0.005} value={s.grain.strength} format={(v) => v.toFixed(3)} onChange={(strength) => s.patch({ grain: { ...s.grain, strength } })} />}
       </div>
-      {s.seedVariance && <VarianceFields />}
+      {!moss && s.seedVariance && <VarianceFields />}
       <LoraSection />
 
       <button

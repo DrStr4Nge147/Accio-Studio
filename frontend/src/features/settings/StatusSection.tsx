@@ -30,7 +30,7 @@ export function StatusSection({ onManageModels }: { onManageModels?: () => void 
       <div className="divide-y divide-line rounded-m border border-line px-3 [[data-card-body]_&]:rounded-none [[data-card-body]_&]:border-0 [[data-card-body]_&]:px-0">
         <Row k="Accio server" v={unreachable ? "Unreachable" : "Running"} ok={!unreachable} />
         <Row k="Live updates" v={connected ? "Connected" : "Reconnecting…"} ok={connected} />
-        <Row k="Backend server" v={!health ? "Checking…" : health.comfy_online ? "Online" : "Offline"} ok={health ? health.comfy_online : undefined} />
+        <Row k="Backend server" v={!health ? "Checking…" : health.comfy_online ? `Online${health.comfy_version ? ` (v${health.comfy_version})` : ""}` : "Offline"} ok={health ? health.comfy_online : undefined} />
         {health?.comfy_online && (
           <>
             <Row

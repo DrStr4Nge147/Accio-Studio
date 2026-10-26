@@ -149,3 +149,19 @@ def test_missing_history_and_nothing_announced_is_still_an_error(monkeypatch):
     m = _late_manager(monkeypatch, {})
     asyncio.run(m._on_event({"type": "execution_success", "data": {"prompt_id": "p1"}}))
     assert m.history.job["status"] == "error"
+
+
+def test_a_job_recovered_after_a_restart_looks_for_the_templates_own_save_node():
+    """_built_stub hard-codes each template's output node; every one must be a SaveImage of that very template."""
+    import json
+
+    from config import template_files
+    from jobs import _built_stub
+
+    for path in template_files():
+        job = {"template": path.stem, "seeds": {}, "mode": "create", "label": ""}
+        nodes = json.loads(path.read_text("utf-8"))
+        outs = _built_stub(job).outputs
+        assert outs and all(nodes.get(n, {}).get("class_type") == "SaveImage" for n in outs), path.stem
+    moss = {"template": "moss_t2i__sharp1", "seeds": {}, "mode": "create", "label": "", "params": {"prompt_enhancer": True}}
+    assert _built_stub(moss).prompt_used_node == "27"  # the "Prompt used" preview of the MOSS templates

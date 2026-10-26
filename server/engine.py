@@ -36,6 +36,8 @@ LORA_ADD_MARKER = "➕ Add Lora"
 UNET_CLASS = "UNETLoader"
 GRAIN_NODE = "film_grain"  # id of the node inserted before the Save step
 KLEIN_MAX_IMAGES = 3
+# MOSS Image without its turbo LoRA runs the workflow's normal text-to-image settings (same sampler and scheduler as turbo).
+MOSS_BASE_STEPS, MOSS_BASE_CFG = 50, 4
 KLEIN_IMAGE_NODES = [("76", "109"), ("81", "115"), ("102", "116")]  # (LoadImage, ImageScaleToTotalPixels) per input image
 KLEIN_LORA_NODES = ["120", "121", "122", "123", "124", "125"]  # model-only LoRA loaders, chained in this order
 REF_MEGAPIXEL_NODES = ["298:302", "298:306", "298:310", "298:314", "298:318", "298:322", "298:326", "298:330"]
@@ -274,6 +276,7 @@ def create_defaults() -> dict[str, Any]:
     """Workflow default values of the Create patch points, read from the templates (single source of truth for the UI)."""
     std = load_template("krea_t2i__var1_tenh1_sharp1")
     combo = load_template("krea_combo__var1_tenh1_sharp1")
+    moss = load_template("moss_t2i__sharp1")
     sampler_keys = ("steps", "cfg", "sampler_name", "scheduler", "denoise")
 
     def sampler(pr: dict, node: str) -> dict[str, Any]:
@@ -292,6 +295,15 @@ def create_defaults() -> dict[str, Any]:
             "pass2": sampler(combo, "265"),
             "turbo_pass1": {k: combo["180"]["inputs"]["lora_1"][k] for k in ("on", "strength")},
             "turbo_pass2": {k: combo["174"]["inputs"]["lora_1"][k] for k in ("on", "strength")},
+        },
+        "moss": {
+            "width": moss["15"]["inputs"]["value"],
+            "height": moss["16"]["inputs"]["value"],
+            "sampler": sampler(moss, "331"),
+            "turbo_lora": {k: moss["341"]["inputs"]["lora_1"][k] for k in ("on", "strength")},
+            "sft_lora": {k: moss["341"]["inputs"]["lora_2"][k] for k in ("on", "strength")},
+            "base_sampler": {"steps": MOSS_BASE_STEPS, "cfg": MOSS_BASE_CFG},  # what replaces steps and CFG while the turbo LoRA is off
+            "sharpen_strength": moss["336"]["inputs"]["alpha"],
         },
         "sharpen_strength": std["141"]["inputs"]["method.strength"],
         "t_enhancer_strength": std["146"]["inputs"]["strength"],
@@ -367,7 +379,42 @@ def edit_defaults() -> dict[str, Any]:
 
 # --------------------------------------------------------------------------- builders
 
+def _build_moss(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], prefix: str) -> Built:
+    """MOSS Image, turbo text to image. Prompt mode stays on the template's "manual prompt"; the size is always the manual one
+    (the workflow's automatic resolution picker is switched off)."""
+    sharp = int(p.sharpen)
+    name = f"moss_t2i__sharp{sharp}"
+    pr = strip_output_only(load_template(name))
+    _set(pr, "104", "value", p.prompt)
+    if p.prompt_enhancer:
+        _set(pr, "154", "value", 2)  # PROMPT MODE: 1 = manual prompt, 2 = enhanced prompt (3 = Ideogram 4 BBOX, not offered)
+    seeds = {"main": _seed(p.seed, seeds_src)}
+    _set(pr, "331", "seed", seeds["main"])
+    _set(pr, "676", "value", False)
+    for node, val in (("15", p.width), ("16", p.height)):
+        if val is not None:
+            _set(pr, node, "value", val)
+    _set(pr, "337:329", "batch_size", p.batch)
+    _apply_sampler(pr, "331", p.sampler, cat)
+    for slot, t in (("lora_1", p.turbo_lora), ("lora_2", p.sft_lora)):  # the workflow's own turbo and SFT LoRAs
+        if t is not None:
+            _lora_slot(pr, "341", slot, on=t.on, strength=t.strength)
+    if p.turbo_lora is not None and not p.turbo_lora.on:  # no turbo LoRA: 8 steps at CFG 1 no longer fit, unless the request says otherwise
+        for key, base in (("steps", MOSS_BASE_STEPS), ("cfg", MOSS_BASE_CFG)):
+            if p.sampler is None or getattr(p.sampler, key) is None:
+                _set(pr, "331", key, base)
+    if sharp and p.sharpen_strength is not None:
+        _set(pr, "336", "alpha", p.sharpen_strength)
+    _inject_loras(pr, "341", p.loras, cat)
+    save = "147" if sharp else "86"
+    _apply_grain(pr, save, p.film_grain, seeds["main"])
+    _set(pr, save, "filename_prefix", f"{prefix}/create")
+    return Built(pr, name, seeds, {save: "final"}, "27" if p.prompt_enhancer else None, "create", "Create · MOSS")
+
+
 def _build_create(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], prefix: str) -> Built:
+    if p.variant == "moss":
+        return _build_moss(p, cat, seeds_src, prefix)
     var, tenh, sharp = int(p.seed_variance), int(p.t_enhancer), int(p.sharpen)
     seeds: dict[str, int] = {}
     outputs: dict[str, str] = {}

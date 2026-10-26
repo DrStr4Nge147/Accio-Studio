@@ -63,4 +63,4 @@ def test_settings_cli_keys():
 
 
 def test_manifest_comfy_version_matches_template_exports():
-    assert config.load_manifest()["comfyui"]["version"] == "0.38.0"
+    assert config.load_manifest()["comfyui"]["version"] == "0.42.1"

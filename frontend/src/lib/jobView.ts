@@ -23,6 +23,7 @@ export function jobSize(job: Job): { w: number; h: number } {
   const hint = job.params.size_hint as number[] | undefined;
   if (job.mode !== "create") return hint?.length === 2 ? { w: hint[0]!, h: hint[1]! } : { w: 1024, h: 1024 };
   const detailed = job.params.variant === "detailed";
+  if (job.params.variant === "moss") return { w: job.params.width ?? 1920, h: job.params.height ?? 1088 };
   return { w: job.params.width ?? (detailed ? 1920 : 1080), h: job.params.height ?? (detailed ? 1080 : 1920) };
 }
 

@@ -70,7 +70,7 @@ export function SeedFields() {
         <div className="mt-2 grid gap-2">
           <SeedInput label={detailed ? "Pass 1 seed" : "Seed"} value={seeds.main} onChange={set("main")} />
           {detailed && <SeedInput label="Pass 2 seed" value={seeds.pass2} onChange={set("pass2")} />}
-          {seedVariance && <SeedInput label="Variance seed" value={seeds.variance} onChange={set("variance")} />}
+          {seedVariance && variant !== "moss" && <SeedInput label="Variance seed" value={seeds.variance} onChange={set("variance")} />}
         </div>
       )}
     </div>
