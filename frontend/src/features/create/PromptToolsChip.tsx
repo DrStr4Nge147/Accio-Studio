@@ -1,15 +1,16 @@
 import { useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ChevronRight, FileText, Palette, WandSparkles } from "lucide-react";
+import { ChevronRight, FileText, LayoutTemplate, Palette, WandSparkles } from "lucide-react";
 import { Chip } from "../../components/ui/controls";
 import { Sheet } from "../../components/ui/Sheet";
 import { BuilderSheet } from "./builder/BuilderSheet";
+import { LayoutSheet } from "./builder/LayoutSheet";
 import { useEdit } from "../edit/store";
 import { useCreate } from "./store";
 import { StyleSheet } from "./StylePicker";
 import { TemplateSheet } from "./TemplatePicker";
 
-type Tool = "builder" | "style" | "templates";
+type Tool = "builder" | "layout" | "style" | "templates";
 
 function Row({ icon, title, sub, onClick }: { icon: ReactNode; title: string; sub: string; onClick: () => void }) {
   return (
@@ -32,6 +33,7 @@ export function PromptToolsChip({ target = "create" }: { target?: "create" | "ed
   const createStyle = useCreate((s) => s.style);
   const editStyle = useEdit((s) => s.style);
   const style = target === "edit" ? editStyle : createStyle;
+  const moss = useCreate((s) => s.variant === "moss");
   const [menu, setMenu] = useState(false);
   const [tool, setTool] = useState<Tool | null>(null);
   const open = (t: Tool) => {
@@ -51,6 +53,7 @@ export function PromptToolsChip({ target = "create" }: { target?: "create" | "ed
         <Sheet open={menu} onClose={() => setMenu(false)} title="Prompt tools" height="60%">
           <div className="flex flex-col gap-2">
             {target === "create" && <Row icon={<WandSparkles size={18} strokeWidth={1.7} />} title="Builder" sub="Build a prompt from options: character or scene" onClick={() => open("builder")} />}
+            {target === "create" && moss && <Row icon={<LayoutTemplate size={18} strokeWidth={1.7} />} title="Layout" sub="Draw boxes and describe what goes in each" onClick={() => open("layout")} />}
             <Row icon={<Palette size={18} strokeWidth={1.7} />} title="Style" sub={style ? `Current: ${style.name}` : "Add a style to your prompt"} onClick={() => open("style")} />
             <Row icon={<FileText size={18} strokeWidth={1.7} />} title="Templates" sub="Save and reuse prompts" onClick={() => open("templates")} />
           </div>
@@ -58,6 +61,7 @@ export function PromptToolsChip({ target = "create" }: { target?: "create" | "ed
         document.body,
       )}
       {target === "create" && <BuilderSheet open={tool === "builder"} onClose={close} />}
+      {target === "create" && <LayoutSheet open={tool === "layout"} onClose={close} />}
       <StyleSheet open={tool === "style"} onClose={close} target={target} />
       <TemplateSheet open={tool === "templates"} onClose={close} target={target} />
     </>

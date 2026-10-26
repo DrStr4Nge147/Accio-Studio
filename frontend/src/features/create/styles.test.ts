@@ -12,6 +12,9 @@ describe("withStyle", () => {
     expect(withStyle("a fox", "Soft watercolor.", true)).toBe("Soft watercolor. a fox");
     expect(withStyle("a fox", "Soft watercolor", true)).toBe("Soft watercolor. a fox");
   });
+  it("never appends to a JSON prompt from the layout builder", () => {
+    expect(withStyle('{"a":1}', "Soft watercolor.")).toBe('{"a":1}');
+  });
 });
 
 describe("styleText", () => {

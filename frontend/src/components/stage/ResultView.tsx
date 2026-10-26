@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { Columns2, Copy, Download, Info, Maximize2, Repeat, RotateCcw, Share2, TextQuote, WandSparkles, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Columns2, Copy, Download, Info, Maximize2, Repeat, RotateCcw, Share2, SquareDashed, TextQuote, WandSparkles, X } from "lucide-react";
 import { imageUrl } from "../../api/http";
 import type { Job } from "../../api/types";
 import { continueFromResult, sendToEdit } from "../../features/edit/actions";
 import { showEnhanced } from "../../features/edit/enhanced";
 import type { EditMode } from "../../features/edit/store";
 import { useBeforeUrl, useMaskPreviewUrl } from "../../features/edit/useBefore";
+import { parseCaption } from "../../features/create/builder/ideogram";
 import { loadStyles, splitEditStyle, splitStyle } from "../../features/create/styles";
 import { reuseAny } from "../../features/reuse";
 import { enhancedText, formatDuration, jobSize } from "../../lib/jobView";
@@ -16,6 +17,7 @@ import { IconButton } from "../ui/controls";
 import { jobMenuItems, removeJob } from "../../features/history/jobMenu";
 import { Box } from "./Box";
 import { Compare } from "./Compare";
+import { LayoutOverlay } from "./LayoutOverlay";
 import { LocalReveal } from "./LocalReveal";
 import { Zoomable } from "./Zoomable";
 
@@ -33,6 +35,7 @@ export function ResultView({ job }: { job: Job }) {
   const [details, setDetails] = useState(false);
   const [full, setFull] = useState(false);
   const [compare, setCompare] = useState(false);
+  const [boxes, setBoxes] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -43,6 +46,7 @@ export function ResultView({ job }: { job: Job }) {
   const maskUrl = useMaskPreviewUrl(job);
   const local = job.mode === "inpaint"; // inpaint reveals only the painted area; everything else gets the whole-image reveal
   const hint = jobSize(job);
+  const layout = useMemo(() => (job.mode === "create" ? parseCaption(job.params.prompt ?? "") : null), [job.mode, job.params.prompt]);
 
   useEffect(() => {
     if (!full) return;
@@ -126,6 +130,11 @@ export function ResultView({ job }: { job: Job }) {
             <Columns2 size={20} strokeWidth={1.7} className={ic} />
           </IconButton>
         )}
+        {layout && !firstPass && (
+          <IconButton label={boxes ? "Hide the layout boxes" : "Show the layout boxes"} className={cls} aria-pressed={boxes} onClick={() => setBoxes((b) => !b)}>
+            <SquareDashed size={20} strokeWidth={1.7} className={`${ic} ${boxes ? "text-gold-hi" : ""}`} />
+          </IconButton>
+        )}
         <IconButton label="Reuse settings" className={cls} onClick={() => reuseAny(job)}>
           <RotateCcw size={20} strokeWidth={1.7} className={ic} />
         </IconButton>
@@ -177,7 +186,10 @@ export function ResultView({ job }: { job: Job }) {
           ) : (
             <div className="contents" onContextMenu={(e) => openContextMenu(e, [{ label: "Full screen", icon: <Maximize2 size={16} strokeWidth={1.7} />, onSelect: () => setFull(true) }, ...jobMenuItems(job, cur.i).filter((i) => i.label !== "Open")])}>
               <Zoomable key={url} onExpand={() => setFull(true)}>
-                {picture}
+                <div className="relative h-full w-full">
+                  {picture}
+                  {boxes && layout && !firstPass && <LayoutOverlay regions={layout.regions} />}
+                </div>
               </Zoomable>
             </div>
           )}

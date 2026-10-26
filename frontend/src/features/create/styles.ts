@@ -43,7 +43,7 @@ const END_PUNCT = /[.!?,;:]$/;
 /** Your prompt and the style text as two sentences, in the order asked. */
 export function withStyle(prompt: string, text: string | undefined, first = false): string {
   const p = prompt.trim();
-  if (!text) return p;
+  if (!text || p.startsWith("{")) return p; // a layout-builder JSON prompt carries its own style; appended text would break it
   if (!p) return text;
   if (first) return `${text}${END_PUNCT.test(text) ? "" : "."} ${p}`;
   return `${p}${END_PUNCT.test(p) ? " " : ". "}${text}`;

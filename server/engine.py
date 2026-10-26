@@ -379,15 +379,61 @@ def edit_defaults() -> dict[str, Any]:
 
 # --------------------------------------------------------------------------- builders
 
+def _layout_of(prompt: str) -> dict[str, Any] | None:
+    """The Ideogram 4 caption in a layout prompt (the Create screen's Layout builder), or None for an ordinary prompt."""
+    if not prompt.lstrip().startswith("{"):
+        return None
+    try:
+        cap = json.loads(prompt)
+    except ValueError:
+        return None
+    body = cap.get("compositional_deconstruction") if isinstance(cap, dict) else None
+    return cap if isinstance(body, dict) and isinstance(body.get("elements"), list) else None
+
+
+
+
+def _layout_boxes(cap: dict[str, Any]) -> list[dict[str, Any]]:
+    """The boxes of a caption as fractions of the image (x, y, w, h), from Ideogram's [y1, x1, y2, x2] order."""
+    boxes = []
+    for el in cap["compositional_deconstruction"]["elements"]:
+        if not isinstance(el, dict):
+            continue
+        ymin, xmin, ymax, xmax = (el.get("bbox") or [0, 0, 1000, 1000])[:4]
+        boxes.append({"type": "text" if el.get("type") == "text" else "obj", "text": el.get("text") or "",
+                      "desc": el.get("desc") or "", "palette": list(el.get("color_palette") or []),
+                      "x": xmin / 1000, "y": ymin / 1000, "w": (xmax - xmin) / 1000, "h": (ymax - ymin) / 1000})
+    return boxes
+
+
+def _apply_layout(pr: dict, cap: dict[str, Any]) -> str:
+    """Fill the workflow's Ideogram 4 prompt builder (node 95) from a caption and switch to PROMPT MODE 3 (its boxes).
+    Returns the text for the manual prompt, which the negative prompt's photo check still reads."""
+    body = cap["compositional_deconstruction"]
+    style = cap.get("style_description") if isinstance(cap.get("style_description"), dict) else {}
+    art = "art_style" in style
+    boxes = _layout_boxes(cap)
+    overview = cap.get("high_level_description") or ""
+    background = body.get("background") or ""
+    for key, val in (("high_level_description", overview), ("background", background), ("style", "art_style" if art else "photo"),
+                     ("style.art_style" if art else "style.photo", style.get("art_style" if art else "photo") or ""),
+                     ("aesthetics", style.get("aesthetics") or ""), ("lighting", style.get("lighting") or ""), ("medium", style.get("medium") or ""),
+                     ("style_palette_data", json.dumps(style.get("color_palette") or [])), ("elements_data", json.dumps(boxes))):
+        _set(pr, "95", key, val)
+    _set(pr, "154", "value", 3)
+    return " ".join(t for t in (overview, background, *(b["desc"] for b in boxes)) if t)
+
+
 def _build_moss(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], prefix: str) -> Built:
     """MOSS Image, turbo text to image. Prompt mode stays on the template's "manual prompt"; the size is always the manual one
     (the workflow's automatic resolution picker is switched off)."""
     sharp = int(p.sharpen)
     name = f"moss_t2i__sharp{sharp}"
     pr = strip_output_only(load_template(name))
-    _set(pr, "104", "value", p.prompt)
-    if p.prompt_enhancer:
-        _set(pr, "154", "value", 2)  # PROMPT MODE: 1 = manual prompt, 2 = enhanced prompt (3 = Ideogram 4 BBOX, not offered)
+    layout = _layout_of(p.prompt)
+    _set(pr, "104", "value", _apply_layout(pr, layout) if layout else p.prompt)  # PROMPT MODE: 1 = manual prompt, 2 = enhanced, 3 = Ideogram 4 boxes
+    if p.prompt_enhancer and not layout:
+        _set(pr, "154", "value", 2)
     seeds = {"main": _seed(p.seed, seeds_src)}
     _set(pr, "331", "seed", seeds["main"])
     _set(pr, "676", "value", False)
@@ -409,7 +455,7 @@ def _build_moss(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], pre
     save = "147" if sharp else "86"
     _apply_grain(pr, save, p.film_grain, seeds["main"])
     _set(pr, save, "filename_prefix", f"{prefix}/create")
-    return Built(pr, name, seeds, {save: "final"}, "27" if p.prompt_enhancer else None, "create", "Create · MOSS")
+    return Built(pr, name, seeds, {save: "final"}, "27" if p.prompt_enhancer or layout else None, "create", "Create · MOSS")
 
 
 def _build_create(p: CreateParams, cat: Catalog, seeds_src: Callable[[], int], prefix: str) -> Built:

@@ -34,6 +34,7 @@ export function Composer({
   fieldHeader,
   promptTool,
   collapse,
+  summary,
   loraCount = 0,
   triggers,
   generateIcon =<Sparkles size={20} strokeWidth={1.7} />,
@@ -63,6 +64,8 @@ export function Composer({
   promptTool?: ReactNode;
   /** makes the prompt (and its header) foldable; folded, a one-line row stands in for it */
   collapse?: { collapsed: boolean; onToggle: () => void; label: string; hint: string };
+  /** stands in for the prompt box while the prompt is machine text (a layout's JSON), with a way back to its editor and a way to drop it */
+  summary?: { label: string; onEdit: () => void; onClear: () => void };
   /** number of LoRAs that will be applied; when above 0 a glowing "LoRA enabled" note sits under the prompt box */
   loraCount?: number;
   /** saved LoRA trigger words: typing `@` suggests them */
@@ -257,11 +260,28 @@ export function Composer({
   );
   const promptBlock = (
     <>
-      {foldRow}
-      {!folded && (
+      {summary ? (
+        <div className="rounded-m border border-line bg-raised">
+          <div className="flex min-h-11 items-center gap-1 pl-3 pr-1.5">
+            <span className="min-w-0 flex-1 truncate text-[14px] text-text">{summary.label}</span>
+            <button type="button" onClick={summary.onEdit} className="hover-wash h-9 flex-none rounded-full px-3 text-[13px] font-medium text-gold-text">
+              Edit
+            </button>
+            <button type="button" onClick={summary.onClear} aria-label="Remove the layout" data-tip="Remove the layout and empty the prompt" className="hover-wash grid h-9 w-9 flex-none place-items-center rounded-full text-text-2 hover:text-text">
+              <X size={16} strokeWidth={1.7} aria-hidden />
+            </button>
+          </div>
+          {tool && <div className="px-2 pb-2">{tool}</div>}
+        </div>
+      ) : (
         <>
-          {fieldHeader}
-          {field}
+          {foldRow}
+          {!folded && (
+            <>
+              {fieldHeader}
+              {field}
+            </>
+          )}
         </>
       )}
       {loraCount > 0 && (

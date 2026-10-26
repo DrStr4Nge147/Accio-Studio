@@ -1,10 +1,13 @@
+import { useMemo } from "react";
 import { Loader2, X } from "lucide-react";
 import type { Job } from "../../api/types";
 import { requestCancel } from "../../features/create/actions";
+import { parseCaption } from "../../features/create/builder/ideogram";
 import { useBeforeUrl, useMaskPreviewUrl } from "../../features/edit/useBefore";
 import { formatEta, isEnhancing, jobSize, passOf, useDecodePhase, useEta } from "../../lib/jobView";
 import { useJobs } from "../../store/jobs";
 import { Ring } from "../Wordmark";
+import { LayoutOverlay } from "./LayoutOverlay";
 import { LogoDust } from "./LogoDust";
 import { Box } from "./Box";
 import { Zoomable } from "./Zoomable";
@@ -94,6 +97,7 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
   const maskUrl = useMaskPreviewUrl(job);
   const masked = job.mode === "inpaint" && !!before && !!maskUrl;
   const staged = padded || masked; // the card shows the photo itself instead of the blurred live preview
+  const layout = useMemo(() => (job.mode === "create" ? parseCaption(job.params.prompt ?? "") : null), [job.mode, job.params.prompt]);
   const sheet = job.mode === "charsheet"; // step / max count finished views, not sampler steps
   const pct = max ? Math.min(100, ((step ?? 0) / max) * 100) : 0;
   const waiting = ahead ? `${ahead} job${ahead === 1 ? "" : "s"} ahead in the queue` : null;
@@ -116,6 +120,7 @@ export function RunningCard({ job, compact }: { job: Job; compact?: boolean }) {
           )}
         </div>
       )}
+      {layout && !staged && <LayoutOverlay regions={layout.regions} />}
       {cancelling ? <div className="absolute inset-0 z-[1] bg-black/35 fade-in" aria-hidden /> : staged ? null : decoding ? <Ripples /> : <Bubbles />}
       <div className={`absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-[rgba(8,7,12,0.9)] to-transparent p-3.5 pt-10 text-[#f1eadb] ${staged ? "pointer-events-none" : ""}`}>
         <div className="mb-2 flex items-baseline justify-between gap-3 text-[13px] font-medium">

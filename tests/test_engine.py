@@ -382,8 +382,8 @@ def test_create_film_grain_sits_before_the_final_save(variant, save):
 MCAT = Catalog(loras={"8-steps-dmd2-lora.safetensors", "moss_image_sft.safetensors", "moss-image/style.safetensors"}, samplers={"er_sde", "euler"}, schedulers={"bong_tangent", "simple"})
 
 
-def run_moss(**kw):
-    return build(mk(mode="create", variant="moss", prompt="a fox", **kw), MCAT, seed_source=iter(range(10, 99)).__next__)
+def run_moss(prompt="a fox", **kw):
+    return build(mk(mode="create", variant="moss", prompt=prompt, **kw), MCAT, seed_source=iter(range(10, 99)).__next__)
 
 
 def test_moss_patches_prompt_seed_size_and_batch():
@@ -424,6 +424,32 @@ def test_moss_prompt_enhancer_switches_the_prompt_mode_and_reads_the_used_prompt
     assert on.prompt["27"]["class_type"] == "PreviewAny"
     with pytest.raises(ValidationError, match="MOSS Image only"):
         mk(mode="create", variant="detailed", prompt="x", prompt_enhancer=True)
+
+
+LAYOUT = (
+    '{"high_level_description":"An apple and a teapot","style_description":{"aesthetics":"minimal","lighting":"soft","photo":"50mm","medium":"photograph","color_palette":["#C0392B"]},'
+    '"compositional_deconstruction":{"background":"A wooden table","elements":['
+    '{"type":"obj","bbox":[400,60,800,420],"desc":"A red apple","color_palette":["#C0392B"]},'
+    '{"type":"text","bbox":[100,500,200,900],"text":"TEA","desc":"a sign"}]}}'
+)
+
+
+def test_moss_layout_prompt_fills_the_ideogram_builder_and_switches_to_mode_3():
+    b = run_moss(LAYOUT, prompt_enhancer=True)
+    i = b.prompt["95"]["inputs"]
+    assert b.prompt["154"]["inputs"]["value"] == 3 and b.prompt_used_node == "27"  # a layout wins over the enhancer
+    assert (i["high_level_description"], i["background"], i["style"], i["style.photo"]) == ("An apple and a teapot", "A wooden table", "photo", "50mm")
+    assert (i["aesthetics"], i["lighting"], i["medium"]) == ("minimal", "soft", "photograph")
+    assert json.loads(i["style_palette_data"]) == ["#C0392B"]
+    apple, sign = json.loads(i["elements_data"])
+    assert apple == {"type": "obj", "text": "", "desc": "A red apple", "palette": ["#C0392B"], "x": 0.06, "y": 0.4, "w": 0.36, "h": 0.4}
+    assert (sign["type"], sign["text"]) == ("text", "TEA")
+    assert "apple" in b.prompt["104"]["inputs"]["value"]  # the negative prompt's photo check reads text, not JSON
+
+
+def test_moss_json_that_is_not_a_layout_stays_a_plain_prompt():
+    b = run_moss('{"just": "braces"}')
+    assert b.prompt["154"]["inputs"]["value"] == 1 and b.prompt["104"]["inputs"]["value"] == '{"just": "braces"}'
 
 
 def test_moss_without_the_turbo_lora_uses_the_normal_steps_and_cfg():

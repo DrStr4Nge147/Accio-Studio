@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Composer } from "../../components/Composer";
 import { useTriggerOptions } from "../../lib/triggerWords";
 import { useServer } from "../../store/health";
@@ -6,6 +6,8 @@ import { isActive, useJobs } from "../../store/jobs";
 import { useUi } from "../../store/ui";
 import { cancelCurrent, generate, useSubmit } from "./actions";
 import { BuilderButton } from "./builder/BuilderSheet";
+import { parseCaption } from "./builder/ideogram";
+import { LayoutButton, LayoutSheet, openLayoutFor } from "./builder/LayoutSheet";
 import { CreateChips, CreateToggles } from "./CreateControls";
 import { StyleButton } from "./StylePicker";
 import { TemplateButton } from "./TemplatePicker";
@@ -15,6 +17,13 @@ import { useCreate } from "./store";
 export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; above?: ReactNode }) {
   const prompt = useCreate((s) => s.prompt);
   const patch = useCreate((s) => s.patch);
+  const moss = useCreate((s) => s.variant === "moss"); // only MOSS Image takes boxes: its workflow turns the layout into regions
+  const caption = useMemo(() => (moss ? parseCaption(prompt) : null), [moss, prompt]);
+  const [layoutOpen, setLayoutOpen] = useState(false);
+  const showLayout = () => {
+    openLayoutFor(prompt);
+    setLayoutOpen(true);
+  };
   const loraCount = useCreate((s) => s.loras.filter((l) => l.on).length);
   const triggers = useTriggerOptions(useCreate((s) => s.loras));
   const { busy, error } = useSubmit();
@@ -24,30 +33,35 @@ export function CreateComposer({ layout, above }: { layout: "dock" | "pane"; abo
   const offline = online === false;
 
   return (
-    <Composer
-      layout={layout}
-      above={above}
-      prompt={prompt}
-      onPrompt={(prompt) => patch({ prompt })}
-      loraCount={loraCount}
-      triggers={triggers}
-      promptTool={
-        <div className="flex flex-wrap items-center gap-x-1 gap-y-1.5">
-          <BuilderButton />
-          <StyleButton />
-          <TemplateButton />
-        </div>
-      }
-      placeholder="Describe what to create…"
-      controls={layout === "dock" ? <CreateChips /> : <CreateToggles />}
-      running={running}
-      cancelling={cancelling}
-      disabled={busy || !prompt.trim() || offline}
-      disabledReason={offline ? "The backend server is offline, so nothing can be generated right now." : null}
-      error={error}
-      onGenerate={() => void generate()}
-      onCancel={() => void cancelCurrent()}
-      onExpand={() => useUi.getState().set({ advancedOpen: true })}
-    />
+    <>
+      <Composer
+        layout={layout}
+        above={above}
+        prompt={prompt}
+        onPrompt={(prompt) => patch({ prompt })}
+        loraCount={loraCount}
+        triggers={triggers}
+        promptTool={
+          <div className="flex flex-wrap items-center gap-x-1 gap-y-1.5">
+            <BuilderButton />
+            {moss && <LayoutButton onClick={showLayout} />}
+            <StyleButton />
+            <TemplateButton />
+          </div>
+        }
+        summary={caption ? { label: `Layout · ${caption.regions.length} ${caption.regions.length === 1 ? "box" : "boxes"}`, onEdit: showLayout, onClear: () => patch({ prompt: "" }) } : undefined}
+        placeholder="Describe what to create…"
+        controls={layout === "dock" ? <CreateChips /> : <CreateToggles />}
+        running={running}
+        cancelling={cancelling}
+        disabled={busy || !prompt.trim() || offline}
+        disabledReason={offline ? "The backend server is offline, so nothing can be generated right now." : null}
+        error={error}
+        onGenerate={() => void generate()}
+        onCancel={() => void cancelCurrent()}
+        onExpand={() => useUi.getState().set({ advancedOpen: true })}
+      />
+      <LayoutSheet open={layoutOpen} onClose={() => setLayoutOpen(false)} />
+    </>
   );
 }
