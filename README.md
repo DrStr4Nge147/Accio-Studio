@@ -6,7 +6,7 @@ choose to share it over a tunnel.
 
 It ships with its own portable copy of ComfyUI as the engine. You never open ComfyUI yourself.
 
-- **Create**: Standard (one pass) and Detailed (two passes with a refine step), with Seed Variance, T-Enhancer and Sharpen switches. **MOSS** is an optional second model (8-step turbo by default, with its own turbo and SFT LoRA sliders, a prompt enhancer and Sharpen); download its models in Settings > Models.
+- **Create**: Standard (one pass) and Detailed (two passes with a refine step), with Seed Variance, T-Enhancer and Sharpen switches. **MOSS** is an optional second model (8-step turbo by default, with its own turbo and SFT LoRA sliders, a prompt enhancer, a Layout builder where you draw boxes and describe what goes in each, and Sharpen); download its models in Settings > Models.
 - **Edit**: Multi-edit (up to 9 images, head and body swap presets), Inpaint (paint a mask; remove or move an object) and Outpaint (drag the edges out).
 - **Character sheet** (in Edit): upload one photo and get a sheet of face close-ups and a sheet of full-body views. *One by one* renders every angle at full quality and stitches them into a grid (slow: one render per view); *Merged* has the model draw each whole sheet in one picture (two renders, quicker, lower quality).
 - **Gallery** of everything you made, with thumbnails, "Reuse settings" and "Send to Edit".
