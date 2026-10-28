@@ -68,6 +68,16 @@ def sniff_image(head: bytes) -> tuple[str, str] | None:
     return None
 
 
+def image_is_complete(data: bytes, ext: str) -> bool:
+    """A cut-off upload still has valid magic bytes, then fails inside ComfyUI ("image file is truncated"). Check the tail
+    instead: PNG ends with IEND, JPEG with the EOI marker (some writers pad after it), WebP's RIFF size matches the file."""
+    if ext == "png":
+        return data[-12:-8] == b"\x00\x00\x00\x00" and data[-8:-4] == b"IEND"
+    if ext == "jpg":
+        return b"\xff\xd9" in data[-64:]
+    return int.from_bytes(data[4:8], "little") + 8 <= len(data)
+
+
 def save_upload_copy(subfolder: str, name: str, data: bytes) -> None:
     """Only needed when the backend does not write into data/uploads itself (an external one). Best effort: a failed copy only
     means the preview falls back to the backend's own file."""
@@ -495,6 +505,8 @@ async def upload(request: Request, kind: str):
     if not sniffed:
         raise HTTPException(415, "Only PNG, JPEG and WebP images are supported.")
     ext, mime = sniffed
+    if not image_is_complete(bytes(data), ext):
+        raise HTTPException(422, "That image file is incomplete. Save or export it again and retry.")
     if kind == "mask" and not (ext == "png" and png_has_alpha(bytes(data[:32]))):
         raise HTTPException(422, "The mask upload must be an RGBA PNG.")
     name = f"{'mask-' if kind == 'mask' else ''}{uuid.uuid4().hex}.{ext}"

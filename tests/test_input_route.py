@@ -47,6 +47,22 @@ def test_our_own_copy_is_served_without_the_backend(tmp_path, monkeypatch):
     assert client.get("/api/input/media/abc123.png").content == b"PNG-test"  # the same photo, reused in another mode
 
 
+def test_image_is_complete_rejects_cut_off_files():
+    import io
+
+    from PIL import Image
+
+    from main import image_is_complete
+
+    for fmt, ext in (("PNG", "png"), ("JPEG", "jpg"), ("WEBP", "webp")):
+        buf = io.BytesIO()
+        Image.effect_noise((64, 64), 80).convert("RGB").save(buf, fmt)
+        whole = buf.getvalue()
+        assert image_is_complete(whole, ext)
+        assert not image_is_complete(whole[:-12], ext)
+    assert image_is_complete(whole + b"\x00\x00", "webp")  # padding after the RIFF payload is fine
+
+
 def test_a_copy_is_never_written_outside_the_uploads_folder(tmp_path, monkeypatch):
     import main
 
